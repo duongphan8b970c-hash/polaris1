@@ -71,23 +71,24 @@ export default function Sidebar({ isOpen, onClose }) {
       `}
     >
       {/* Logo & Close Button */}
-      <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h1 className="text-xl font-bold text-gray-900">Finance Tracker</h1>
+      <div className="p-6 border-b-2 border-gray-100 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          {/* CUSTOM STAR LOGO */}
+          <img 
+            src="/logo.png" 
+            alt="Polaris Logo" 
+            className="w-12 h-12 object-contain flex-shrink-0"
+          />
+          <h1 className="text-xl font-bold text-gray-900">Polaris</h1>
         </div>
         
         {/* Close button (mobile only) */}
         <button
           onClick={onClose}
-          className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+          className="lg:hidden p-2.5 rounded-xl hover:bg-gray-100"
         >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <svg className="w-7 h-7 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -103,9 +104,9 @@ export default function Sidebar({ isOpen, onClose }) {
                 key={item.path}
                 to={item.path}
                 onClick={onClose}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                className={`flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all font-semibold ${
                   isActive
-                    ? 'bg-primary-50 text-primary-600 font-semibold'
+                    ? 'bg-primary-50 text-primary-600 shadow-sm'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >

@@ -6,6 +6,13 @@
   body {
     @apply bg-gray-50 text-gray-900;
   }
+  
+  /* Improve touch targets on mobile */
+  @media (max-width: 768px) {
+    button, a {
+      @apply min-h-[44px] min-w-[44px];
+    }
+  }
 }
 
 @layer components {
@@ -13,12 +20,19 @@
     @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
   }
   
+  /* Button Primary */
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+    @apply px-6 py-3 bg-primary-600 text-white rounded-xl 
+           hover:bg-primary-700 font-bold transition-all shadow-md hover:shadow-lg
+           disabled:opacity-50 disabled:cursor-not-allowed
+           text-sm sm:text-base;
   }
-  
+
+  /* Button Secondary */
   .btn-secondary {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-400;
+    @apply px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 
+           rounded-xl hover:bg-gray-50 font-bold transition-all shadow-sm hover:shadow-md
+           text-sm sm:text-base;
   }
   
   .btn-danger {
@@ -37,8 +51,9 @@
     @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
   }
   
+  /* Label */
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-semibold text-gray-700 mb-2;
   }
   
   .label-required::after {
@@ -85,3 +100,14 @@
   .hover-lift {
     @apply transition-transform hover:-translate-y-0.5;
   }
+
+  @layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
