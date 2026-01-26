@@ -1,0 +1,357 @@
+import { useState } from 'react'
+import { useTransactions } from '../hooks/useTransactions'
+import { useCategories } from '../hooks/useCategories'
+import { useWallets } from '../hooks/useWallets'
+import TransactionList from '../components/transactions/TransactionList'
+import TransactionForm from '../components/transactions/TransactionForm'
+import CategoryList from '../components/transactions/CategoryList'
+import CategoryForm from '../components/transactions/CategoryForm'
+import Modal from '../components/common/Modal'
+import PageHeader from '../components/layout/PageHeader'
+import Loading from '../components/common/Loading'
+import ErrorMessage from '../components/common/ErrorMessage'
+
+export default function FinancialTracking() {
+  const [activeTab, setActiveTab] = useState('transactions')
+  const [categoryType, setCategoryType] = useState('expense')
+  
+  // Filters state
+  const [filters, setFilters] = useState({
+    wallet_id: '',
+    type: '',
+    category_id: '',
+    date_from: '',
+    date_to: ''
+  })
+  
+  const { wallets } = useWallets()
+  const { transactions, loading: transactionsLoading, error: transactionsError, createTransaction, updateTransaction, refetch: refetchTransactions } = useTransactions(filters)
+  const { categories, loading: categoriesLoading, error: categoriesError, createCategory, updateCategory, refetch: refetchCategories } = useCategories(categoryType)
+  
+  const [showTransactionForm, setShowTransactionForm] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState(null)
+  const [submittingTransaction, setSubmittingTransaction] = useState(false)
+  
+  const [showCategoryForm, setShowCategoryForm] = useState(false)
+  const [editingCategory, setEditingCategory] = useState(null)
+  const [submittingCategory, setSubmittingCategory] = useState(false)
+
+  // Filter handlers
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  const handleClearFilters = () => {
+    setFilters({
+      wallet_id: '',
+      type: '',
+      category_id: '',
+      date_from: '',
+      date_to: ''
+    })
+  }
+
+  // Transaction handlers (existing)
+  const handleCreateTransaction = () => {
+    setEditingTransaction(null)
+    setShowTransactionForm(true)
+  }
+
+  const handleEditTransaction = (transaction) => {
+    setEditingTransaction(transaction)
+    setShowTransactionForm(true)
+  }
+
+  const handleCloseTransactionForm = () => {
+    setShowTransactionForm(false)
+    setEditingTransaction(null)
+  }
+
+  const handleSubmitTransaction = async (formData) => {
+    setSubmittingTransaction(true)
+    
+    const result = editingTransaction
+      ? await updateTransaction(editingTransaction.id, formData)
+      : await createTransaction(formData)
+    
+    setSubmittingTransaction(false)
+    
+    if (result.success) {
+      handleCloseTransactionForm()
+    } else {
+      alert('Lỗi: ' + result.error)
+    }
+  }
+
+  // Category handlers (existing)
+  const handleCreateCategory = () => {
+    setEditingCategory(null)
+    setShowCategoryForm(true)
+  }
+
+  const handleEditCategory = (category) => {
+    setEditingCategory(category)
+    setShowCategoryForm(true)
+  }
+
+  const handleCloseCategoryForm = () => {
+    setShowCategoryForm(false)
+    setEditingCategory(null)
+  }
+
+  const handleSubmitCategory = async (formData) => {
+    setSubmittingCategory(true)
+    
+    const result = editingCategory
+      ? await updateCategory(editingCategory.id, formData)
+      : await createCategory(formData)
+    
+    setSubmittingCategory(false)
+    
+    if (result.success) {
+      handleCloseCategoryForm()
+    } else {
+      alert('Lỗi: ' + result.error)
+    }
+  }
+
+  const loading = activeTab === 'transactions' ? transactionsLoading : categoriesLoading
+  const error = activeTab === 'transactions' ? transactionsError : categoriesError
+
+  if (loading) {
+    return <Loading message={activeTab === 'transactions' ? 'Đang tải giao dịch...' : 'Đang tải danh mục...'} />
+  }
+
+  if (error) {
+    return <ErrorMessage message={error} onRetry={activeTab === 'transactions' ? refetchTransactions : refetchCategories} />
+  }
+
+  // Get all categories for filter
+  const allCategories = [...(categories || [])]
+
+  return (
+    <div>
+      <PageHeader 
+        title="Quản lý thu chi" 
+        subtitle="Theo dõi các khoản thu nhập và chi tiêu"
+      />
+
+      {/* Tabs */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('transactions')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'transactions'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <svg className="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Giao dịch
+            </button>
+            <button
+              onClick={() => setActiveTab('categories')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'categories'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <svg className="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+              Danh mục
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Transactions Tab Content */}
+      {activeTab === 'transactions' && (
+        <>
+          {/* Filters Section */}
+          <div className="card mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Bộ lọc</h3>
+              <button
+                onClick={handleClearFilters}
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
+                Xóa bộ lọc
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Wallet Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ví</label>
+                <select
+                  name="wallet_id"
+                  value={filters.wallet_id}
+                  onChange={handleFilterChange}
+                  className="input"
+                >
+                  <option value="">Tất cả ví</option>
+                  {wallets.map(wallet => (
+                    <option key={wallet.id} value={wallet.id}>
+                      {wallet.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Type Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Loại</label>
+                <select
+                  name="type"
+                  value={filters.type}
+                  onChange={handleFilterChange}
+                  className="input"
+                >
+                  <option value="">Tất cả</option>
+                  <option value="income">Thu nhập</option>
+                  <option value="expense">Chi tiêu</option>
+                </select>
+              </div>
+
+              {/* Category Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
+                <select
+                  name="category_id"
+                  value={filters.category_id}
+                  onChange={handleFilterChange}
+                  className="input"
+                >
+                  <option value="">Tất cả danh mục</option>
+                  {allCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date From */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Từ ngày</label>
+                <input
+                  type="date"
+                  name="date_from"
+                  value={filters.date_from}
+                  onChange={handleFilterChange}
+                  className="input"
+                />
+              </div>
+
+              {/* Date To */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Đến ngày</label>
+                <input
+                  type="date"
+                  name="date_to"
+                  value={filters.date_to}
+                  onChange={handleFilterChange}
+                  className="input"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Action Button */}
+          <div className="mb-6 flex justify-end">
+            <button onClick={handleCreateTransaction} className="btn btn-primary">
+              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Thêm giao dịch
+            </button>
+          </div>
+
+          <TransactionList
+            transactions={transactions}
+            onEdit={handleEditTransaction}
+          />
+
+          <Modal
+            isOpen={showTransactionForm}
+            onClose={handleCloseTransactionForm}
+            title={editingTransaction ? 'Sửa giao dịch' : 'Thêm giao dịch mới'}
+          >
+            <TransactionForm
+              transaction={editingTransaction}
+              onSubmit={handleSubmitTransaction}
+              onCancel={handleCloseTransactionForm}
+              loading={submittingTransaction}
+            />
+          </Modal>
+        </>
+      )}
+
+      {/* Categories Tab Content (unchanged) */}
+      {activeTab === 'categories' && (
+        <>
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setCategoryType('expense')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  categoryType === 'expense'
+                    ? 'bg-red-100 text-red-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Chi tiêu
+              </button>
+              <button
+                onClick={() => setCategoryType('income')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  categoryType === 'income'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Thu nhập
+              </button>
+            </div>
+
+            <button onClick={handleCreateCategory} className="btn btn-primary">
+              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Thêm danh mục
+            </button>
+          </div>
+
+          <CategoryList
+            categories={categories}
+            onEdit={handleEditCategory}
+          />
+
+          <Modal
+            isOpen={showCategoryForm}
+            onClose={handleCloseCategoryForm}
+            title={editingCategory ? 'Sửa danh mục' : 'Thêm danh mục mới'}
+          >
+            <CategoryForm
+              category={editingCategory}
+              defaultType={categoryType}
+              onSubmit={handleSubmitCategory}
+              onCancel={handleCloseCategoryForm}
+              loading={submittingCategory}
+            />
+          </Modal>
+        </>
+      )}
+    </div>
+  )
+}
