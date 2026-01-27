@@ -7,7 +7,7 @@ const supabase = createClient(
 )
 
 // Supported currencies to track
-const SUPPORTED_CURRENCIES = ['USD', 'EUR', 'JPY', 'CNY', 'THB', 'SGD', 'KRW', 'GBP']
+const SUPPORTED_CURRENCIES = ['USD','USDT', 'EUR', 'JPY', 'CNY', 'THB', 'SGD', 'KRW', 'GBP']
 
 export default async function handler(req, res) {
   try {
