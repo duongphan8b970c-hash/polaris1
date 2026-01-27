@@ -29,15 +29,15 @@ export default function Header({ user, onLogout, onMenuClick }) {
             </div>
           </div>
           
-          {/* Logout button - Better styling */}
+          {/* Mobile logout button */}
           <button
-            onClick={onLogout}
-            className="px-4 py-2.5 md:px-5 md:py-3 text-sm md:text-base font-bold text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all border-2 border-gray-200 hover:border-gray-300"
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full"
           >
-            <svg className="w-5 h-5 md:w-6 md:h-6 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            <span className="hidden sm:inline">Đăng xuất</span>
+            <span>Đăng xuất</span>
           </button>
         </div>
       </div>

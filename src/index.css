@@ -156,3 +156,26 @@
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Responsive card scaling */
+@media (max-width: 640px) {
+  .transform {
+    transform: scale(1);
+  }
+  .hover\:scale-105:hover {
+    transform: scale(1.02);
+  }
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Better text wrapping for numbers */
+.break-words {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
