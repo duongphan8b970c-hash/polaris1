@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useState,useMemo } from 'react'
 import { useWallets } from '../hooks/useWallets'
 import { useTransactions } from '../hooks/useTransactions'
 import { useTrades } from '../hooks/useTrades'
@@ -11,12 +11,15 @@ export default function Dashboard() {
   const { transactions, loading: transactionsLoading } = useTransactions()
   const { trades, loading: tradesLoading } = useTrades()
   const { budgets, loading: budgetsLoading } = useBudgets()
+  // ADD THESE NEW STATES:
+  const [updatingRates, setUpdatingRates] = useState(false)
+  const [updateResult, setUpdateResult] = useState(null)
 
   const loading = walletsLoading || transactionsLoading || tradesLoading || budgetsLoading
 
   // Calculate total balance
   const totalBalance = useMemo(() => {
-    return wallets.reduce((sum, wallet) => sum + (wallet.balance || 0), 0)
+    return wallets.reduce((sum, wallet) => sum + (wallet.balance_vnd || 0), 0)
   }, [wallets])
 
   // Get current month transactions
@@ -79,6 +82,54 @@ export default function Dashboard() {
       .slice(0, 5)
   }, [monthlyTransactions])
 
+    // Function to manually update exchange rates
+const handleManualUpdate = async () => {
+  if (!window.confirm('Cập nhật tỷ giá ngay bây giờ?')) return
+  
+  setUpdatingRates(true)
+  setUpdateResult(null)
+  
+  try {
+    console.log('🔄 Calling update-rates API...')
+    
+    const response = await fetch('/api/update-rates', {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer db5d50fd8d3e81bc2d4fbcf3642ff0a4d0f6b013eca79e32744e2eb37e0ad1b6',
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    const data = await response.json()
+    console.log('Response:', data)
+    
+    if (response.ok && data.success) {
+      setUpdateResult({ 
+        success: true, 
+        message: `✅ Đã cập nhật ${data.updated_currencies} tỷ giá thành công!` 
+      })
+      
+      // Reload page after 2 seconds to show new data
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
+    } else {
+      setUpdateResult({ 
+        success: false, 
+        message: `❌ Lỗi: ${data.error || 'Không thể cập nhật'}` 
+      })
+    }
+  } catch (error) {
+    console.error('Error updating rates:', error)
+    setUpdateResult({ 
+      success: false, 
+      message: `❌ Lỗi: ${error.message}` 
+    })
+  } finally {
+    setUpdatingRates(false)
+  }
+}
+
   if (loading) {
     return <Loading message="Đang tải dashboard..." />
   }
@@ -89,7 +140,49 @@ export default function Dashboard() {
         title="Dashboard" 
         subtitle="Tổng quan tài chính của bạn"
       />
-
+      <div className="space-y-6">
+    {/* ADD THIS SECTION - Manual Update Button */}
+    <div className="flex items-center justify-between">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+        <p className="text-gray-600 mt-1">Tổng quan tài chính của bạn</p>
+      </div>
+      
+      <button
+        onClick={handleManualUpdate}
+        disabled={updatingRates}
+        className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      >
+        {updatingRates ? (
+          <>
+            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Đang cập nhật...
+          </>
+        ) : (
+          <>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Cập nhật tỷ giá
+          </>
+        )}
+      </button>
+    </div>
+    
+    {/* Success/Error Message */}
+    {updateResult && (
+      <div className={`p-4 rounded-xl font-medium animate-fade-in ${
+        updateResult.success 
+          ? 'bg-green-50 text-green-800 border-2 border-green-200' 
+          : 'bg-red-50 text-red-800 border-2 border-red-200'
+      }`}>
+        {updateResult.message}
+      </div>
+    )}
+    </div>
       {/* MODERN STAT CARDS - UPDATED */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
         {/* Total Balance - Blue Theme */}
@@ -287,30 +380,45 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KEEP WALLET LIST AS IS */}
-      <div className="card">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Danh sách ví</h3>
-        {wallets.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {wallets.map(wallet => (
-              <div key={wallet.id} className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-gray-900 truncate">{wallet.name}</h4>
-                  <span className="text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-lg">
-                    {wallet.currency}
-                  </span>
-                </div>
-                <p className="text-xl font-bold text-gray-900">
-                  {(wallet.balance || 0).toLocaleString('vi-VN')} ₫
-                </p>
-                <p className="text-xs text-gray-500 mt-1">{wallet.type}</p>
-              </div>
-            ))}
+      {/* Wallet List Section */}
+<div className="card">
+  <h3 className="text-lg font-bold text-gray-900 mb-4">Danh sách ví</h3>
+  {wallets.length > 0 ? (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {wallets.map(wallet => (
+        <div 
+          key={wallet.id} 
+          className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-semibold text-gray-900 truncate">
+              {wallet.name}
+            </h4>
+            <span className="text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-lg">
+              {wallet.currency}
+            </span>
           </div>
-        ) : (
-          <p className="text-center text-gray-500 py-8">Chưa có ví nào</p>
-        )}
-      </div>
+          
+          {/* Original amount in wallet's currency */}
+          <p className="text-xl font-bold text-gray-900">
+            {(wallet.current_amount || 0).toLocaleString('vi-VN')} {wallet.currency}
+          </p>
+          
+          {/* VND equivalent if different currency */}
+          {wallet.currency !== 'VND' && wallet.balance_vnd && (
+            <p className="text-sm text-gray-500 mt-1">
+              ≈ {(wallet.balance_vnd || 0).toLocaleString('vi-VN')} VND
+            </p>
+          )}
+          
+          <p className="text-xs text-gray-500 mt-2">{wallet.type}</p>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p className="text-center text-gray-500 py-8">Chưa có ví nào</p>
+  )}
+</div>
     </div>
   )
 }
