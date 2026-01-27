@@ -141,13 +141,8 @@ const handleManualUpdate = async () => {
         subtitle="Tổng quan tài chính của bạn"
       />
       <div className="space-y-6">
-    {/* ADD THIS SECTION - Manual Update Button */}
-    <div className="flex items-center justify-between">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-        <p className="text-gray-600 mt-1">Tổng quan tài chính của bạn</p>
-      </div>
-      
+      {/* ADD THIS SECTION - Manual Update Button */}
+      <div className="flex items-center justify-between">
       <button
         onClick={handleManualUpdate}
         disabled={updatingRates}
