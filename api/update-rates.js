@@ -1,71 +1,40 @@
-// api/update-rates.js
+import { createClient } from '@supabase/supabase-js'
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL,
+  process.env.VITE_SUPABASE_ANON_KEY
+)
+
+// Supported currencies to track
+const SUPPORTED_CURRENCIES = ['USD', 'EUR', 'JPY', 'CNY', 'THB', 'SGD', 'KRW', 'GBP']
+
 export default async function handler(req, res) {
-  // Set headers
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end()
-  }
-
   try {
-    // Check auth
+    // Security: Verify cron secret
     const authHeader = req.headers.authorization
-    const expectedAuth = `Bearer ${process.env.CRON_SECRET}`
-    
-    if (authHeader !== expectedAuth) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Unauthorized' 
-      })
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return res.status(401).json({ error: 'Unauthorized' })
     }
 
-    // Check env vars
-    if (!process.env.VITE_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      return res.status(500).json({ 
-        success: false, 
-        error: 'Missing environment variables',
-        debug: {
-          has_url: !!process.env.VITE_SUPABASE_URL,
-          has_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-        }
-      })
-    }
+    console.log('🔄 Fetching latest exchange rates...')
 
-    // Import Supabase
-    const { createClient } = await import('@supabase/supabase-js')
-
-    const supabase = createClient(
-      process.env.VITE_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-
-    const CURRENCIES = ['USD', 'USDT', 'EUR', 'JPY', 'CNY', 'THB', 'SGD', 'KRW', 'GBP']
-
-    // Fetch exchange rates
+    // Fetch rates from ExchangeRate-API (Free, no API key needed)
     const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
     
     if (!response.ok) {
-      throw new Error(`Exchange API error: ${response.status}`)
+      throw new Error('Failed to fetch exchange rates from API')
     }
 
     const data = await response.json()
     const usdToVnd = data.rates.VND
 
-    if (!usdToVnd) {
-      throw new Error('VND rate not found')
-    }
+    console.log(`💵 USD to VND: ${usdToVnd}`)
 
-    // Prepare updates
+    // Prepare rate updates
     const updates = []
 
-    // VND to VND
+    // VND to VND = 1 (base currency)
     updates.push({
       from_currency: 'VND',
       to_currency: 'VND',
@@ -73,51 +42,52 @@ export default async function handler(req, res) {
       updated_at: new Date().toISOString()
     })
 
-    // Other currencies
-    for (const currency of CURRENCIES) {
-      if (['USDT', 'USDC', 'BUSD'].includes(currency)) {
+    // Calculate each currency to VND
+    for (const currency of SUPPORTED_CURRENCIES) {
+      if (data.rates[currency]) {
+        // Convert: 1 CURRENCY = ? VND
+        const rateToVnd = currency === 'USD' 
+          ? usdToVnd 
+          : usdToVnd / data.rates[currency]
+
         updates.push({
           from_currency: currency,
           to_currency: 'VND',
-          rate: parseFloat(usdToVnd.toFixed(4)),
+          rate: parseFloat(rateToVnd.toFixed(4)),
           updated_at: new Date().toISOString()
         })
-      } else if (data.rates[currency]) {
-        const rate = currency === 'USD' ? usdToVnd : usdToVnd / data.rates[currency]
-        updates.push({
-          from_currency: currency,
-          to_currency: 'VND',
-          rate: parseFloat(rate.toFixed(4)),
-          updated_at: new Date().toISOString()
-        })
+
+        console.log(`💱 ${currency} to VND: ${rateToVnd.toFixed(2)}`)
       }
     }
 
-    // Update database
+    // Update Supabase exchange_rates table
+    console.log('💾 Updating database...')
+    
     for (const update of updates) {
       const { error } = await supabase
         .from('exchange_rates')
-        .upsert(update, { onConflict: 'from_currency,to_currency' })
+        .upsert(update, {
+          onConflict: 'from_currency,to_currency'
+        })
 
       if (error) {
-        console.error('DB error:', error)
-        throw new Error(`Database error: ${error.message}`)
+        console.error(`❌ Error updating ${update.from_currency}:`, error)
+        throw error
       }
     }
 
-    // Recalculate wallets
+    // Recalculate all wallet balances with new rates
+    console.log('🔢 Recalculating wallet balances...')
+    
     const { error: recalcError } = await supabase.rpc('recalculate_all_wallet_balances')
     
     if (recalcError) {
-      console.log('Recalc warning:', recalcError.message)
+      console.error('❌ Error recalculating balances:', recalcError)
+      throw recalcError
     }
 
-    // Log success
-    await supabase.from('rate_update_logs').insert({
-      status: 'success',
-      message: 'Exchange rates updated successfully',
-      rates_updated: updates.length
-    }).catch(() => {})
+    console.log('✅ Exchange rates updated successfully!')
 
     return res.status(200).json({
       success: true,
@@ -131,8 +101,7 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    console.error('Error:', error.message)
-    
+    console.error('❌ Error updating exchange rates:', error)
     return res.status(500).json({
       success: false,
       error: error.message,
