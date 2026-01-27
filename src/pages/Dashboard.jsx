@@ -167,23 +167,29 @@ export default function Dashboard() {
     const tradePL = closedTrades.reduce((sum, trade) => sum + (trade.profit_loss || 0), 0)
     const tradeCount = closedTrades.length
 
-    // Top categories
-    const categoryMap = {}
-    monthlyTransactions
-      .filter(txn => txn.type === 'expense' && txn.category)
-      .forEach(txn => {
-        const cat = txn.category
-        if (!categoryMap[cat]) {
-          categoryMap[cat] = { category: cat, amount: 0, count: 0 }
+    // ✅ TOP CATEGORIES - Group by category
+  const categoryMap = {}
+  monthlyTransactions.forEach(txn => {
+    // Only expense transactions with category
+    if (txn.type === 'expense' && txn.category) {
+      const cat = txn.category
+      if (!categoryMap[cat]) {
+        categoryMap[cat] = { 
+          category: cat, 
+          amount: 0, 
+          count: 0 
         }
-        categoryMap[cat].amount += Math.abs(txn.amount || 0)
-        categoryMap[cat].count += 1
-      })
+      }
+      categoryMap[cat].amount += Math.abs(txn.amount || 0)
+      categoryMap[cat].count += 1
+    }
+  })
 
-    const topCategories = Object.values(categoryMap)
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5)
-
+  // Sort by amount descending, take top 5
+  const topCategories = Object.values(categoryMap)
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5)
+    
     // Recent transactions
     const recentTransactions = transactions.slice(0, 10)
 
