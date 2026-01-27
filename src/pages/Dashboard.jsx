@@ -100,8 +100,20 @@ const handleManualUpdate = async () => {
       }
     })
     
+    // ✅ CHECK CONTENT-TYPE BEFORE PARSING
+    const contentType = response.headers.get('content-type')
+    console.log('Response content-type:', contentType)
+    console.log('Response status:', response.status)
+    
+    // If not JSON, get text to see error
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text()
+      console.error('Non-JSON response:', text.substring(0, 500))
+      throw new Error('Server trả về lỗi. Vui lòng check console hoặc Vercel logs.')
+    }
+    
     const data = await response.json()
-    console.log('Response:', data)
+    console.log('Response data:', data)
     
     if (response.ok && data.success) {
       setUpdateResult({ 
@@ -109,14 +121,14 @@ const handleManualUpdate = async () => {
         message: `✅ Đã cập nhật ${data.updated_currencies} tỷ giá thành công!` 
       })
       
-      // Reload page after 2 seconds to show new data
+      // Reload after 2 seconds
       setTimeout(() => {
         window.location.reload()
       }, 2000)
     } else {
       setUpdateResult({ 
         success: false, 
-        message: `❌ Lỗi: ${data.error || 'Không thể cập nhật'}` 
+        message: `❌ Lỗi: ${data.error || data.message || 'Không thể cập nhật'}` 
       })
     }
   } catch (error) {
@@ -136,17 +148,28 @@ const handleManualUpdate = async () => {
 
   return (
     <div>
-      <PageHeader 
-        title="Dashboard" 
-        subtitle="Tổng quan tài chính của bạn"
-      />
-      <div className="space-y-6">
-      {/* ADD THIS SECTION - Manual Update Button */}
-      <div className="flex items-center justify-between">
+      {/* Header Section */}
+<div className="mb-6">
+  <div className="flex items-start justify-between">
+    <div>
+      <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+      <p className="text-gray-600 mt-1">Tổng quan tài chính của bạn</p>
+      
+      {/* Last updated badge */}
+      <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Cập nhật lúc: 15:30 hôm nay</span>
+      </div>
+    </div>
+    
+    {/* Update button with badge style */}
+    <div className="flex flex-col items-end gap-2">
       <button
         onClick={handleManualUpdate}
         disabled={updatingRates}
-        className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        className="group relative px-4 py-2.5 bg-white border-2 border-blue-200 text-blue-700 rounded-xl hover:border-blue-400 hover:bg-blue-50 font-medium text-sm transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       >
         {updatingRates ? (
           <>
@@ -154,30 +177,47 @@ const handleManualUpdate = async () => {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Đang cập nhật...
+            <span>Đang cập nhật...</span>
           </>
         ) : (
           <>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            Cập nhật tỷ giá
+            <span>Cập nhật tỷ giá</span>
           </>
         )}
       </button>
-    </div>
-    
-    {/* Success/Error Message */}
-    {updateResult && (
-      <div className={`p-4 rounded-xl font-medium animate-fade-in ${
-        updateResult.success 
-          ? 'bg-green-50 text-green-800 border-2 border-green-200' 
-          : 'bg-red-50 text-red-800 border-2 border-red-200'
-      }`}>
-        {updateResult.message}
+      
+      {/* Auto-update badge */}
+      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-medium">
+        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+        <span>Tự động mỗi ngày 3 PM</span>
       </div>
-    )}
     </div>
+  </div>
+  
+  {updateResult && (
+    <div className={`mt-4 p-4 rounded-xl font-medium shadow-md border-l-4 animate-slideIn ${
+      updateResult.success 
+        ? 'bg-green-50 text-green-800 border-green-500' 
+        : 'bg-red-50 text-red-800 border-red-500'
+    }`}>
+      <div className="flex items-center gap-2">
+        {updateResult.success ? (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+        ) : (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+        )}
+        <span>{updateResult.message}</span>
+      </div>
+    </div>
+  )}
+</div>
       {/* MODERN STAT CARDS - UPDATED */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
         {/* Total Balance - Blue Theme */}
@@ -374,46 +414,6 @@ const handleManualUpdate = async () => {
           )}
         </div>
       </div>
-
-      {/* Wallet List Section */}
-<div className="card">
-  <h3 className="text-lg font-bold text-gray-900 mb-4">Danh sách ví</h3>
-  {wallets.length > 0 ? (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {wallets.map(wallet => (
-        <div 
-          key={wallet.id} 
-          className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-semibold text-gray-900 truncate">
-              {wallet.name}
-            </h4>
-            <span className="text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-lg">
-              {wallet.currency}
-            </span>
-          </div>
-          
-          {/* Original amount in wallet's currency */}
-          <p className="text-xl font-bold text-gray-900">
-            {(wallet.current_amount || 0).toLocaleString('vi-VN')} {wallet.currency}
-          </p>
-          
-          {/* VND equivalent if different currency */}
-          {wallet.currency !== 'VND' && wallet.balance_vnd && (
-            <p className="text-sm text-gray-500 mt-1">
-              ≈ {(wallet.balance_vnd || 0).toLocaleString('vi-VN')} VND
-            </p>
-          )}
-          
-          <p className="text-xs text-gray-500 mt-2">{wallet.type}</p>
-        </div>
-      ))}
-    </div>
-  ) : (
-    <p className="text-center text-gray-500 py-8">Chưa có ví nào</p>
-  )}
-</div>
     </div>
   )
 }
