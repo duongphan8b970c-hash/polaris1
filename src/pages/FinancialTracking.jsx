@@ -51,25 +51,30 @@ export default function FinancialTracking() {
   const [categoriesLoaded, setCategoriesLoaded] = useState(false)
 
   useEffect(() => {
-    const fetchAllCategories = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('categories')
-          .select('*')
-          .order('name')
-        
-        if (error) throw error
+  const fetchAllCategories = async () => {
+    try {
+      setCategoriesLoaded(false) // ✅ ADD THIS
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name')
+      
+      if (error) {
+        console.error('Error fetching all categories:', error)
+        setAllCategories([]) // ✅ Set empty array on error
+      } else {
         setAllCategories(data || [])
-        setCategoriesLoaded(true)
-      } catch (err) {
-        console.error('Error fetching categories:', err)
-        setAllCategories([])
-        setCategoriesLoaded(true)
       }
+    } catch (err) {
+      console.error('Error fetching categories:', err)
+      setAllCategories([]) // ✅ Set empty array on error
+    } finally {
+      setCategoriesLoaded(true) // ✅ Always set loaded
     }
-    
-    fetchAllCategories()
-  }, [])
+  }
+  
+  fetchAllCategories()
+}, [])
   
   const [showTransactionForm, setShowTransactionForm] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState(null)
@@ -181,26 +186,36 @@ export default function FinancialTracking() {
   const loading = activeTab === 'transactions' ? transactionsLoading : categoriesLoading
   const error = activeTab === 'transactions' ? transactionsError : categoriesError
 
-  // ✅ Loading guard
-  if (!categoriesLoaded || !wallets) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang tải dữ liệu...</p>
-        </div>
+  // ✅ IMPROVED LOADING GUARD
+if (!wallets) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p className="text-gray-600">Đang tải ví...</p>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
-  if (loading) {
-    return <Loading message={activeTab === 'transactions' ? 'Đang tải giao dịch...' : 'Đang tải danh mục...'} />
-  }
+if (!categoriesLoaded || !allCategories) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p className="text-gray-600">Đang tải danh mục...</p>
+      </div>
+    </div>
+  )
+}
 
-  if (error) {
-    return <ErrorMessage message={error} onRetry={activeTab === 'transactions' ? refetchTransactions : refetchCategories} />
-  }
+if (loading) {
+  return <Loading message={activeTab === 'transactions' ? 'Đang tải giao dịch...' : 'Đang tải danh mục...'} />
+}
 
+if (error) {
+  return <ErrorMessage message={error} onRetry={activeTab === 'transactions' ? refetchTransactions : refetchCategories} />
+}
   return (
     <div>
       <PageHeader 
@@ -265,9 +280,10 @@ export default function FinancialTracking() {
                       {(filters.wallet_id || filters.type || filters.category_id || filters.date_from || filters.date_to) ? (
                         <>
                           {filters.type && `${filters.type === 'income' ? 'Thu nhập' : filters.type === 'expense' ? 'Chi tiêu' : 'Chuyển khoản'} • `}
-                          {filters.wallet_id && wallets && `${wallets.find(w => w.id === filters.wallet_id)?.name} • `}
-                          {filters.category_id && allCategories && `${allCategories.find(c => c.id === filters.category_id)?.name} • `}
-                          {(filters.date_from || filters.date_to) && 'Lọc theo ngày'}
+      {/* ✅ ADD SAFE ACCESS */}
+      {filters.wallet_id && Array.isArray(wallets) && wallets.length > 0 && `${wallets.find(w => w.id === filters.wallet_id)?.name || ''} • `}
+      {filters.category_id && Array.isArray(allCategories) && allCategories.length > 0 && `${allCategories.find(c => c.id === filters.category_id)?.name || ''} • `}
+      {(filters.date_from || filters.date_to) && 'Lọc theo ngày'}
                         </>
                       ) : (
                         'Nhấn để mở bộ lọc'
@@ -325,10 +341,11 @@ export default function FinancialTracking() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
                       <option value="">Tất cả ví</option>
-                      {wallets && wallets.map(wallet => (
-                        <option key={wallet.id} value={wallet.id}>
-                          {wallet.name}
-                        </option>
+                       {/* ✅ ADD SAFE ACCESS */}
+  {Array.isArray(wallets) && wallets.map(wallet => (
+    <option key={wallet.id} value={wallet.id}>
+      {wallet.name}
+    </option>
                       ))}
                     </select>
                   </div>
@@ -359,10 +376,11 @@ export default function FinancialTracking() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
                       <option value="">Tất cả danh mục</option>
-                      {allCategories && allCategories.map(cat => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.icon} {cat.name}
-                        </option>
+                      {/* ✅ ADD SAFE ACCESS */}
+  {Array.isArray(allCategories) && allCategories.map(cat => (
+    <option key={cat.id} value={cat.id}>
+      {cat.icon} {cat.name}
+    </option>
                       ))}
                     </select>
                   </div>
