@@ -67,6 +67,7 @@ export function useTransactions(filters = {}) {
 
   useEffect(() => {
     fetchTransactions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.wallet_id, filters.type, filters.category_id, filters.date_from, filters.date_to])
 
   const createTransaction = async (transactionData) => {
@@ -138,7 +139,7 @@ export function useTransactions(filters = {}) {
           wallet_id: wallet_id,
           to_wallet_id: to_wallet_id,
           type: 'transfer',
-          amount: -transferAmount, // ⚠️ NEGATIVE
+          amount: -transferAmount,
           description: description || `Chuyển → ${destWallet.name}`,
           date: date,
           category_id: null,
@@ -163,7 +164,7 @@ export function useTransactions(filters = {}) {
           wallet_id: to_wallet_id,
           to_wallet_id: wallet_id,
           type: 'transfer',
-          amount: transferAmount, // ⚠️ POSITIVE
+          amount: transferAmount,
           description: description || `Nhận ← ${sourceWallet.name}`,
           date: date,
           category_id: null,
@@ -326,36 +327,44 @@ export function useTransactions(filters = {}) {
 
   const deleteTransaction = async (id, transactionData) => {
     try {
-      console.log('🗑️ Deleting transaction:', id, transactionData.type)
+      console.log('🗑️ DELETE CALLED')
+      console.log('Transaction ID:', id)
+      console.log('Transaction data:', JSON.stringify(transactionData, null, 2))
+      console.log('Type:', transactionData.type)
+      console.log('Has transfer_pair_id?', !!transactionData.transfer_pair_id)
 
       // If deleting a transfer, delete BOTH sides
       if (transactionData.type === 'transfer' && transactionData.transfer_pair_id) {
-        console.log('🔗 Deleting transfer pair:', transactionData.transfer_pair_id)
+        console.log('🔗 Attempting to delete transfer pair:', transactionData.transfer_pair_id)
         
-        const { error } = await supabase
+        const { data: deletedData, error } = await supabase
           .from('financial_transactions')
           .delete()
           .eq('transfer_pair_id', transactionData.transfer_pair_id)
+          .select()
 
         if (error) {
           console.error('❌ Delete transfer error:', error)
           throw error
         }
         
-        console.log('✅ Transfer pair deleted')
+        console.log('✅ Deleted transactions:', deletedData)
+        console.log('✅ Deleted count:', deletedData?.length)
       } else {
-        // Regular delete
-        const { error } = await supabase
+        console.log('💳 Deleting regular transaction:', id)
+        
+        const { data: deletedData, error } = await supabase
           .from('financial_transactions')
           .delete()
           .eq('id', id)
+          .select()
 
         if (error) {
           console.error('❌ Delete error:', error)
           throw error
         }
         
-        console.log('✅ Transaction deleted')
+        console.log('✅ Deleted transaction:', deletedData)
       }
 
       // Recalculate balances
@@ -369,10 +378,11 @@ export function useTransactions(filters = {}) {
       }
 
       await fetchTransactions()
+      console.log('✅ Transactions refetched')
       return { success: true }
       
     } catch (err) {
-      console.error('❌ Delete transaction error:', err)
+      console.error('❌ DELETE FAILED:', err)
       return { success: false, error: err.message }
     }
   }
