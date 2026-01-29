@@ -51,30 +51,29 @@ export default function FinancialTracking() {
   const [categoriesLoaded, setCategoriesLoaded] = useState(false)
 
   useEffect(() => {
-  const fetchAllCategories = async () => {
-    try {
-      setCategoriesLoaded(false) // ✅ ADD THIS
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name')
-      
-      if (error) {
-        console.error('Error fetching all categories:', error)
-        setAllCategories([]) // ✅ Set empty array on error
-      } else {
-        setAllCategories(data || [])
+    const fetchAllCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .order('name')
+        
+        if (error) {
+          console.error('Error fetching all categories:', error)
+          setAllCategories([])
+        } else {
+          setAllCategories(data || [])
+        }
+      } catch (err) {
+        console.error('Error fetching categories:', err)
+        setAllCategories([])
+      } finally {
+        setCategoriesLoaded(true)
       }
-    } catch (err) {
-      console.error('Error fetching categories:', err)
-      setAllCategories([]) // ✅ Set empty array on error
-    } finally {
-      setCategoriesLoaded(true) // ✅ Always set loaded
     }
-  }
-  
-  fetchAllCategories()
-}, [])
+    
+    fetchAllCategories()
+  }, [])
   
   const [showTransactionForm, setShowTransactionForm] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState(null)
@@ -183,39 +182,46 @@ export default function FinancialTracking() {
     }
   }
 
+  // ✅ SAFE DEFAULTS - Ensure arrays are never undefined
+  const safeWallets = Array.isArray(wallets) ? wallets : []
+  const safeAllCategories = Array.isArray(allCategories) ? allCategories : []
+  const safeTransactions = Array.isArray(transactions) ? transactions : []
+  const safeCategories = Array.isArray(categories) ? categories : []
+
   const loading = activeTab === 'transactions' ? transactionsLoading : categoriesLoading
   const error = activeTab === 'transactions' ? transactionsError : categoriesError
 
-  // ✅ IMPROVED LOADING GUARD
-if (!wallets) {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-        <p className="text-gray-600">Đang tải ví...</p>
+  // ✅ FIXED LOADING GUARD
+  if (!wallets) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải ví...</p>
+        </div>
       </div>
-    </div>
-  )
-}
+    )
+  }
 
-if (!categoriesLoaded || !allCategories) {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-        <p className="text-gray-600">Đang tải danh mục...</p>
+  if (!categoriesLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải danh mục...</p>
+        </div>
       </div>
-    </div>
-  )
-}
+    )
+  }
 
-if (loading) {
-  return <Loading message={activeTab === 'transactions' ? 'Đang tải giao dịch...' : 'Đang tải danh mục...'} />
-}
+  if (loading) {
+    return <Loading message={activeTab === 'transactions' ? 'Đang tải giao dịch...' : 'Đang tải danh mục...'} />
+  }
 
-if (error) {
-  return <ErrorMessage message={error} onRetry={activeTab === 'transactions' ? refetchTransactions : refetchCategories} />
-}
+  if (error) {
+    return <ErrorMessage message={error} onRetry={activeTab === 'transactions' ? refetchTransactions : refetchCategories} />
+  }
+
   return (
     <div>
       <PageHeader 
@@ -280,10 +286,9 @@ if (error) {
                       {(filters.wallet_id || filters.type || filters.category_id || filters.date_from || filters.date_to) ? (
                         <>
                           {filters.type && `${filters.type === 'income' ? 'Thu nhập' : filters.type === 'expense' ? 'Chi tiêu' : 'Chuyển khoản'} • `}
-      {/* ✅ ADD SAFE ACCESS */}
-      {filters.wallet_id && Array.isArray(wallets) && wallets.length > 0 && `${wallets.find(w => w.id === filters.wallet_id)?.name || ''} • `}
-      {filters.category_id && Array.isArray(allCategories) && allCategories.length > 0 && `${allCategories.find(c => c.id === filters.category_id)?.name || ''} • `}
-      {(filters.date_from || filters.date_to) && 'Lọc theo ngày'}
+                          {filters.wallet_id && safeWallets.length > 0 && `${safeWallets.find(w => w.id === filters.wallet_id)?.name || ''} • `}
+                          {filters.category_id && safeAllCategories.length > 0 && `${safeAllCategories.find(c => c.id === filters.category_id)?.name || ''} • `}
+                          {(filters.date_from || filters.date_to) && 'Lọc theo ngày'}
                         </>
                       ) : (
                         'Nhấn để mở bộ lọc'
@@ -295,7 +300,7 @@ if (error) {
                 <div className="flex items-center gap-3">
                   {(filters.wallet_id || filters.type || filters.category_id || filters.date_from || filters.date_to) && (
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                      {transactions.length} kết quả
+                      {safeTransactions.length} kết quả
                     </span>
                   )}
                   
@@ -341,11 +346,10 @@ if (error) {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
                       <option value="">Tất cả ví</option>
-                       {/* ✅ ADD SAFE ACCESS */}
-  {Array.isArray(wallets) && wallets.map(wallet => (
-    <option key={wallet.id} value={wallet.id}>
-      {wallet.name}
-    </option>
+                      {safeWallets.map(wallet => (
+                        <option key={wallet.id} value={wallet.id}>
+                          {wallet.name}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -376,11 +380,10 @@ if (error) {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
                       <option value="">Tất cả danh mục</option>
-                      {/* ✅ ADD SAFE ACCESS */}
-  {Array.isArray(allCategories) && allCategories.map(cat => (
-    <option key={cat.id} value={cat.id}>
-      {cat.icon} {cat.name}
-    </option>
+                      {safeAllCategories.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -433,7 +436,7 @@ if (error) {
 
           {/* Transaction List */}
           <TransactionList
-            transactions={transactions}
+            transactions={safeTransactions}
             onEdit={handleEditTransaction}
             onDelete={handleDeleteTransaction}
           />
@@ -490,7 +493,7 @@ if (error) {
           </div>
 
           <CategoryList
-            categories={categories}
+            categories={safeCategories}
             onEdit={handleEditCategory}
           />
 
