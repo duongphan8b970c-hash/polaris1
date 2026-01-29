@@ -1,15 +1,25 @@
 import { useMemo } from 'react'
 
-export default function TransactionList({ transactions, onEdit, onDelete }) {
-  // Filter transfers - show only withdrawals (negative amounts)
+export default function TransactionList({ 
+  transactions = [], // ✅ Default prop
+  onEdit, 
+  onDelete 
+}) {
+  // ✅ Safe filter with validation
   const displayTransactions = useMemo(() => {
+    if (!Array.isArray(transactions)) {
+      console.warn('TransactionList received non-array transactions:', transactions)
+      return []
+    }
+    
     return transactions.filter(txn => {
+      if (!txn || typeof txn !== 'object') return false
       if (txn.type !== 'transfer') return true
       return txn.amount < 0 // Only show withdrawal side of transfers
     })
   }, [transactions])
 
-  if (!displayTransactions || displayTransactions.length === 0) {
+  if (displayTransactions.length === 0) {
     return (
       <div className="card text-center py-12">
         <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -142,7 +152,12 @@ export default function TransactionList({ transactions, onEdit, onDelete }) {
                         </span>
                         {onDelete && (
                           <button
-                            onClick={() => onDelete(txn)}
+                            onClick={() => {
+                              console.log('🔘 Delete button clicked for:', txn)
+                              console.log('Transaction object keys:', Object.keys(txn))
+                              console.log('transfer_pair_id:', txn.transfer_pair_id)
+                              onDelete(txn)
+                            }}
                             className="text-red-600 hover:text-red-800 font-medium transition-colors"
                           >
                             Xóa
