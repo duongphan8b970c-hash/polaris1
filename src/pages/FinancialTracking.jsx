@@ -51,25 +51,15 @@ export default function FinancialTracking() {
   const [categoriesLoaded, setCategoriesLoaded] = useState(false)
 
   useEffect(() => {
-    const fetchAllCategories = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('categories')
-          .select('*')
-          .order('name')
-        
-        if (error) throw error
-        setAllCategories(data || [])
-        setCategoriesLoaded(true)
-      } catch (err) {
-        console.error('Error fetching categories:', err)
-        setAllCategories([])
-        setCategoriesLoaded(true)
-      }
-    }
-    
-    fetchAllCategories()
-  }, [])
+  fetchTransactions()
+}, [
+  filters.wallet_id, 
+  filters.type, 
+  filters.category_id, 
+  filters.date_from, 
+  filters.date_to
+  // DO NOT add fetchTransactions to dependencies
+])
   
   const [showTransactionForm, setShowTransactionForm] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState(null)
