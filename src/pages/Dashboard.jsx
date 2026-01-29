@@ -169,9 +169,9 @@ export default function Dashboard() {
 
     // ✅ TOP CATEGORIES - Group by category
   const categoryMap = {}
-  monthlyTransactions.forEach(txn => {
-    // Only expense transactions with category
-    if (txn.type === 'expense' && txn.category) {
+  monthlyTransactions
+    .filter(txn => txn.type === 'expense' && txn.category) // Only expense with category
+    .forEach(txn => {
       const cat = txn.category
       if (!categoryMap[cat]) {
         categoryMap[cat] = { 
@@ -180,15 +180,24 @@ export default function Dashboard() {
           count: 0 
         }
       }
+      // Add absolute value of amount
       categoryMap[cat].amount += Math.abs(txn.amount || 0)
       categoryMap[cat].count += 1
-    }
-  })
+    })
 
   // Sort by amount descending, take top 5
   const topCategories = Object.values(categoryMap)
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5)
+
+  // Debug log
+  console.log('📊 Dashboard Stats:', {
+    totalTransactions: transactions.length,
+    monthlyTransactions: monthlyTransactions.length,
+    expenseTransactions: monthlyTransactions.filter(t => t.type === 'expense').length,
+    topCategories: topCategories,
+    categoryMap: categoryMap
+  })
     
     // Recent transactions
     const recentTransactions = transactions.slice(0, 10)
