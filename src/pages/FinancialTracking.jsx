@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTransactions } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
 import { useWallets } from '../hooks/useWallets'
+import { supabase } from '../lib/supabase'
 import TransactionList from '../components/transactions/TransactionList'
 import TransactionForm from '../components/transactions/TransactionForm'
 import CategoryList from '../components/transactions/CategoryList'
@@ -29,6 +30,29 @@ export default function FinancialTracking() {
   const { transactions, loading: transactionsLoading, error: transactionsError, createTransaction, updateTransaction, deleteTransaction, refetch: refetchTransactions } = useTransactions(filters)
   const { categories, loading: categoriesLoading, error: categoriesError, createCategory, updateCategory, refetch: refetchCategories } = useCategories(categoryType)
   
+   // ✅ ADD THIS - Fetch all categories for filter dropdown
+  const [allCategories, setAllCategories] = useState([])
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false)
+useEffect(() => {
+    const fetchAllCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .order('name')
+        
+        if (error) throw error
+        setAllCategories(data || [])
+        setCategoriesLoaded(true)
+      } catch (err) {
+        console.error('Error fetching categories:', err)
+        setAllCategories([])
+        setCategoriesLoaded(true)
+      }
+    }
+    
+    fetchAllCategories()
+  }, [])
   const [showTransactionForm, setShowTransactionForm] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState(null)
   const [submittingTransaction, setSubmittingTransaction] = useState(false)
@@ -146,6 +170,18 @@ export default function FinancialTracking() {
   const loading = activeTab === 'transactions' ? transactionsLoading : categoriesLoading
   const error = activeTab === 'transactions' ? transactionsError : categoriesError
 
+  // ✅ ADD LOADING GUARD
+  if (!categoriesLoaded || !wallets) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return <Loading message={activeTab === 'transactions' ? 'Đang tải giao dịch...' : 'Đang tải danh mục...'} />
   }
@@ -153,9 +189,6 @@ export default function FinancialTracking() {
   if (error) {
     return <ErrorMessage message={error} onRetry={activeTab === 'transactions' ? refetchTransactions : refetchCategories} />
   }
-
-  // Get all categories for filter
-  const allCategories = [...(categories || [])]
 
   return (
     <div>
