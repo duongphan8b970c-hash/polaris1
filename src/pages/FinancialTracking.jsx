@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo} from 'react'
 import { supabase } from '../lib/supabase'
 import { useTransactions } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
