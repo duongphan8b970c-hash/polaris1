@@ -288,7 +288,6 @@ const filteredStats = useMemo(() => {
     <div>
       <PageHeader 
         title="Quản lý thu chi" 
-        subtitle="Theo dõi các khoản thu nhập và chi tiêu"
       />
 
       {/* Tabs */}

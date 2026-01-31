@@ -20,7 +20,6 @@ export default function Reports() {
     <div>
       <PageHeader 
         title="Báo cáo" 
-        subtitle="Phân tích và xuất dữ liệu tài chính"
       />
 
       <MonthlyReport 

@@ -66,7 +66,6 @@ export default function Budgets() {
     <div>
       <PageHeader 
         title="Ngân sách" 
-        subtitle="Quản lý hạn mức chi tiêu"
         action={
           <button onClick={handleCreate} className="btn btn-primary">
             <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
