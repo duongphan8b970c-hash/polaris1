@@ -231,7 +231,6 @@ export default function Dashboard() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Tổng quan tài chính của bạn</p>
           
           <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -370,7 +369,7 @@ export default function Dashboard() {
     <p className="text-2xl md:text-3xl font-bold mb-1 break-words">
       {stats.tradePL >= 0 ? '+' : ''}{stats.tradePL.toLocaleString('vi-VN')}
     </p>
-    <p className="text-purple-100 text-sm font-medium">VND tổng P&L</p>
+    <p className="text-purple-100 text-sm font-medium">$ tổng P&L</p>
   </div>
 
   {/* 5. Total Transactions */}

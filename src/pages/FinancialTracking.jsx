@@ -82,6 +82,7 @@ export default function FinancialTracking() {
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
   const [submittingCategory, setSubmittingCategory] = useState(false)
+  const [breakdownView, setBreakdownView] = useState('month')
 
   // Filter handlers
   const handleFilterChange = (e) => {
@@ -101,6 +102,67 @@ export default function FinancialTracking() {
       date_to: ''
     })
   }
+  // ✅ ADD: Calculate filtered transaction statistics
+const filteredStats = useMemo(() => {
+  const safeTransactions = Array.isArray(transactions) ? transactions : []
+  
+  // Filter out transfer deposit side (only count withdrawal)
+  const displayTransactions = safeTransactions.filter(txn => {
+    if (txn.type !== 'transfer') return true
+    return txn.amount < 0
+  })
+
+  const totalIncome = displayTransactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+
+  const totalExpense = displayTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+
+  const totalTransfer = displayTransactions
+    .filter(t => t.type === 'transfer')
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+
+  const netAmount = totalIncome - totalExpense
+
+  // Group by date
+  const byDate = {}
+  displayTransactions.forEach(t => {
+    const date = new Date(t.date).toLocaleDateString('vi-VN')
+    if (!byDate[date]) {
+      byDate[date] = { income: 0, expense: 0, transfer: 0, count: 0 }
+    }
+    byDate[date].count++
+    if (t.type === 'income') byDate[date].income += Math.abs(t.amount)
+    if (t.type === 'expense') byDate[date].expense += Math.abs(t.amount)
+    if (t.type === 'transfer') byDate[date].transfer += Math.abs(t.amount)
+  })
+
+  // Group by month
+  const byMonth = {}
+  displayTransactions.forEach(t => {
+    const date = new Date(t.date)
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    if (!byMonth[monthKey]) {
+      byMonth[monthKey] = { income: 0, expense: 0, transfer: 0, count: 0 }
+    }
+    byMonth[monthKey].count++
+    if (t.type === 'income') byMonth[monthKey].income += Math.abs(t.amount)
+    if (t.type === 'expense') byMonth[monthKey].expense += Math.abs(t.amount)
+    if (t.type === 'transfer') byMonth[monthKey].transfer += Math.abs(t.amount)
+  })
+
+  return {
+    totalIncome,
+    totalExpense,
+    totalTransfer,
+    netAmount,
+    count: displayTransactions.length,
+    byDate,
+    byMonth
+  }
+}, [transactions])
 
   // Transaction handlers
   const handleCreateTransaction = () => {
@@ -433,6 +495,151 @@ export default function FinancialTracking() {
               </div>
             )}
           </div>
+            {/* ✅ SUMMARY STATISTICS */}
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      {/* Total Income */}
+      <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-md">
+        <div className="flex items-center justify-between mb-2">
+          <svg className="w-8 h-8 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+          <span className="text-xs uppercase font-semibold opacity-90">Thu nhập</span>
+        </div>
+        <p className="text-2xl font-bold">
+          +{filteredStats.totalIncome.toLocaleString('vi-VN')}
+        </p>
+        <p className="text-green-100 text-xs mt-1">
+          {safeTransactions.filter(t => t.type === 'income').length} giao dịch
+        </p>
+      </div>
+
+      {/* Total Expense */}
+      <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 text-white shadow-md">
+        <div className="flex items-center justify-between mb-2">
+          <svg className="w-8 h-8 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+          </svg>
+          <span className="text-xs uppercase font-semibold opacity-90">Chi tiêu</span>
+        </div>
+        <p className="text-2xl font-bold">
+          -{filteredStats.totalExpense.toLocaleString('vi-VN')}
+        </p>
+        <p className="text-red-100 text-xs mt-1">
+          {safeTransactions.filter(t => t.type === 'expense').length} giao dịch
+        </p>
+      </div>
+
+      {/* Total Transfer */}
+      <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-md">
+        <div className="flex items-center justify-between mb-2">
+          <svg className="w-8 h-8 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+          </svg>
+          <span className="text-xs uppercase font-semibold opacity-90">Chuyển khoản</span>
+        </div>
+        <p className="text-2xl font-bold">
+          {filteredStats.totalTransfer.toLocaleString('vi-VN')}
+        </p>
+        <p className="text-blue-100 text-xs mt-1">
+          {safeTransactions.filter(t => t.type === 'transfer' && t.amount < 0).length} giao dịch
+        </p>
+      </div>
+
+      {/* Net Amount */}
+      <div className={`rounded-xl p-4 text-white shadow-md ${
+        filteredStats.netAmount >= 0 
+          ? 'bg-gradient-to-br from-emerald-500 to-emerald-600' 
+          : 'bg-gradient-to-br from-orange-500 to-orange-600'
+      }`}>
+        <div className="flex items-center justify-between mb-2">
+          <svg className="w-8 h-8 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          <span className="text-xs uppercase font-semibold opacity-90">Chênh lệch</span>
+        </div>
+        <p className="text-2xl font-bold">
+          {filteredStats.netAmount >= 0 ? '+' : ''}{filteredStats.netAmount.toLocaleString('vi-VN')}
+        </p>
+        <p className={`text-xs mt-1 ${filteredStats.netAmount >= 0 ? 'text-emerald-100' : 'text-orange-100'}`}>
+          {filteredStats.count} tổng giao dịch
+        </p>
+      </div>
+    </div>
+
+    {/* ✅ ADD: BREAKDOWN BY DATE/MONTH TOGGLE */}
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-gray-900">Thống kê chi tiết</h3>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setBreakdownView('date')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              breakdownView === 'date'
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Theo ngày
+          </button>
+          <button
+            onClick={() => setBreakdownView('month')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              breakdownView === 'month'
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Theo tháng
+          </button>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
+                {breakdownView === 'date' ? 'Ngày' : 'Tháng'}
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Thu nhập</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Chi tiêu</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Chuyển khoản</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Chênh lệch</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Số GD</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {Object.entries(breakdownView === 'date' ? filteredStats.byDate : filteredStats.byMonth)
+              .sort((a, b) => b[0].localeCompare(a[0]))
+              .map(([period, data]) => {
+                const net = data.income - data.expense
+                return (
+                  <tr key={period} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                      {breakdownView === 'date' ? period : new Date(period + '-01').toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-right text-green-600 font-semibold">
+                      +{data.income.toLocaleString('vi-VN')}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-right text-red-600 font-semibold">
+                      -{data.expense.toLocaleString('vi-VN')}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-right text-blue-600">
+                      {data.transfer.toLocaleString('vi-VN')}
+                    </td>
+                    <td className={`px-4 py-3 text-sm text-right font-bold ${net >= 0 ? 'text-emerald-600' : 'text-orange-600'}`}>
+                      {net >= 0 ? '+' : ''}{net.toLocaleString('vi-VN')}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center text-gray-600">
+                      {data.count}
+                    </td>
+                  </tr>
+                )
+              })}
+          </tbody>
+        </table>
+      </div>
+    </div>
 
           {/* Transaction List */}
           <TransactionList
