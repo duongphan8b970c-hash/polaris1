@@ -1,25 +1,42 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
-import MainLayout from './components/layout/MainLayout'
-import Login from './pages/Login'
+import Layout from './components/layout/Layout'
 import Dashboard from './pages/Dashboard'
-import WalletConfig from './pages/WalletConfig'
 import FinancialTracking from './pages/FinancialTracking'
 import TradeTracking from './pages/TradeTracking'
+import Wallets from './pages/Wallets'
 import Reports from './pages/Reports'
-import Budgets from './pages/Budgets'
+import Login from './pages/Login'
+
+// ✅ Create ProtectedRoute component
+function ProtectedRoute({ children, session }) {
+  if (!session) {
+    return <Navigate to="/login" replace />
+  }
+  return children
+}
+
+// ✅ Create PublicRoute component (redirect if already logged in)
+function PublicRoute({ children, session }) {
+  if (session) {
+    return <Navigate to="/dashboard" replace />
+  }
+  return children
+}
 
 function App() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setLoading(false)
     })
 
+    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -31,33 +48,52 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Đang tải...</p>
         </div>
       </div>
     )
   }
 
-  if (!session) {
-    return <Login />
-  }
-
   return (
-    <BrowserRouter>
-      <MainLayout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/wallets" element={<WalletConfig />} />
-          <Route path="/transactions" element={<FinancialTracking />} />
-          <Route path="/trades" element={<TradeTracking />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/budgets" element={<Budgets />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </MainLayout>
-    </BrowserRouter>
+    <Router>
+      <Routes>
+        {/* ✅ Public Route - Login */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute session={session}>
+              <Login />
+            </PublicRoute>
+          }
+        />
+
+        {/* ✅ Protected Routes - Main App */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute session={session}>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="transactions" element={<FinancialTracking />} />
+          <Route path="trades" element={<TradeTracking />} />
+          <Route path="wallets" element={<Wallets />} />
+          <Route path="reports" element={<Reports />} />
+        </Route>
+
+        {/* ✅ Catch all - redirect to dashboard or login */}
+        <Route
+          path="*"
+          element={<Navigate to={session ? "/dashboard" : "/login"} replace />}
+        />
+      </Routes>
+    </Router>
   )
 }
 
