@@ -179,3 +179,112 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
+
+/* ===================================
+   FLOATING WATER EFFECT ANIMATIONS
+   =================================== */
+
+/* Floating animation - like on water */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-10px) translateX(5px) rotate(0.5deg);
+  }
+  50% {
+    transform: translateY(-5px) translateX(-5px) rotate(-0.5deg);
+  }
+  75% {
+    transform: translateY(-15px) translateX(3px) rotate(0.3deg);
+  }
+}
+
+.floating-card {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Shine effect - light reflection on water */
+@keyframes shine {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(30deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(30deg);
+  }
+}
+
+.shine-effect {
+  animation: shine 8s ease-in-out infinite;
+}
+
+/* Ripple effect - water ripples */
+@keyframes ripple {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+.ripple-effect {
+  background: 
+    radial-gradient(circle at 20% 50%, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%),
+    radial-gradient(circle at 80% 80%, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%),
+    radial-gradient(circle at 40% 20%, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%);
+  background-size: 200% 200%;
+  animation: ripple 10s linear infinite;
+}
+
+/* Shake animation for errors */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Hover glow effect */
+.floating-card:hover {
+  filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.3));
+  animation: float 4s ease-in-out infinite; /* Speed up on hover */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .floating-card {
+    animation: float 8s ease-in-out infinite; /* Slower on mobile */
+  }
+}
+
+/* Glass morphism enhancement */
+@supports (backdrop-filter: blur(20px)) {
+  .backdrop-blur-xl {
+    backdrop-filter: blur(20px);
+  }
+}
+
+/* Input focus glow */
+input:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1), 
+              0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+/* Button gradient animation */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+button[type="submit"] {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
