@@ -176,11 +176,51 @@ export default function Dashboard() {
     return tradeDate.getMonth() === currentMonth && tradeDate.getFullYear() === currentYear
   })
 
-  const tradePL = monthlyClosedTrades.reduce((sum, trade) => sum + (trade.profit_loss || 0), 0)
+   const tradePLInVND = monthlyClosedTrades.reduce((sum, trade) => {
+    const pl = trade.profit_loss || 0
+    const currency = trade.exit_currency || 'USDT'
+    
+    // Find wallet to get exchange rate
+    const wallet = wallets.find(w => w.id === trade.wallet_id)
+    let rate = 1
+    
+    if (currency !== 'VND') {
+      // Use wallet's balance_vnd / current_amount as exchange rate
+      if (wallet && wallet.current_amount > 0 && wallet.balance_vnd > 0) {
+        rate = wallet.balance_vnd / wallet.current_amount
+      } else {
+        // Fallback to standard rates
+        switch(currency.toUpperCase()) {
+          case 'USD':
+          case 'USDT':
+            rate = 24000 // Default USD/VND rate
+            break
+          case 'EUR':
+            rate = 26000
+            break
+          default:
+            rate = 1
+        }
+      }
+    }
+    
+    const plInVND = pl * rate
+    
+    console.log(`💱 Trade P&L conversion:`, {
+      trade: trade.symbol,
+      pl,
+      currency,
+      rate,
+      plInVND
+    })
+    
+    return sum + plInVND
+  }, 0)
+
   const tradeCount = monthlyClosedTrades.length
 
-  // ✅ TOTAL INCOME = Transaction Income + Trade Profit (if positive)
-  const income = transactionIncome + (tradePL > 0 ? tradePL : 0)
+  // ✅ TOTAL INCOME = Transaction Income + Trade Profit (if positive, in VND)
+  const income = transactionIncome + (tradePLInVND > 0 ? tradePLInVND : 0)
 
   // ✅ TOP CATEGORIES - Fixed to properly check for category
   const categoryMap = {}
