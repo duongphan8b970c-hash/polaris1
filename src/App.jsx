@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
-import Layout from './components/layout/Layout'
+import MainLayout from './components/layout/MainLayout'
 import Dashboard from './pages/Dashboard'
 import FinancialTracking from './pages/FinancialTracking'
 import TradeTracking from './pages/TradeTracking'
-import Wallets from './pages/Wallets'
+import Wallets from './pages/WalletConfig'
 import Reports from './pages/Reports'
 import Login from './pages/Login'
 
@@ -75,7 +75,7 @@ function App() {
           path="/"
           element={
             <ProtectedRoute session={session}>
-              <Layout />
+              <MainLayout />
             </ProtectedRoute>
           }
         >
