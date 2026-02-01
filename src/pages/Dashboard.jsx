@@ -19,9 +19,17 @@ export default function Dashboard() {
   const fetchData = async () => {
     try {
       const { data: txnData } = await supabase
-        .from('financial_transactions')
-        .select('*')
-        .order('date', { ascending: false })
+      .from('financial_transactions')
+      .select(`
+        *,
+        categories (
+          id,
+          name,
+          icon,
+          type
+        )
+      `)
+      .order('date', { ascending: false })
 
       setTransactions(txnData || [])
 
@@ -133,56 +141,66 @@ export default function Dashboard() {
     }
   }
 
-  // Calculate statistics
   const stats = useMemo(() => {
-    const now = new Date()
-    const currentMonth = now.getMonth()
-    const currentYear = now.getFullYear()
+  const now = new Date()
+  const currentMonth = now.getMonth()
+  const currentYear = now.getFullYear()
 
-    // Total balance
-    const totalBalance = wallets.reduce((sum, wallet) => sum + (wallet.balance_vnd || 0), 0)
+  // Total balance
+  const totalBalance = wallets.reduce((sum, wallet) => sum + (wallet.balance_vnd || 0), 0)
 
-    // Filter transactions for current month
-    const monthlyTransactions = transactions.filter(txn => {
-      const txnDate = new Date(txn.date)
-      return txnDate.getMonth() === currentMonth && txnDate.getFullYear() === currentYear
-    })
+  // Filter transactions for current month
+  const monthlyTransactions = transactions.filter(txn => {
+    const txnDate = new Date(txn.date)
+    return txnDate.getMonth() === currentMonth && txnDate.getFullYear() === currentYear
+  })
 
-    // Calculate income
-    const income = monthlyTransactions
-      .filter(txn => txn.type === 'income')
-      .reduce((sum, txn) => sum + (txn.amount || 0), 0)
+  // Calculate income from transactions
+  const transactionIncome = monthlyTransactions
+    .filter(txn => txn.type === 'income')
+    .reduce((sum, txn) => sum + (txn.amount || 0), 0)
 
-    const incomeCount = monthlyTransactions.filter(txn => txn.type === 'income').length
+  const incomeCount = monthlyTransactions.filter(txn => txn.type === 'income').length
 
-    // Calculate expense
-    const expense = monthlyTransactions
-      .filter(txn => txn.type === 'expense')
-      .reduce((sum, txn) => sum + Math.abs(txn.amount || 0), 0)
+  // Calculate expense
+  const expense = monthlyTransactions
+    .filter(txn => txn.type === 'expense')
+    .reduce((sum, txn) => sum + Math.abs(txn.amount || 0), 0)
 
-    const expenseCount = monthlyTransactions.filter(txn => txn.type === 'expense').length
+  const expenseCount = monthlyTransactions.filter(txn => txn.type === 'expense').length
 
-    // Calculate trade P&L
-    const closedTrades = trades.filter(trade => trade.status === 'closed')
-    const tradePL = closedTrades.reduce((sum, trade) => sum + (trade.profit_loss || 0), 0)
-    const tradeCount = closedTrades.length
+  // ✅ Calculate trade P&L for current month
+  const monthlyClosedTrades = trades.filter(trade => {
+    if (trade.status !== 'closed' || !trade.updated_at) return false
+    const tradeDate = new Date(trade.updated_at)
+    return tradeDate.getMonth() === currentMonth && tradeDate.getFullYear() === currentYear
+  })
 
-    // ✅ TOP CATEGORIES - Group by category
+  const tradePL = monthlyClosedTrades.reduce((sum, trade) => sum + (trade.profit_loss || 0), 0)
+  const tradeCount = monthlyClosedTrades.length
+
+  // ✅ TOTAL INCOME = Transaction Income + Trade Profit (if positive)
+  const income = transactionIncome + (tradePL > 0 ? tradePL : 0)
+
+  // ✅ TOP CATEGORIES - Fixed to properly check for category
   const categoryMap = {}
   monthlyTransactions
-    .filter(txn => txn.type === 'expense' && txn.category) // Only expense with category
+    .filter(txn => txn.type === 'expense' && txn.categories !== null) // ✅ Check categories is not null
     .forEach(txn => {
-      const cat = txn.category
-      if (!categoryMap[cat]) {
-        categoryMap[cat] = { 
-          category: cat, 
+      const catName = txn.categories?.name || 'Khác'
+      const catIcon = txn.categories?.icon || '📁'
+      
+      if (!categoryMap[catName]) {
+        categoryMap[catName] = { 
+          category: catName,
+          icon: catIcon,
           amount: 0, 
           count: 0 
         }
       }
       // Add absolute value of amount
-      categoryMap[cat].amount += Math.abs(txn.amount || 0)
-      categoryMap[cat].count += 1
+      categoryMap[catName].amount += Math.abs(txn.amount || 0)
+      categoryMap[catName].count += 1
     })
 
   // Sort by amount descending, take top 5
@@ -192,30 +210,35 @@ export default function Dashboard() {
 
   // Debug log
   console.log('📊 Dashboard Stats:', {
+    currentMonth: currentMonth + 1,
+    currentYear,
     totalTransactions: transactions.length,
     monthlyTransactions: monthlyTransactions.length,
-    expenseTransactions: monthlyTransactions.filter(t => t.type === 'expense').length,
-    topCategories: topCategories,
-    categoryMap: categoryMap
+    expenseWithCategory: monthlyTransactions.filter(t => t.type === 'expense' && t.categories !== null).length,
+    transactionIncome,
+    tradePL,
+    totalIncome: income,
+    topCategories,
+    categoryMap
   })
     
-    // Recent transactions
-    const recentTransactions = transactions.slice(0, 10)
+  // Recent transactions
+  const recentTransactions = transactions.slice(0, 10)
 
-    return {
-      totalBalance,
-      walletCount: wallets.length,
-      income,
-      incomeCount,
-      expense,
-      expenseCount,
-      tradePL,
-      tradeCount,
-      topCategories,
-      recentTransactions,
-      transactionCount: incomeCount + expenseCount
-    }
-  }, [wallets, transactions, trades])
+  return {
+    totalBalance,
+    walletCount: wallets.length,
+    income, // ✅ Now includes trade profit
+    incomeCount,
+    expense,
+    expenseCount,
+    tradePL,
+    tradeCount,
+    topCategories, // ✅ Now properly populated
+    recentTransactions,
+    transactionCount: incomeCount + expenseCount
+  }
+}, [wallets, transactions, trades])
 
   if (loading || walletsLoading) {
     return (
@@ -316,7 +339,7 @@ export default function Dashboard() {
   </div>
 
   {/* 2. Income */}
-  <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-4 md:p-6 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+  <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 md:p-6 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
     <div className="flex items-center justify-between mb-3">
       <div className="p-2 md:p-3 bg-white/20 rounded-xl">
         <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -325,13 +348,15 @@ export default function Dashboard() {
       </div>
       <div className="text-right">
         <p className="text-green-100 text-xs font-medium uppercase">Thu Nhập</p>
-        <p className="text-green-100 text-xs">{stats.incomeCount} giao dịch</p>
+        <p className="text-green-100 text-xs">{stats.incomeCount} giao dịch{stats.tradePL > 0 && ` + ${stats.tradeCount} trade`}</p>
       </div>
     </div>
     <p className="text-2xl md:text-3xl font-bold mb-1 break-words">
       +{stats.income.toLocaleString('vi-VN')}
     </p>
-    <p className="text-green-100 text-sm font-medium">VND tháng này</p>
+    <p className="text-green-100 text-sm font-medium">
+      VND tháng này {stats.tradePL > 0 && '(bao gồm trade)'}
+    </p>
   </div>
 
   {/* 3. Expense */}
@@ -428,59 +453,62 @@ export default function Dashboard() {
     Top 5 Danh Mục Chi Tiêu
   </h3>
   {stats.topCategories.length > 0 ? (
-    <div className="space-y-3">
-      {stats.topCategories.map((cat, index) => {
-        const percentage = stats.expense > 0 ? (cat.amount / stats.expense * 100) : 0
-        
-        return (
-          <div key={index} className="group">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-red-500 to-red-600' :
-                  index === 1 ? 'bg-gradient-to-br from-orange-500 to-orange-600' :
-                  index === 2 ? 'bg-gradient-to-br from-amber-500 to-amber-600' :
-                  'bg-gradient-to-br from-gray-400 to-gray-500'
-                }`}>
-                  {index + 1}
-                </div>
+  <div className="space-y-3">
+    {stats.topCategories.map((cat, index) => {
+      const percentage = stats.expense > 0 ? (cat.amount / stats.expense * 100) : 0
+      
+      return (
+        <div key={index} className="group">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                index === 0 ? 'bg-gradient-to-br from-red-500 to-red-600' :
+                index === 1 ? 'bg-gradient-to-br from-orange-500 to-orange-600' :
+                index === 2 ? 'bg-gradient-to-br from-amber-500 to-amber-600' :
+                'bg-gradient-to-br from-gray-400 to-gray-500'
+              }`}>
+                {index + 1}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{cat.icon}</span>
                 <div>
                   <p className="font-semibold text-gray-900">{cat.category}</p>
                   <p className="text-xs text-gray-500">{cat.count} giao dịch</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-red-600">
-                  -{cat.amount.toLocaleString('vi-VN')} ₫
-                </p>
-                <p className="text-xs text-gray-500">{percentage.toFixed(1)}%</p>
-              </div>
             </div>
-            {/* Progress bar */}
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className={`h-2 rounded-full transition-all ${
-                  index === 0 ? 'bg-gradient-to-r from-red-500 to-red-600' :
-                  index === 1 ? 'bg-gradient-to-r from-orange-500 to-orange-600' :
-                  index === 2 ? 'bg-gradient-to-r from-amber-500 to-amber-600' :
-                  'bg-gradient-to-r from-gray-400 to-gray-500'
-                }`}
-                style={{ width: `${percentage}%` }}
-              ></div>
+            <div className="text-right">
+              <p className="font-bold text-red-600">
+                -{cat.amount.toLocaleString('vi-VN')} ₫
+              </p>
+              <p className="text-xs text-gray-500">{percentage.toFixed(1)}%</p>
             </div>
           </div>
-        )
-      })}
-    </div>
-  ) : (
-    <div className="text-center py-8 text-gray-500">
-      <svg className="w-16 h-16 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-      <p className="text-sm font-medium">Chưa có dữ liệu chi tiêu</p>
-      <p className="text-xs mt-1">Thêm giao dịch chi tiêu để xem thống kê</p>
-    </div>
-  )}
+          {/* Progress bar */}
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className={`h-2 rounded-full transition-all ${
+                index === 0 ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                index === 1 ? 'bg-gradient-to-r from-orange-500 to-orange-600' :
+                index === 2 ? 'bg-gradient-to-r from-amber-500 to-amber-600' :
+                'bg-gradient-to-r from-gray-400 to-gray-500'
+              }`}
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+        </div>
+      )
+    })}
+  </div>
+) : (
+  <div className="text-center py-8 text-gray-500">
+    <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+    <p className="font-medium">Chưa có dữ liệu chi tiêu</p>
+    <p className="text-sm mt-1">Thêm giao dịch chi tiêu để xem thống kê</p>
+  </div>
+)}
 </div>
 
         {/* RECENT TRANSACTIONS */}
