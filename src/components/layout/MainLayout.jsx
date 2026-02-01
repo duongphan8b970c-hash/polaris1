@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import { supabase } from '../../lib/supabase'
+import { Outlet } from 'react-router-dom';
 
 export default function MainLayout({ children }) {
   const [user, setUser] = useState(null)
