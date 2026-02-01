@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import { supabase } from '../../lib/supabase'
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom'
 
-export default function MainLayout({ children }) {
+export default function MainLayout({}) {
   const [user, setUser] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
