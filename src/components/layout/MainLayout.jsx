@@ -15,7 +15,7 @@ export default function MainLayout({ children }) {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    window.location.reload()
+    window.location.href = '/login'
   }
 
   return (
@@ -39,7 +39,7 @@ export default function MainLayout({ children }) {
         />
         
         <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>
