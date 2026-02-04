@@ -288,3 +288,46 @@ button[type="submit"] {
   background-size: 200% 200%;
   animation: gradient-shift 3s ease infinite;
 }
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 8px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #f7fafc;
+  border-radius: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* Firefox */
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+/* ✅ THÊM: Utility classes */
+.cell-truncate {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ✅ THÊM: Smooth scroll behavior */
+.overflow-x-auto {
+  scroll-behavior: smooth;
+}
+
+/* ✅ THÊM: Table hover effect */
+tbody tr {
+  transition: background-color 0.15s ease;
+}
