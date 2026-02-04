@@ -11,7 +11,7 @@ import Login from './pages/Login'
 import PaybackTracking from './pages/finance/PaybackTracking'
 import GoalsDashboard from './pages/goals/GoalsDashboard'
 import GoalDetails from './pages/goals/GoalDetails'
-import ProjectDetails from './pages/goals/ProjectDetails'
+import ProjectDetails from './pages/ProjectDetails'
 
 // ✅ Create ProtectedRoute component
 function ProtectedRoute({ children, session }) {
