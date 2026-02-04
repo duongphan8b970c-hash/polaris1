@@ -1,10 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useGoals } from '../hooks/goals/useGoals'
-import { useGoalCategories } from '../hooks/goals/useGoalCategories'
 import { useProjects } from '../hooks/goals/useProjects'
-import CategoryCard from '../components/goals/CategoryCard'
-import CategoryForm from '../components/goals/CategoryForm'
 import ProjectCard from '../components/goals/ProjectCard'
 import ProjectForm from '../components/goals/ProjectForm'
 import Modal from '../components/common/Modal'
@@ -16,16 +13,7 @@ export default function GoalDetails() {
   const navigate = useNavigate()
   
   const { goals, loading: goalsLoading } = useGoals()
-  const { categories, loading: categoriesLoading, createCategory, updateCategory, deleteCategory } = useGoalCategories(goalId)
-  const { projects, loading: projectsLoading, createProject, updateProject, deleteProject } = useProjects()
-  
-  const [activeTab, setActiveTab] = useState('categories')
-  const [selectedCategory, setSelectedCategory] = useState(null)
-  
-  // Category modals
-  const [showCategoryForm, setShowCategoryForm] = useState(false)
-  const [editingCategory, setEditingCategory] = useState(null)
-  const [submittingCategory, setSubmittingCategory] = useState(false)
+  const { projects, loading: projectsLoading, createProject, updateProject, deleteProject } = useProjects(goalId)
   
   // Project modals
   const [showProjectForm, setShowProjectForm] = useState(false)
@@ -34,58 +22,8 @@ export default function GoalDetails() {
 
   const goal = goals.find(g => g.id === goalId)
 
-  // Filter projects by selected category
-  const filteredProjects = selectedCategory
-    ? projects.filter(p => p.category_id === selectedCategory.id)
-    : projects.filter(p => categories.some(c => c.id === p.category_id))
-
-  // Category handlers
-  const handleCreateCategory = () => {
-    setEditingCategory(null)
-    setShowCategoryForm(true)
-  }
-
-  const handleEditCategory = (category) => {
-    setEditingCategory(category)
-    setShowCategoryForm(true)
-  }
-
-  const handleDeleteCategory = async (category) => {
-    if (!confirm(`Xóa danh mục "${category.name}"?\n\nTất cả projects và tasks bên trong cũng sẽ bị xóa.`)) return
-    
-    const result = await deleteCategory(category.id)
-    if (!result.success) {
-      alert('Lỗi: ' + result.error)
-    }
-  }
-
-  const handleCloseCategoryForm = () => {
-    setShowCategoryForm(false)
-    setEditingCategory(null)
-  }
-
-  const handleSubmitCategory = async (formData) => {
-    setSubmittingCategory(true)
-    
-    const result = editingCategory
-      ? await updateCategory(editingCategory.id, formData)
-      : await createCategory({ ...formData, goal_id: goalId })
-    
-    if (result.success) {
-      handleCloseCategoryForm()
-    } else {
-      alert('Lỗi: ' + result.error)
-    }
-    
-    setSubmittingCategory(false)
-  }
-
   // Project handlers
   const handleCreateProject = () => {
-    if (!selectedCategory) {
-      alert('Vui lòng chọn danh mục trước')
-      return
-    }
     setEditingProject(null)
     setShowProjectForm(true)
   }
@@ -114,7 +52,7 @@ export default function GoalDetails() {
     
     const result = editingProject
       ? await updateProject(editingProject.id, formData)
-      : await createProject({ ...formData, category_id: selectedCategory.id })
+      : await createProject({ ...formData, goal_id: goalId })
     
     if (result.success) {
       handleCloseProjectForm()
@@ -129,7 +67,7 @@ export default function GoalDetails() {
     navigate(`/goals/projects/${project.id}`)
   }
 
-  if (goalsLoading || categoriesLoading || projectsLoading) {
+  if (goalsLoading || projectsLoading) {
     return <Loading message="Đang tải chi tiết mục tiêu..." />
   }
 
@@ -190,6 +128,9 @@ export default function GoalDetails() {
                       {new Date(goal.target_date).toLocaleDateString('vi-VN')}
                     </span>
                   )}
+                  <span className="flex items-center gap-1">
+                    📊 {projects.length} dự án
+                  </span>
                 </div>
               </div>
             </div>
@@ -219,180 +160,43 @@ export default function GoalDetails() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('categories')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'categories'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              📁 Danh mục ({categories.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('projects')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'projects'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              📊 Dự án ({filteredProjects.length})
-            </button>
-          </nav>
+      {/* Projects Section */}
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Dự án</h2>
+          <button onClick={handleCreateProject} className="btn btn-primary">
+            <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Thêm dự án
+          </button>
         </div>
+
+        {projects.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {projects.map(project => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onEdit={handleEditProject}
+                onDelete={handleDeleteProject}
+                onClick={() => handleProjectClick(project)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="card text-center py-12">
+            <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+            </svg>
+            <p className="text-gray-500 font-medium">Chưa có dự án nào</p>
+            <p className="text-gray-400 text-sm mt-1 mb-4">Thêm dự án để bắt đầu</p>
+            <button onClick={handleCreateProject} className="btn btn-primary">
+              Thêm dự án đầu tiên
+            </button>
+          </div>
+        )}
       </div>
-
-      {/* Categories Tab */}
-      {activeTab === 'categories' && (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Danh mục</h2>
-            <button onClick={handleCreateCategory} className="btn btn-primary">
-              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Thêm danh mục
-            </button>
-          </div>
-
-          {categories.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categories.map(category => (
-                <CategoryCard
-                  key={category.id}
-                  category={category}
-                  onEdit={handleEditCategory}
-                  onDelete={handleDeleteCategory}
-                  onClick={() => {
-                    setSelectedCategory(category)
-                    setActiveTab('projects')
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="card text-center py-12">
-              <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-              <p className="text-gray-500 font-medium">Chưa có danh mục nào</p>
-              <p className="text-gray-400 text-sm mt-1">Thêm danh mục để tổ chức các dự án</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Projects Tab */}
-      {activeTab === 'projects' && (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-4">
-              <h2 className="text-xl font-bold text-gray-900">Dự án</h2>
-              {selectedCategory && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-600">Danh mục:</span>
-                  <span 
-                    className="inline-flex items-center gap-2 px-3 py-1 rounded-lg font-medium"
-                    style={{ 
-                      backgroundColor: `${selectedCategory.color}15`,
-                      color: selectedCategory.color 
-                    }}
-                  >
-                    <span>{selectedCategory.icon}</span>
-                    <span>{selectedCategory.name}</span>
-                    <button
-                      onClick={() => setSelectedCategory(null)}
-                      className="hover:bg-black/10 rounded-full p-0.5"
-                    >
-                      ×
-                    </button>
-                  </span>
-                </div>
-              )}
-            </div>
-            <button 
-              onClick={handleCreateProject} 
-              className="btn btn-primary"
-              disabled={!selectedCategory}
-            >
-              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Thêm dự án
-            </button>
-          </div>
-
-          {!selectedCategory && categories.length > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-              <p className="text-sm text-yellow-800">
-                💡 Chọn một danh mục từ tab "Danh mục" hoặc click vào danh mục bên dưới để xem dự án
-              </p>
-              <div className="flex flex-wrap gap-2 mt-3">
-                {categories.map(cat => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat)}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium hover:opacity-80 transition-opacity"
-                    style={{ 
-                      backgroundColor: `${cat.color}15`,
-                      color: cat.color 
-                    }}
-                  >
-                    <span>{cat.icon}</span>
-                    <span>{cat.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {filteredProjects.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredProjects.map(project => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onEdit={handleEditProject}
-                  onDelete={handleDeleteProject}
-                  onClick={() => handleProjectClick(project)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="card text-center py-12">
-              <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-              </svg>
-              <p className="text-gray-500 font-medium">
-                {selectedCategory ? 'Chưa có dự án nào trong danh mục này' : 'Chọn danh mục để xem dự án'}
-              </p>
-              <p className="text-gray-400 text-sm mt-1">
-                {selectedCategory && 'Thêm dự án để bắt đầu'}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Category Form Modal */}
-      <Modal
-        isOpen={showCategoryForm}
-        onClose={handleCloseCategoryForm}
-        title={editingCategory ? 'Sửa danh mục' : 'Thêm danh mục mới'}
-      >
-        <CategoryForm
-          category={editingCategory}
-          goalId={goalId}
-          onSubmit={handleSubmitCategory}
-          onCancel={handleCloseCategoryForm}
-          loading={submittingCategory}
-        />
-      </Modal>
 
       {/* Project Form Modal */}
       <Modal
@@ -402,7 +206,7 @@ export default function GoalDetails() {
       >
         <ProjectForm
           project={editingProject}
-          categories={categories}
+          goalId={goalId}
           onSubmit={handleSubmitProject}
           onCancel={handleCloseProjectForm}
           loading={submittingProject}

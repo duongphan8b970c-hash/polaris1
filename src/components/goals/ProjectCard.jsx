@@ -81,10 +81,10 @@ export default function ProjectCard({ project, onEdit, onDelete, onClick }) {
         </div>
       )}
 
-      {/* Category */}
-      {project.category && (
+      {/* Goal (nếu có) */}
+      {project.goal && (
         <div className="text-xs text-gray-500 mb-3">
-          <span>{project.category.icon} {project.category.name}</span>
+          <span>{project.goal.icon} {project.goal.name}</span>
         </div>
       )}
 

@@ -15,9 +15,9 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Hủy bỏ', icon: '❌' },
 ]
 
-export default function ProjectForm({ project, categories, onSubmit, onCancel, loading }) {
+export default function ProjectForm({ project, goalId, onSubmit, onCancel, loading }) {
   const [formData, setFormData] = useState({
-    category_id: '',
+    goal_id: goalId || '',
     name: '',
     description: '',
     start_date: new Date().toISOString().split('T')[0],
@@ -29,7 +29,7 @@ export default function ProjectForm({ project, categories, onSubmit, onCancel, l
   useEffect(() => {
     if (project) {
       setFormData({
-        category_id: project.category_id,
+        goal_id: project.goal_id,
         name: project.name,
         description: project.description || '',
         start_date: project.start_date || new Date().toISOString().split('T')[0],
@@ -51,11 +51,6 @@ export default function ProjectForm({ project, categories, onSubmit, onCancel, l
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    if (!formData.category_id) {
-      alert('Vui lòng chọn danh mục')
-      return
-    }
-
     if (!formData.name.trim()) {
       alert('Vui lòng nhập tên dự án')
       return
@@ -71,33 +66,6 @@ export default function ProjectForm({ project, categories, onSubmit, onCancel, l
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Category */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Danh mục <span className="text-red-500">*</span>
-        </label>
-        <select
-          name="category_id"
-          value={formData.category_id}
-          onChange={handleChange}
-          className="input"
-          required
-          disabled={loading || project}
-        >
-          <option value="">Chọn danh mục</option>
-          {categories.map(cat => (
-            <option key={cat.id} value={cat.id}>
-              {cat.icon} {cat.name}
-            </option>
-          ))}
-        </select>
-        {project && (
-          <p className="text-xs text-amber-600 mt-1">
-            ⚠️ Không thể thay đổi danh mục
-          </p>
-        )}
-      </div>
-
       {/* Name */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -134,7 +102,6 @@ export default function ProjectForm({ project, categories, onSubmit, onCancel, l
 
       {/* Priority & Status */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Priority */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Độ ưu tiên
@@ -154,7 +121,6 @@ export default function ProjectForm({ project, categories, onSubmit, onCancel, l
           </select>
         </div>
 
-        {/* Status */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Trạng thái
@@ -177,7 +143,6 @@ export default function ProjectForm({ project, categories, onSubmit, onCancel, l
 
       {/* Dates */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Start Date */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Ngày bắt đầu
@@ -192,7 +157,6 @@ export default function ProjectForm({ project, categories, onSubmit, onCancel, l
           />
         </div>
 
-        {/* Due Date */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Ngày hoàn thành
@@ -223,17 +187,7 @@ export default function ProjectForm({ project, categories, onSubmit, onCancel, l
           className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Đang lưu...
-            </span>
-          ) : (
-            project ? 'Cập nhật' : 'Tạo dự án'
-          )}
+          {loading ? 'Đang lưu...' : project ? 'Cập nhật' : 'Tạo dự án'}
         </button>
       </div>
     </form>

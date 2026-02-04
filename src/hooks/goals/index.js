@@ -1,5 +1,4 @@
 export { useGoals } from './useGoals'
-export { useGoalCategories } from './useGoalCategories'
 export { useProjects } from './useProjects'
 export { useTasks } from './useTasks'
 export { useSubtasks } from './useSubtasks'

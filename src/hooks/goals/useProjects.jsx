@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
-export function useProjects(categoryId = null) {
+export function useProjects(goalId = null) {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -18,23 +18,18 @@ export function useProjects(categoryId = null) {
         .from('projects')
         .select(`
           *,
-          category:goal_categories(
+          goal:goals(
             id,
             name,
             icon,
-            goal_id,
-            goal:goals(
-              id,
-              name,
-              icon
-            )
+            color
           )
         `)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
 
-      if (categoryId) {
-        query = query.eq('category_id', categoryId)
+      if (goalId) {
+        query = query.eq('goal_id', goalId)
       }
 
       const { data, error: fetchError } = await query
@@ -59,7 +54,7 @@ export function useProjects(categoryId = null) {
         .from('projects')
         .insert([{
           user_id: user.id,
-          category_id: projectData.category_id,
+          goal_id: projectData.goal_id,
           name: projectData.name,
           description: projectData.description,
           start_date: projectData.start_date,
@@ -124,7 +119,7 @@ export function useProjects(categoryId = null) {
 
   useEffect(() => {
     fetchProjects()
-  }, [categoryId])
+  }, [goalId])
 
   return {
     projects,

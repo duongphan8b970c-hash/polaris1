@@ -2,7 +2,6 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
   const isCompleted = goal.status === 'completed'
   const progress = parseFloat(goal.progress) || 0
 
-  // Calculate time remaining
   const getTimeRemaining = () => {
     if (!goal.target_date) return null
     
@@ -30,7 +29,6 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
         borderLeftColor: goal.color 
       }}
     >
-      {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <span className="text-4xl flex-shrink-0">{goal.icon}</span>
@@ -54,7 +52,6 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
         </div>
       </div>
 
-      {/* Progress */}
       <div className="mb-4">
         <div className="flex justify-between text-sm mb-2">
           <span className="text-gray-600">Tiến độ</span>
@@ -73,11 +70,10 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
         </div>
         <div className="flex justify-between text-xs text-gray-600 mt-2">
           <span>{goal.completed_tasks || 0} / {goal.total_tasks || 0} tasks</span>
-          <span>{goal.categories?.length || 0} categories</span>
+          <span>{goal.projects_count || 0} dự án</span>
         </div>
       </div>
 
-      {/* Time Remaining */}
       {timeRemaining && !isCompleted && (
         <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 text-sm ${
           timeRemaining.type === 'overdue' ? 'bg-red-100 text-red-700' :
@@ -97,7 +93,6 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
         </div>
       )}
 
-      {/* Dates */}
       <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
         <div className="flex items-center gap-1">
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -115,7 +110,6 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
         )}
       </div>
 
-      {/* Actions */}
       <div className="flex gap-2 pt-4 border-t" onClick={(e) => e.stopPropagation()}>
         {!isCompleted && progress >= 100 && (
           <button
