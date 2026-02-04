@@ -8,7 +8,7 @@ const PRIORITY_OPTIONS = [
 ]
 
 const STATUS_OPTIONS = [
-  { value: 'todo', label: 'Cần làm', icon: '��' },
+  { value: 'todo', label: 'Cần làm', icon: '⏳' },
   { value: 'in_progress', label: 'Đang làm', icon: '⏳' },
   { value: 'completed', label: 'Hoàn thành', icon: '✅' },
   { value: 'blocked', label: 'Bị chặn', icon: '🚫' },

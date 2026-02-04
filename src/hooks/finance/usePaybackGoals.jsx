@@ -40,29 +40,25 @@ export function usePaybackGoals() {
         return
       }
 
-      // For each goal, calculate current_paid from transactions
+      // ✅ Tính current_paid từ transactions có payback_goal_id
       const goalsWithProgress = await Promise.all(
         (goalsData || []).map(async (goal) => {
-          // Get all payback transactions since goal start date
+          // Get transactions linked to this goal
           const { data: transactions } = await supabase
             .from('financial_transactions')
             .select('amount')
-            .eq('category_id', paybackCategory.id)
-            .eq('type', 'expense')
+            .eq('payback_goal_id', goal.id)
             .gte('date', goal.start_date)
             .is('deleted_at', null)
 
-          // Sum up paid amount (transactions are negative, so we use Math.abs)
           const currentPaid = (transactions || []).reduce((sum, txn) => {
             return sum + Math.abs(txn.amount)
           }, 0)
 
-          // Calculate progress percentage
           const progress = goal.target_amount > 0 
             ? Math.min((currentPaid / goal.target_amount) * 100, 100)
             : 0
 
-          // Check if completed
           const isCompleted = currentPaid >= goal.target_amount
 
           return {

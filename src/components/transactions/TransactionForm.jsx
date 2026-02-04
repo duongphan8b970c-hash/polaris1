@@ -2,6 +2,8 @@ import { formatDate } from '../../lib/utils'
 import { useState, useEffect } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
 import { useCategories } from '../../hooks/finance/useCategories'
+import { usePaybackGoals } from '../hooks/goals/usePaybackGoals'
+
 
 export default function TransactionForm({ transaction, onSubmit, onCancel, loading }) {
   const { wallets } = useWallets()
@@ -14,6 +16,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
     category_id: transaction?.category_id || '',
     amount: transaction?.amount || '',
     description: transaction?.description || '',
+    payback_goal_id: '',
     date: transaction?.date ? transaction.date.split('T')[0] : new Date().toISOString().split('T')[0]
   })
 
@@ -319,6 +322,34 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
             </select>
           </div>
         </>
+      )}
+
+      {/* ✅ Payback Goal Selector */}
+      {isPaybackCategory && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Mục tiêu trả nợ
+          </label>
+          <select
+            name="payback_goal_id"
+            value={formData.payback_goal_id}
+            onChange={handleChange}
+            className="input"
+            disabled={loading}
+          >
+            <option value="">-- Chọn mục tiêu --</option>
+            {paybackGoals
+              .filter(g => g.status === 'active')
+              .map(goal => (
+                <option key={goal.id} value={goal.id}>
+                  {goal.name} ({goal.progress.toFixed(0)}% - Còn {goal.remaining.toLocaleString('vi-VN')}đ)
+                </option>
+              ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            💡 Chọn mục tiêu để tự động cập nhật tiến độ trả nợ
+          </p>
+        </div>
       )}
 
       {/* Amount */}

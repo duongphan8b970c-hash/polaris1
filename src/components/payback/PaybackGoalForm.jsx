@@ -115,7 +115,7 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
             disabled={loading}
           />
           <p className="text-xs text-gray-500 mt-1">
-            💡 Tùy chọn: Để theo dõi tổng tiền ban đầu
+            Không bắt buộc: Để theo dõi tổng tiền ban đầu
           </p>
         </div>
 
