@@ -9,8 +9,8 @@ import Wallets from './pages/finance/WalletConfig'
 import Reports from './pages/Reports'
 import Login from './pages/Login'
 import PaybackTracking from './pages/finance/PaybackTracking'
-import GoalsDashboard from './pages/goals/GoalsDashboard'
-import GoalDetails from './pages/goals/GoalDetails'
+import GoalsDashboard from './pages/GoalsDashboard'
+import GoalDetails from './pages/GoalDetails'
 import ProjectDetails from './pages/ProjectDetails'
 
 // ✅ Create ProtectedRoute component
