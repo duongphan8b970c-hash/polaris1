@@ -8,6 +8,7 @@ import TradeTracking from './pages/TradeTracking'
 import Wallets from './pages/WalletConfig'
 import Reports from './pages/Reports'
 import Login from './pages/Login'
+import PaybackTracking from './pages/PaybackTracking'
 
 // ✅ Create ProtectedRoute component
 function ProtectedRoute({ children, session }) {
@@ -85,6 +86,7 @@ function App() {
           <Route path="trades" element={<TradeTracking />} />
           <Route path="wallets" element={<Wallets />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="payback" element={<PaybackTracking />} />
         </Route>
 
         {/* ✅ Catch all - redirect to dashboard or login */}
