@@ -1,3 +1,5 @@
+import GoalCard from './GoalCard'
+
 export default function GoalList({ goals, onEdit, onDelete, onComplete, onGoalClick }) {
   if (goals.length === 0) {
     return (
