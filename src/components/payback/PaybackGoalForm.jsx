@@ -73,7 +73,7 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
           value={formData.name}
           onChange={handleChange}
           className="input"
-          placeholder="Ví dụ: Trả nợ thẻ tín dụng"
+          placeholder="Ví dụ: Trả tiền thẻ tín dụng"
           required
           disabled={loading}
           autoFocus
@@ -91,7 +91,7 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
           onChange={handleChange}
           rows="3"
           className="input"
-          placeholder="Chi tiết về khoản nợ..."
+          placeholder="Chi tiết..."
           disabled={loading}
         />
       </div>
@@ -101,7 +101,7 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
         {/* Initial Amount (Optional) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tổng nợ ban đầu (₫)
+            Tổng tiền ban đầu (₫)
           </label>
           <input
             type="number"
@@ -115,7 +115,7 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
             disabled={loading}
           />
           <p className="text-xs text-gray-500 mt-1">
-            ���� Tùy chọn: Để theo dõi tổng nợ gốc
+            💡 Tùy chọn: Để theo dõi tổng tiền ban đầu
           </p>
         </div>
 

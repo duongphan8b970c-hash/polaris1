@@ -14,18 +14,10 @@ export function useGoals() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
+      // ✅ BỎ query goal_categories
       const { data, error: fetchError } = await supabase
         .from('goals')
-        .select(`
-          *,
-          categories:goal_categories(
-            id,
-            name,
-            icon,
-            color,
-            is_active
-          )
-        `)
+        .select('*')
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
 
@@ -34,20 +26,22 @@ export function useGoals() {
       // Calculate metrics for each goal
       const goalsWithMetrics = await Promise.all(
         (data || []).map(async (goal) => {
-          // Get all tasks for this goal through categories and projects
+          // ✅ Count projects
+          const { data: projectsData } = await supabase
+            .from('projects')
+            .select('id, status')
+            .eq('goal_id', goal.id)
+            .is('deleted_at', null)
+
+          // ✅ Get all tasks for this goal through projects
           const { data: tasksData } = await supabase
             .from('tasks')
             .select(`
               id,
               status,
-              projects!inner(
-                id,
-                goal_categories!inner(
-                  goal_id
-                )
-              )
+              projects!inner(goal_id)
             `)
-            .eq('projects.goal_categories.goal_id', goal.id)
+            .eq('projects.goal_id', goal.id)
             .is('deleted_at', null)
 
           const totalTasks = tasksData?.length || 0
@@ -58,7 +52,8 @@ export function useGoals() {
             ...goal,
             total_tasks: totalTasks,
             completed_tasks: completedTasks,
-            progress: progress.toFixed(2)
+            progress: progress.toFixed(2),
+            projects_count: projectsData?.length || 0
           }
         })
       )

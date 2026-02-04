@@ -7,7 +7,7 @@ export default function PaybackGoalList({ goals, onEdit, onDelete, onComplete })
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
         </div>
-        <p className="text-gray-500 font-medium">Chưa có mục tiêu trả nợ nào</p>
+        <p className="text-gray-500 font-medium">Chưa có mục tiêu nào</p>
         <p className="text-gray-400 text-sm mt-1">Tạo mục tiêu đầu tiên để bắt đầu theo dõi</p>
       </div>
     )
@@ -209,11 +209,11 @@ function PaybackGoalCard({ goal, onEdit, onDelete, onComplete }) {
       {goal.initial_amount > 0 && (
         <div className="mt-3 pt-3 border-t text-xs text-gray-500">
           <div className="flex justify-between">
-            <span>Tổng nợ ban đầu:</span>
+            <span>Tổng tiền ban đầu:</span>
             <span className="font-medium">{goal.initial_amount.toLocaleString('vi-VN')} ₫</span>
           </div>
           <div className="flex justify-between mt-1">
-            <span>% đã trả (so với nợ gốc):</span>
+            <span>% đã trả (so với tổng tiền ban đầu):</span>
             <span className="font-medium">
               {((goal.current_paid / goal.initial_amount) * 100).toFixed(1)}%
             </span>

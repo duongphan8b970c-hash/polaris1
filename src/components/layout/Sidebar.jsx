@@ -1,13 +1,10 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useState } from 'react' // ✅ THÊM useState
+import { useState } from 'react'
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
-  
-  // ✅ THÊM: State để track expanded menu
-  const [expandedMenu, setExpandedMenu] = useState('financial') // default expand financial
+  const [expandedMenu, setExpandedMenu] = useState('financial')
 
-  // ✅ THAY ĐỔI: Cấu trúc menu mới với submenu
   const menuSections = [
     {
       id: 'dashboard',
@@ -18,7 +15,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
       ),
-      submenu: null // no submenu
+      submenu: null
     },
     {
       id: 'financial',
@@ -56,14 +53,14 @@ export default function Sidebar({ isOpen, onClose }) {
             </svg>
           )
         },
-        { 
-        name: 'Payback', 
-        path: '/payback', 
-        icon: (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-        )
+        {
+          name: 'Trả nợ',
+          path: '/payback',
+          icon: (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          )
         }
       ]
     },
@@ -91,81 +88,70 @@ export default function Sidebar({ isOpen, onClose }) {
     }
   ]
 
-  // ✅ Function để toggle submenu
   const toggleMenu = (menuId) => {
     setExpandedMenu(expandedMenu === menuId ? null : menuId)
   }
 
-  // ✅ Function để check active state
   const isMenuActive = (section) => {
     if (section.path) {
-      return location.pathname === section.path
+      return location.pathname.startsWith(section.path)
     }
     if (section.submenu) {
-      return section.submenu.some(item => location.pathname === item.path)
+      return section.submenu.some(item => location.pathname.startsWith(item.path))
     }
     return false
   }
 
+  // ✅ Đóng sidebar khi click vào menu item trên mobile
+  const handleMenuClick = () => {
+    if (window.innerWidth < 1024) { // lg breakpoint
+      onClose()
+    }
+  }
+
   return (
-    <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-      isOpen ? 'translate-x-0' : '-translate-x-full'
-    }`}>
-      {/* Logo */}
-      <div className="h-20 flex items-center justify-between px-4 border-b-2 border-gray-100">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
+    <>
+      {/* ✅ Sidebar với animation */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        {/* Logo */}
+        <div className="h-20 flex items-center justify-between px-4 border-b-2 border-gray-100">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
+              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            </div>
+            <span className="text-xl font-bold text-gray-900">Polaris</span>
           </div>
-          <span className="text-xl font-bold text-gray-900">Polaris</span>
+
+          {/* ✅ Close button chỉ hiện trên mobile */}
+          <button
+            onClick={onClose}
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
+        
+        {/* Navigation */}
+        <nav className="p-4 overflow-y-auto h-[calc(100vh-80px)]">
+          <div className="space-y-1">
+            {menuSections.map((section) => {
+              const isActive = isMenuActive(section)
+              const hasSubmenu = section.submenu && section.submenu.length > 0
+              const isExpanded = expandedMenu === section.id
 
-        {/* Close button (Mobile only) */}
-        <button
-          onClick={onClose}
-          className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      
-      {/* ✅ THAY ĐỔI: Navigation với submenu support */}
-      <nav className="p-4 overflow-y-auto h-[calc(100vh-80px)]">
-        <div className="space-y-1">
-          {menuSections.map((section) => {
-            const isActive = isMenuActive(section)
-            const hasSubmenu = section.submenu && section.submenu.length > 0
-            const isExpanded = expandedMenu === section.id
-
-            return (
-              <div key={section.id}>
-                {/* Main Menu Item */}
-                {!hasSubmenu ? (
-                  // ✅ Direct link (no submenu)
-                  <Link
-                    to={section.path}
-                    onClick={onClose}
-                    className={`flex items-center justify-between space-x-3 px-4 py-3.5 rounded-xl transition-all font-semibold ${
-                      isActive
-                        ? 'bg-primary-50 text-primary-600 shadow-sm'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      {section.icon}
-                      <span>{section.name}</span>
-                    </div>
-                  </Link>
-                ) : (
-                  // ✅ Menu with submenu (expandable)
-                  <>
-                    <button
-                      onClick={() => toggleMenu(section.id)}
-                      className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all font-semibold ${
+              return (
+                <div key={section.id}>
+                  {!hasSubmenu ? (
+                    <Link
+                      to={section.path}
+                      onClick={handleMenuClick}
+                      className={`flex items-center justify-between space-x-3 px-4 py-3.5 rounded-xl transition-all font-semibold ${
                         isActive
                           ? 'bg-primary-50 text-primary-600 shadow-sm'
                           : 'text-gray-700 hover:bg-gray-50'
@@ -175,48 +161,62 @@ export default function Sidebar({ isOpen, onClose }) {
                         {section.icon}
                         <span>{section.name}</span>
                       </div>
-                      {/* Chevron icon */}
-                      <svg 
-                        className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
+                    </Link>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => toggleMenu(section.id)}
+                        className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all font-semibold ${
+                          isActive
+                            ? 'bg-primary-50 text-primary-600 shadow-sm'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
+                        <div className="flex items-center space-x-3">
+                          {section.icon}
+                          <span>{section.name}</span>
+                        </div>
+                        <svg 
+                          className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
 
-                    {/* ✅ Submenu Items */}
-                    {isExpanded && (
-                      <div className="mt-1 ml-4 space-y-1">
-                        {section.submenu.map((item) => {
-                          const isSubmenuActive = location.pathname === item.path
-                          
-                          return (
-                            <Link
-                              key={item.path}
-                              to={item.path}
-                              onClick={onClose}
-                              className={`flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all text-sm font-medium ${
-                                isSubmenuActive
-                                  ? 'bg-primary-100 text-primary-700'
-                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                              }`}
-                            >
-                              {item.icon}
-                              <span>{item.name}</span>
-                            </Link>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </nav>
-    </div>
+                      {isExpanded && (
+                        <div className="mt-1 ml-4 space-y-1">
+                          {section.submenu.map((item) => {
+                            const isSubmenuActive = location.pathname.startsWith(item.path)
+                            
+                            return (
+                              <Link
+                                key={item.path}
+                                to={item.path}
+                                onClick={handleMenuClick}
+                                className={`flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all text-sm font-medium ${
+                                  isSubmenuActive
+                                    ? 'bg-primary-100 text-primary-700'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                }`}
+                              >
+                                {item.icon}
+                                <span>{item.name}</span>
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </nav>
+      </div>
+    </>
   )
 }

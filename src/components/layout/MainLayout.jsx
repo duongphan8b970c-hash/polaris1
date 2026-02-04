@@ -1,47 +1,41 @@
-import { useState, useEffect } from 'react'
+import { Outlet } from 'react-router-dom'
+import { useState } from 'react'
 import Sidebar from './Sidebar'
 import Header from './Header'
-import { supabase } from '../../lib/supabase'
-import { Outlet } from 'react-router-dom'
 
-export default function MainLayout({}) {
-  const [user, setUser] = useState(null)
+export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-    })
-  }, [])
+  const handleCloseSidebar = () => {
+    setSidebarOpen(false)
+  }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    window.location.href = '/login'
+  const handleToggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen)
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Mobile Overlay */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile overlay */}
       {sidebarOpen && (
-        <div
+        <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={handleCloseSidebar}
         />
       )}
 
-      {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header 
-          user={user} 
-          onLogout={handleLogout} 
-          onMenuClick={() => setSidebarOpen(true)}
-        />
-        
-        <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
-          <Outlet />
-        </main>
+      <div className="flex h-screen overflow-hidden">
+        {/* Sidebar */}
+        <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header onMenuClick={handleToggleSidebar} />
+          
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   )
