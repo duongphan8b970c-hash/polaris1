@@ -48,7 +48,7 @@ export default function PaybackTracking() {
     
     const result = await completeGoal(goal.id)
     if (result.success) {
-      alert('🎉 Chúc mừng! Bạn đã hoàn thành mục tiêu trả nợ!')
+      alert('🎉 Chúc mừng! Bạn đã hoàn thành mục tiêu!')
     } else {
       alert('Lỗi: ' + result.error)
     }
@@ -76,7 +76,7 @@ export default function PaybackTracking() {
   }
 
   if (loading) {
-    return <Loading message="Đang tải mục tiêu trả nợ..." />
+    return <Loading message="Đang tải mục tiêu..." />
   }
 
   if (error) {
@@ -86,8 +86,7 @@ export default function PaybackTracking() {
   return (
     <div>
       <PageHeader 
-        title="Theo Dõi Trả Nợ" 
-        subtitle="Quản lý và theo dõi tiến độ trả nợ của bạn"
+        title="Theo Dõi Payback" 
         action={
           <button onClick={handleCreate} className="btn btn-primary">
             <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -157,15 +156,6 @@ export default function PaybackTracking() {
           <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <div className="text-sm text-gray-700">
-            <p className="font-medium mb-1">💡 Cách sử dụng:</p>
-            <ul className="list-disc list-inside space-y-1 text-gray-600">
-              <li>Tạo mục tiêu trả nợ với số tiền và thời hạn</li>
-              <li>Mỗi khi trả nợ, tạo giao dịch với danh mục <strong>"Payback"</strong></li>
-              <li>Hệ thống tự động tính tiến độ dựa trên giao dịch</li>
-              <li>Đánh dấu hoàn thành khi đạt 100%</li>
-            </ul>
-          </div>
         </div>
       </div>
 
@@ -181,7 +171,7 @@ export default function PaybackTracking() {
       <Modal
         isOpen={showForm}
         onClose={handleCloseForm}
-        title={editingGoal ? 'Sửa mục tiêu trả nợ' : 'Tạo mục tiêu trả nợ mới'}
+        title={editingGoal ? 'Sửa mục tiêu' : 'Tạo mục tiêu mới'}
       >
         <PaybackGoalForm
           goal={editingGoal}

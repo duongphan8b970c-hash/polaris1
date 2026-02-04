@@ -57,7 +57,7 @@ export default function Sidebar({ isOpen, onClose }) {
           )
         },
         { 
-        name: 'Trả nợ', 
+        name: 'Payback', 
         path: '/payback', 
         icon: (
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
