@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { usePaybackGoals } from '../hooks/usePaybackGoals'
-import PaybackGoalList from '../components/payback/PaybackGoalList'
-import PaybackGoalForm from '../components/payback/PaybackGoalForm'
-import Modal from '../components/common/Modal'
-import PageHeader from '../components/layout/PageHeader'
-import Loading from '../components/common/Loading'
-import ErrorMessage from '../components/common/ErrorMessage'
+import { usePaybackGoals } from '../../hooks/finance/usePaybackGoals'
+import PaybackGoalList from '../../components/payback/PaybackGoalList'
+import PaybackGoalForm from '../../components/payback/PaybackGoalForm'
+import Modal from '../../components/common/Modal'
+import PageHeader from '../../components/layout/PageHeader'
+import Loading from '../../components/common/Loading'
+import ErrorMessage from '../../components/common/ErrorMessage'
 
 export default function PaybackTracking() {
   const { goals, loading, error, createGoal, updateGoal, completeGoal, deleteGoal, refetch } = usePaybackGoals()

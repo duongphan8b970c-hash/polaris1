@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useWallets } from '../../hooks/useWallets'
+import { useWallets } from '../../hooks/finance/useWallets'
 import { formatCurrency } from '../../lib/utils'
 
 export default function TradeForm({ trade, onSubmit, onCancel, loading }) {

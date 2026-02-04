@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { useWallets } from '../hooks/useWallets'
-import WalletList from '../components/wallets/WalletList'
-import WalletForm from '../components/wallets/WalletForm'
-import Modal from '../components/common/Modal'
-import PageHeader from '../components/layout/PageHeader'
-import Loading from '../components/common/Loading'
-import ErrorMessage from '../components/common/ErrorMessage'
+import { useWallets } from '../../hooks/finance/useWallets'
+import WalletList from '../../components/wallets/WalletList'
+import WalletForm from '../../components/wallets/WalletForm'
+import Modal from '../../components/common/Modal'
+import PageHeader from '../../components/layout/PageHeader'
+import Loading from '../../components/common/Loading'
+import ErrorMessage from '../../components/common/ErrorMessage'
 
 export default function WalletConfig() {
   const { wallets, loading, error, createWallet, updateWallet, refetch } = useWallets()

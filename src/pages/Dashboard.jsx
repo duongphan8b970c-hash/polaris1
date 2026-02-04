@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useWallets } from '../hooks/useWallets'
+import { useWallets } from '../hooks/finance/useWallets'
 import { supabase } from '../lib/supabase'
 import FinanceTab from '../components/dashboard/FinanceTab'
 import GoalsTab from '../components/dashboard/GoalsTab'

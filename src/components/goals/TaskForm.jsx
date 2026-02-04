@@ -1,0 +1,328 @@
+import { useState, useEffect } from 'react'
+
+const PRIORITY_OPTIONS = [
+  { value: 'low', label: 'Thấp', icon: '🔵' },
+  { value: 'medium', label: 'Trung bình', icon: '🟡' },
+  { value: 'high', label: 'Cao', icon: '🟠' },
+  { value: 'urgent', label: 'Khẩn cấp', icon: '🔴' },
+]
+
+const STATUS_OPTIONS = [
+  { value: 'todo', label: 'Cần làm', icon: '��' },
+  { value: 'in_progress', label: 'Đang làm', icon: '⏳' },
+  { value: 'completed', label: 'Hoàn thành', icon: '✅' },
+  { value: 'blocked', label: 'Bị chặn', icon: '🚫' },
+]
+
+export default function TaskForm({ task, projects, onSubmit, onCancel, loading }) {
+  const [formData, setFormData] = useState({
+    project_id: '',
+    title: '',
+    description: '',
+    start_date: '',
+    due_date: '',
+    priority: 'medium',
+    status: 'todo',
+    tags: [],
+    estimated_hours: ''
+  })
+
+  const [tagInput, setTagInput] = useState('')
+
+  useEffect(() => {
+    if (task) {
+      setFormData({
+        project_id: task.project_id,
+        title: task.title,
+        description: task.description || '',
+        start_date: task.start_date || '',
+        due_date: task.due_date || '',
+        priority: task.priority || 'medium',
+        status: task.status || 'todo',
+        tags: task.tags || [],
+        estimated_hours: task.estimated_hours || ''
+      })
+    }
+  }, [task])
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  const handleAddTag = () => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tagInput.trim()]
+      }))
+      setTagInput('')
+    }
+  }
+
+  const handleRemoveTag = (tag) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(t => t !== tag)
+    }))
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    if (!formData.project_id) {
+      alert('Vui lòng chọn dự án')
+      return
+    }
+
+    if (!formData.title.trim()) {
+      alert('Vui lòng nhập tên công việc')
+      return
+    }
+
+    if (formData.due_date && formData.start_date && formData.due_date < formData.start_date) {
+      alert('Ngày hoàn thành phải sau ngày bắt đầu')
+      return
+    }
+
+    onSubmit(formData)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Project */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Dự án <span className="text-red-500">*</span>
+        </label>
+        <select
+          name="project_id"
+          value={formData.project_id}
+          onChange={handleChange}
+          className="input"
+          required
+          disabled={loading || task}
+        >
+          <option value="">Chọn dự án</option>
+          {projects.map(project => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
+        {task && (
+          <p className="text-xs text-amber-600 mt-1">
+            ⚠️ Không thể thay đổi dự án
+          </p>
+        )}
+      </div>
+
+      {/* Title */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Tên công việc <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          name="title"
+          value={formData.title}
+          onChange={handleChange}
+          className="input"
+          placeholder="Ví dụ: Thiết kế giao diện, Viết code..."
+          required
+          disabled={loading}
+          autoFocus
+        />
+      </div>
+
+      {/* Description */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Mô tả
+        </label>
+        <textarea
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          rows="4"
+          className="input"
+          placeholder="Mô tả chi tiết về công việc cần làm..."
+          disabled={loading}
+        />
+      </div>
+
+      {/* Priority & Status */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Priority */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Độ ưu tiên
+          </label>
+          <select
+            name="priority"
+            value={formData.priority}
+            onChange={handleChange}
+            className="input"
+            disabled={loading}
+          >
+            {PRIORITY_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.icon} {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Status */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Trạng thái
+          </label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className="input"
+            disabled={loading}
+          >
+            {STATUS_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.icon} {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Dates */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Start Date */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Ngày bắt đầu
+          </label>
+          <input
+            type="date"
+            name="start_date"
+            value={formData.start_date}
+            onChange={handleChange}
+            className="input"
+            disabled={loading}
+          />
+        </div>
+
+        {/* Due Date */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Ngày dự kiến hoàn thành <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            name="due_date"
+            value={formData.due_date}
+            onChange={handleChange}
+            className="input"
+            required
+            disabled={loading}
+          />
+        </div>
+      </div>
+
+      {/* Estimated Hours */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Thời gian ước tính (giờ)
+        </label>
+        <input
+          type="number"
+          name="estimated_hours"
+          value={formData.estimated_hours}
+          onChange={handleChange}
+          className="input"
+          placeholder="Ví dụ: 8"
+          step="0.5"
+          min="0"
+          disabled={loading}
+        />
+      </div>
+
+      {/* Tags */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Tags
+        </label>
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+            className="input flex-1"
+            placeholder="Nhập tag và Enter"
+            disabled={loading}
+          />
+          <button
+            type="button"
+            onClick={handleAddTag}
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+            disabled={loading}
+          >
+            Thêm
+          </button>
+        </div>
+        {formData.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {formData.tags.map((tag, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+              >
+                <span>{tag}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveTag(tag)}
+                  className="hover:text-blue-900"
+                  disabled={loading}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3 pt-4">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+          disabled={loading}
+        >
+          Hủy
+        </button>
+        <button
+          type="submit"
+          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
+        >
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Đang lưu...
+            </span>
+          ) : (
+            task ? 'Cập nhật' : 'Tạo công việc'
+          )}
+        </button>
+      </div>
+    </form>
+  )
+}

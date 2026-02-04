@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useBudgets } from '../hooks/useBudgets'
-import BudgetList from '../components/budgets/BudgetList'
-import BudgetForm from '../components/budgets/BudgetForm'
-import Modal from '../components/common/Modal'
-import PageHeader from '../components/layout/PageHeader'
-import Loading from '../components/common/Loading'
-import ErrorMessage from '../components/common/ErrorMessage'
+import BudgetList from '../../components/budgets/BudgetList'
+import BudgetForm from '../../components/budgets/BudgetForm'
+import Modal from '../../components/common/Modal'
+import PageHeader from '../../components/layout/PageHeader'
+import Loading from '../../components/common/Loading'
+import ErrorMessage from '../../components/common/ErrorMessage'
 
 export default function Budgets() {
   const { budgets, loading, error, createBudget, updateBudget, deleteBudget, refetch } = useBudgets()

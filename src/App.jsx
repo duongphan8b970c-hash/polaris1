@@ -3,12 +3,15 @@ import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import MainLayout from './components/layout/MainLayout'
 import Dashboard from './pages/Dashboard'
-import FinancialTracking from './pages/FinancialTracking'
-import TradeTracking from './pages/TradeTracking'
-import Wallets from './pages/WalletConfig'
+import FinancialTracking from './pages/finance/FinancialTracking'
+import TradeTracking from './pages/finance/TradeTracking'
+import Wallets from './pages/finance/WalletConfig'
 import Reports from './pages/Reports'
 import Login from './pages/Login'
-import PaybackTracking from './pages/PaybackTracking'
+import PaybackTracking from './pages/finance/PaybackTracking'
+import GoalsDashboard from './pages/goals/GoalsDashboard'
+import GoalDetails from './pages/goals/GoalDetails'
+import ProjectDetails from './pages/goals/ProjectDetails'
 
 // ✅ Create ProtectedRoute component
 function ProtectedRoute({ children, session }) {
@@ -87,6 +90,9 @@ function App() {
           <Route path="wallets" element={<Wallets />} />
           <Route path="reports" element={<Reports />} />
           <Route path="payback" element={<PaybackTracking />} />
+          <Route path="goals" element={<GoalsDashboard />} />
+          <Route path="goals/:goalId" element={<GoalDetails />} />
+          <Route path="goals/projects/:projectId" element={<ProjectDetails />} />
         </Route>
 
         {/* ✅ Catch all - redirect to dashboard or login */}

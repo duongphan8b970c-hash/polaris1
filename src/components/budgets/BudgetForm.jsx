@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useCategories } from '../../hooks/useCategories'
+import { useCategories } from '../../hooks/finance/useCategories'
 
 export default function BudgetForm({ budget, onSubmit, onCancel, loading }) {
   const { categories } = useCategories('expense') // Only expense categories

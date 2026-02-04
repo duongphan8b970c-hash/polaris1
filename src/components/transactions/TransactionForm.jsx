@@ -1,7 +1,7 @@
 import { formatDate } from '../../lib/utils'
 import { useState, useEffect } from 'react'
-import { useWallets } from '../../hooks/useWallets'
-import { useCategories } from '../../hooks/useCategories'
+import { useWallets } from '../../hooks/finance/useWallets'
+import { useCategories } from '../../hooks/finance/useCategories'
 
 export default function TransactionForm({ transaction, onSubmit, onCancel, loading }) {
   const { wallets } = useWallets()

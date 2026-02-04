@@ -61,18 +61,6 @@ export default function TransactionList({
 
   return (
     <div className="space-y-4">
-      {/* ✅ Summary Info */}
-      <div className="flex items-center justify-between text-sm text-gray-600">
-        <p>
-          Hiển thị <span className="font-semibold text-gray-900">{startIndex + 1}</span> đến{' '}
-          <span className="font-semibold text-gray-900">{Math.min(endIndex, displayTransactions.length)}</span> trong tổng số{' '}
-          <span className="font-semibold text-gray-900">{displayTransactions.length}</span> giao dịch
-        </p>
-        <p className="text-gray-500">
-          Trang {currentPage} / {totalPages}
-        </p>
-      </div>
-
       {/* ✅ Table */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
