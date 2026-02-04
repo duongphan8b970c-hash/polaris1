@@ -2,11 +2,14 @@ import { useState, useEffect, useMemo} from 'react'
 import { supabase } from '../lib/supabase'
 import { useTransactions } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
+import { useBudgets } from '../hooks/useBudgets'
 import { useWallets } from '../hooks/useWallets'
 import TransactionList from '../components/transactions/TransactionList'
 import TransactionForm from '../components/transactions/TransactionForm'
 import CategoryList from '../components/transactions/CategoryList'
 import CategoryForm from '../components/transactions/CategoryForm'
+import BudgetList from '../components/budgets/BudgetList' 
+import BudgetForm from '../components/budgets/BudgetForm' 
 import Modal from '../components/common/Modal'
 import PageHeader from '../components/layout/PageHeader'
 import Loading from '../components/common/Loading'
@@ -45,6 +48,16 @@ export default function FinancialTracking() {
     updateCategory, 
     refetch: refetchCategories 
   } = useCategories(categoryType)
+
+  const {
+    budgets,
+    loading: budgetsLoading,
+    error: budgetsError,
+    createBudget,
+    updateBudget,
+    deleteBudget,
+    refetch: refetchBudgets
+  } = useBudgets()
   
   // ✅ Fetch all categories for filter dropdown
   const [allCategories, setAllCategories] = useState([])
@@ -82,6 +95,12 @@ export default function FinancialTracking() {
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
   const [submittingCategory, setSubmittingCategory] = useState(false)
+
+  // Modal states - Budgets
+  const [showBudgetForm, setShowBudgetForm] = useState(false)
+  const [editingBudget, setEditingBudget] = useState(null)
+  const [submittingBudget, setSubmittingBudget] = useState(false)
+
   const [breakdownView, setBreakdownView] = useState('month')
 
   // Filter handlers
@@ -244,6 +263,46 @@ const filteredStats = useMemo(() => {
     }
   }
 
+ const handleCreateBudget = () => {
+    setEditingBudget(null)
+    setShowBudgetForm(true)
+  }
+
+  const handleEditBudget = (budget) => {
+    setEditingBudget(budget)
+    setShowBudgetForm(true)
+  }
+
+  const handleDeleteBudget = async (budget) => {
+    if (!confirm(`Xóa ngân sách "${budget.category?.name}"?`)) return
+    
+    const result = await deleteBudget(budget.id)
+    if (!result.success) {
+      alert('Lỗi: ' + result.error)
+    }
+  }
+
+  const handleCloseBudgetForm = () => {
+    setShowBudgetForm(false)
+    setEditingBudget(null)
+  }
+
+  const handleSubmitBudget = async (formData) => {
+    setSubmittingBudget(true)
+    
+    const result = editingBudget
+      ? await updateBudget(editingBudget.id, formData)
+      : await createBudget(formData)
+    
+    if (result.success) {
+      handleCloseBudgetForm()
+    } else {
+      alert('Lỗi: ' + result.error)
+    }
+    
+    setSubmittingBudget(false)
+  }
+
   // ✅ SAFE DEFAULTS - Ensure arrays are never undefined
   const safeWallets = Array.isArray(wallets) ? wallets : []
   const safeAllCategories = Array.isArray(allCategories) ? allCategories : []
@@ -319,6 +378,19 @@ const filteredStats = useMemo(() => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
               </svg>
               Danh mục
+            </button>
+            <button
+              onClick={() => setActiveTab('budgets')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'budgets'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <svg className="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Ngân sách
             </button>
           </nav>
         </div>
@@ -642,6 +714,49 @@ const filteredStats = useMemo(() => {
           </Modal>
         </>
       )}
+      {/* ✅ THÊM: TAB CONTENT: BUDGETS */}
+      {activeTab === 'budgets' && (
+        <>
+          {/* Add Budget Button */}
+          <div className="mb-6 flex justify-between items-center">
+            <p className="text-gray-600">
+              Quản lý hạn mức chi tiêu tối đa cho từng danh mục theo tháng/năm
+            </p>
+            <button onClick={handleCreateBudget} className="btn btn-primary">
+              <svg className="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Thêm ngân sách
+            </button>
+          </div>
+
+          {/* Budgets List */}
+          {budgetsLoading ? (
+            <Loading />
+          ) : budgetsError ? (
+            <ErrorMessage message={budgetsError} />
+          ) : (
+            <BudgetList
+              budgets={budgets}
+              onEdit={handleEditBudget}
+              onDelete={handleDeleteBudget}
+            />
+          )}
+        </>
+      )}
+      {/* ✅ THÊM: Budget Form Modal */}
+      <Modal
+        isOpen={showBudgetForm}
+        onClose={handleCloseBudgetForm}
+        title={editingBudget ? 'Sửa ngân sách' : 'Thêm ngân sách mới'}
+      >
+        <BudgetForm
+          budget={editingBudget}
+          onSubmit={handleSubmitBudget}
+          onCancel={handleCloseBudgetForm}
+          loading={submittingBudget}
+        />
+      </Modal>
     </div>
   )
 }
