@@ -123,89 +123,64 @@ export default function TaskDetails() {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Breadcrumb */}
-      <div className="mb-6">
-        <nav className="flex items-center gap-2 text-sm text-gray-600">
-          <button 
-            onClick={() => navigate('/goals')}
-            className="hover:text-gray-900"
-          >
-            Mục tiêu
-          </button>
-          <span>/</span>
-          <button 
-            onClick={() => navigate(`/goals/${goalId}`)}
-            className="hover:text-gray-900"
-          >
-            {goal.name}
-          </button>
-          <span>/</span>
-          <span className="text-gray-900 font-medium">{task.title}</span>
-        </nav>
-      </div>
+      <nav className="mb-6 flex items-center gap-2 text-sm">
+        <button 
+          onClick={() => navigate('/goals')}
+          className="text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          Mục tiêu
+        </button>
+        <span className="text-gray-400">/</span>
+        <button 
+          onClick={() => navigate(`/goals/${goalId}`)}
+          className="text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          {goal.name}
+        </button>
+        <span className="text-gray-400">/</span>
+        <span className="text-gray-900 font-semibold">{task.title}</span>
+      </nav>
 
-      {/* Task Header */}
+      {/* Task Header Card */}
       <div className="card mb-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{task.title}</h1>
-            
-            {/* Status & Priority */}
             <div className="flex items-center gap-3 mb-3">
-              <span className={`inline-flex items-center gap-1 px-3 py-1 bg-${statusOption.color}-100 text-${statusOption.color}-700 rounded-full text-sm font-medium`}>
+              <h1 className="text-3xl font-bold text-gray-900">{task.title}</h1>
+              <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                statusOption.value === 'completed' ? 'bg-green-100 text-green-700' :
+                statusOption.value === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                statusOption.value === 'blocked' ? 'bg-red-100 text-red-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
                 {statusOption.icon} {statusOption.label}
               </span>
-              <span className={`inline-flex items-center gap-1 px-3 py-1 bg-${priorityOption.color}-100 text-${priorityOption.color}-700 rounded-full text-sm font-medium`}>
+              <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                priorityOption.value === 'urgent' ? 'bg-red-100 text-red-700' :
+                priorityOption.value === 'high' ? 'bg-orange-100 text-orange-700' :
+                priorityOption.value === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                'bg-blue-100 text-blue-700'
+              }`}>
                 {priorityOption.icon} {priorityOption.label}
               </span>
             </div>
-
-            {/* Dates */}
-            {(task.start_date || task.due_date) && (
-              <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                {task.start_date && (
-                  <div className="flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span>Bắt đầu: {new Date(task.start_date).toLocaleDateString('vi-VN')}</span>
-                  </div>
-                )}
-                {task.due_date && (
-                  <div className="flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Deadline: {new Date(task.due_date).toLocaleDateString('vi-VN')}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Description */}
-            {task.description && (
-              <div className="mt-3 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{task.description}</p>
-              </div>
-            )}
-
-            {/* Tags */}
-            {task.tags && task.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {task.tags.map((tag, index) => (
-                  <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
+            
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              <span className="flex items-center gap-1">
+                📅 Bắt đầu: {new Date(task.start_date).toLocaleDateString('vi-VN')}
+              </span>
+              {task.deadline && (
+                <span className="flex items-center gap-1">
+                  ⏰ Deadline: {new Date(task.deadline).toLocaleDateString('vi-VN')}
+                </span>
+              )}
+            </div>
           </div>
-
-          {/* Actions */}
+          
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowEditModal(true)}
-              className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title="Sửa task"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -213,8 +188,7 @@ export default function TaskDetails() {
             </button>
             <button
               onClick={handleDeleteTask}
-              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="Xóa task"
+              className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -222,38 +196,65 @@ export default function TaskDetails() {
             </button>
           </div>
         </div>
-
-        {/* Progress */}
-        {subtasks.length > 0 && (
-          <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">Tiến độ hoàn thành</span>
-              <span className="text-sm font-bold text-blue-700">
-                {completedSubtasks} / {subtasks.length} subtasks ({progress.toFixed(0)}%)
-              </span>
-            </div>
-            <div className="w-full bg-white rounded-full h-3 border border-blue-200">
-              <div 
-                className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-blue-500 to-indigo-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+        
+        {/* Progress Card */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold text-gray-700">Tiến độ hoàn thành</span>
+            <span className="text-lg font-bold text-blue-600">
+              {completedSubtasks} / {subtasks.length} subtasks ({progress.toFixed(0)}%)
+            </span>
           </div>
-        )}
+          <div className="w-full bg-blue-200 rounded-full h-3 shadow-inner">
+            <div 
+              className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Subtasks Section */}
-      <div className="card">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">📝 Subtasks</h2>
-        <SubtaskList
-          subtasks={subtasks}
-          onToggle={handleToggleSubtask}
-          onEdit={handleUpdateSubtask}
-          onDelete={handleDeleteSubtask}
-          onAdd={handleAddSubtask}
-          loading={subtasksLoading}
-        />
+<div className="card">
+  <div className="flex items-center gap-2 mb-4">
+    <span className="text-2xl">📝</span>
+    <h2 className="text-2xl font-bold">Subtasks</h2>
+  </div>
+  
+  <p className="text-gray-600 mb-4">Subtasks ({completedSubtasks} / {subtasks.length})</p>
+  
+  <SubtaskList
+    subtasks={subtasks}
+    onToggle={handleToggleSubtask}
+    onUpdate={handleUpdateSubtask}
+    onDelete={handleDeleteSubtask}
+  />
+  
+  {/* Add subtask form inline */}
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <form onSubmit={(e) => {
+          e.preventDefault()
+          const title = e.target.subtaskTitle.value
+          if (title.trim()) {
+            handleAddSubtask({ task_id: taskId, title })
+            e.target.reset()
+          }
+        }} className="flex gap-2">
+          <input
+            type="text"
+            name="subtaskTitle"
+            placeholder="Thêm subtask mới..."
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <button
+            type="submit"
+            className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+          >
+            Thêm
+          </button>
+        </form>
       </div>
+    </div>
 
       {/* Edit Task Modal */}
       <Modal

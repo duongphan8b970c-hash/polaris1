@@ -250,7 +250,7 @@ export default function CheckinCalendar() {
 
   return (
     <div>
-      {/* Header */}
+     {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate(`/goals/${goalId}`)}
@@ -263,45 +263,54 @@ export default function CheckinCalendar() {
         </button>
 
         <div 
-          className="p-6 rounded-xl shadow-lg"
+          className="p-8 rounded-2xl shadow-xl"
           style={{ 
-            backgroundColor: `${goal.color}15`,
-            borderLeft: `4px solid ${goal.color}`
+            backgroundColor: `${goal.color}10`,
+            borderLeft: `6px solid ${goal.color}`
           }}
         >
-          <div className="flex items-center gap-4">
-            <span className="text-4xl">{goal.icon}</span>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900">{goal.name}</h1>
-              <p className="text-gray-600">Lịch Checkin & Theo Dõi Tiến Độ</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              {/* Icon */}
+              <div 
+                className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl shadow-lg"
+                style={{ backgroundColor: `${goal.color}20` }}
+              >
+                {goal.icon}
+              </div>
               
-              {/* ✅ NEW: Checkin frequency info */}
-              {goal.is_checkin_enabled && goal.checkin_frequency && (
-                <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-full text-sm border border-gray-200">
-                  <span className="text-gray-600">📅</span>
-                  <span className="text-gray-700 font-medium">
-                    {goal.checkin_frequency === 'daily' && 'Checkin mỗi ngày'}
-                    {goal.checkin_frequency === 'weekdays' && 'Checkin T2-T6'}
-                    {goal.checkin_frequency === 'weekly' && `${goal.checkin_days_per_week} ngày/tuần`}
-                    {goal.checkin_frequency === 'custom' && `${goal.checkin_target_days} ngày/tháng`}
-                  </span>
-                </div>
-              )}
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-gray-900 mb-1">{goal.name}</h1>
+                <p className="text-gray-600 text-lg mb-3">Lịch Checkin & Theo Dõi Tiến Độ</p>
+                
+                {/* Checkin frequency info */}
+                {goal.is_checkin_enabled && goal.checkin_frequency && (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-xl text-sm border-2 border-gray-200 shadow-sm">
+                    <span className="text-xl">📅</span>
+                    <span className="text-gray-700 font-semibold">
+                      {goal.checkin_frequency === 'daily' && 'Checkin mỗi ngày'}
+                      {goal.checkin_frequency === 'weekdays' && 'Checkin T2-T6'}
+                      {goal.checkin_frequency === 'weekly' && `${goal.checkin_days_per_week} ngày/tuần`}
+                      {goal.checkin_frequency === 'custom' && `${goal.checkin_target_days} ngày/tháng`}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
             
-            {/* ✅ ENHANCED: Progress Stats */}
+            {/* Progress Stats - đẹp hơn */}
             <div className="text-right">
-              <p className="text-sm text-gray-600 mb-1">
+              <p className="text-sm text-gray-600 mb-2 font-medium">
                 Tiến độ tháng {currentDate.getMonth() + 1}/{currentDate.getFullYear()}
               </p>
-              <p className="text-3xl font-bold" style={{ color: goal.color }}>
+              <p className="text-6xl font-bold mb-2" style={{ color: goal.color }}>
                 {progressStats.progress}%
               </p>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-sm text-gray-700 font-medium bg-white px-4 py-2 rounded-lg inline-block shadow-sm mb-2">
                 {progressStats.completedDays} / {progressStats.targetDays} ngày
               </p>
               {progressStats.remaining > 0 && (
-                <p className="text-xs font-medium mt-1" style={{ color: goal.color }}>
+                <p className="text-sm font-semibold" style={{ color: goal.color }}>
                   Còn {progressStats.remaining} ngày
                 </p>
               )}
@@ -309,10 +318,10 @@ export default function CheckinCalendar() {
           </div>
           
           {/* Progress Bar */}
-          <div className="mt-4">
-            <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="mt-6">
+            <div className="w-full bg-gray-200 rounded-full h-4 shadow-inner">
               <div 
-                className="h-3 rounded-full transition-all duration-500"
+                className="h-4 rounded-full transition-all duration-500 shadow-md"
                 style={{ 
                   width: `${progressStats.progress}%`,
                   backgroundColor: goal.color 
@@ -323,112 +332,61 @@ export default function CheckinCalendar() {
         </div>
       </div>
 
-      {/* Calendar */}
-      <div className="card">
-        {/* Calendar Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7 gap-3">
+        {calendarDays.map((date, index) => {
+          const isToday = date && 
+            date.toDateString() === new Date().toDateString()
+          
+          const hasCheckin = date && hasCompletedCheckin(date)
+          const isPast = date && date < new Date().setHours(0, 0, 0, 0)
+          
+          return (
             <button
-              onClick={goToPreviousMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            
-            <h2 className="text-xl font-bold text-gray-900">
-              {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </h2>
-            
-            <button
-              onClick={goToNextMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-
-          <button
-            onClick={goToToday}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors text-sm"
-          >
-            Hôm nay
-          </button>
-        </div>
-
-        {/* Weekday Headers */}
-        <div className="grid grid-cols-7 gap-2 mb-2">
-          {WEEKDAYS.map((day, index) => (
-            <div
               key={index}
-              className={`text-center text-sm font-semibold py-2 ${
-                index === 0 ? 'text-red-600' : 'text-gray-600'
-              }`}
+              onClick={() => handleDateClick(date)}
+              disabled={!date}
+              className={`
+                aspect-square p-4 rounded-2xl transition-all relative group min-h-[80px]
+                ${!date ? 'invisible' : ''}
+                ${isToday ? 'ring-4 ring-blue-400' : ''}
+                ${hasCheckin 
+                  ? 'bg-green-50 hover:bg-green-100 border-4 border-green-400 shadow-md' 
+                  : isPast 
+                    ? 'bg-gray-50 hover:bg-gray-100 text-gray-400 border-2 border-gray-200' 
+                    : 'bg-white hover:bg-blue-50 border-2 border-gray-300 shadow-sm hover:shadow-md'
+                }
+              `}
             >
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-2">
-          {calendarDays.map((date, index) => {
-            const isToday = date && 
-              date.toDateString() === new Date().toDateString()
-            
-            const hasCheckin = date && hasCompletedCheckin(date)
-            const isPast = date && date < new Date().setHours(0, 0, 0, 0)
-            
-            return (
-              <button
-                key={index}
-                onClick={() => handleDateClick(date)}
-                disabled={!date}
-                className={`
-                  aspect-square p-2 rounded-lg transition-all relative group
-                  ${!date ? 'invisible' : ''}
-                  ${isToday ? 'ring-2 ring-primary-500' : ''}
-                  ${hasCheckin 
-                    ? 'bg-green-100 hover:bg-green-200 border-2 border-green-500' 
-                    : isPast 
-                      ? 'bg-gray-50 hover:bg-gray-100 text-gray-400' 
-                      : 'bg-white hover:bg-gray-50 border-2 border-gray-200'
-                  }
-                `}
-              >
-                {date && (
-                  <>
-                    <div className={`text-sm font-semibold ${
-                      hasCheckin ? 'text-green-700' : 
-                      isPast ? 'text-gray-400' : 'text-gray-900'
-                    }`}>
-                      {date.getDate()}
-                    </div>
-                    
-                    {hasCheckin && (
-                      <>
-                        {/* ✅ Checkmark */}
-                        <div className="absolute top-1 right-1">
-                          <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        
-                        {/* ✅ Hover hint */}
-                        <div className="absolute inset-0 bg-red-500 bg-opacity-0 group-hover:bg-opacity-10 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="text-xs text-red-600 font-semibold">Hủy</span>
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
-              </button>
-            )
-          })}
-        </div>
+              {date && (
+                <>
+                  <div className={`text-xl font-bold ${
+                    hasCheckin ? 'text-green-700' : 
+                    isPast ? 'text-gray-400' : 'text-gray-900'
+                  }`}>
+                    {date.getDate()}
+                  </div>
+                  
+                  {hasCheckin && (
+                    <>
+                      {/* Checkmark icon lớn */}
+                      <div className="absolute top-2 right-2">
+                        <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      
+                      {/* Hover hint */}
+                      <div className="absolute inset-0 bg-red-500 bg-opacity-0 group-hover:bg-opacity-10 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-sm text-red-600 font-bold bg-white px-3 py-1 rounded-lg shadow-md">Hủy</span>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </button>
+          )
+        })}
       </div>
 
       {/* ✅ CREATE Checkin Modal */}
