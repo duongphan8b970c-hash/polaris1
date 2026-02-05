@@ -7,14 +7,8 @@ import TaskForm from '../../components/goals/TaskForm'
 import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
-
-const STATUS_FILTERS = [
-  { value: 'all', label: 'Tất cả', icon: '📋' },
-  { value: 'todo', label: 'Cần làm', icon: '📝' },
-  { value: 'in_progress', label: 'Đang làm', icon: '⏳' },
-  { value: 'completed', label: 'Hoàn thành', icon: '✅' },
-  { value: 'blocked', label: 'Bị chặn', icon: '🚫' },
-]
+import { TASK_STATUS_FILTERS } from '../../constants'
+import { formatDate } from '../../utils'
 
 export default function GoalDetails() {
   const { goalId } = useParams()
@@ -147,7 +141,7 @@ export default function GoalDetails() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              {new Date(goal.start_date).toLocaleDateString('vi-VN')}
+              {formatDate(goal.start_date)}
             </span>
             {goal.target_date && (
               <span className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg">
@@ -188,39 +182,39 @@ export default function GoalDetails() {
       </div>
     </div>
       {/* Filters & Actions */}
-    <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
-      {/* Status Filter - làm đẹp hơn */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {STATUS_FILTERS.map(filter => (
-          <button
-            key={filter.value}
-            onClick={() => setFilters(prev => ({ 
-              ...prev, 
-              status: filter.value === 'all' ? '' : filter.value 
-            }))}
-            className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              (filter.value === 'all' && !filters.status) || filters.status === filter.value
-                ? 'bg-blue-500 text-white shadow-lg scale-105'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-            }`}
-          >
-            <span className="mr-2 text-base">{filter.icon}</span>
-            {filter.label}
-          </button>
-        ))}
-      </div>
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
+        {/* Status Filter - làm đẹp hơn */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {TASK_STATUS_FILTERS.map(filter => (
+            <button
+              key={filter.value}
+              onClick={() => setFilters(prev => ({ 
+                ...prev, 
+                status: filter.value === 'all' ? '' : filter.value 
+              }))}
+              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                (filter.value === 'all' && !filters.status) || filters.status === filter.value
+                  ? 'bg-blue-500 text-white shadow-lg scale-105'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+              }`}
+            >
+              <span className="mr-2 text-base">{filter.icon}</span>
+              {filter.label}
+            </button>
+          ))}
+        </div>
 
-      {/* Add Task Button - nổi bật hơn */}
-      <button 
-        onClick={handleCreateTask} 
-        className="btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
-      >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-        Thêm công việc
-      </button>
-    </div>
+        {/* Add Task Button - nổi bật hơn */}
+        <button 
+          onClick={handleCreateTask} 
+          className="btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Thêm công việc
+        </button>
+      </div>
 
       {/* Tasks Grid */}
       {tasks.length > 0 ? (

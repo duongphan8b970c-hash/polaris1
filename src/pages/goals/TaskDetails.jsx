@@ -7,20 +7,8 @@ import SubtaskList from '../../components/goals/SubtaskList'
 import TaskForm from '../../components/goals/TaskForm'
 import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
-
-const STATUS_OPTIONS = [
-  { value: 'todo', label: 'Cần làm', icon: '📝', color: 'gray' },
-  { value: 'in_progress', label: 'Đang làm', icon: '⏳', color: 'blue' },
-  { value: 'completed', label: 'Hoàn thành', icon: '✅', color: 'green' },
-  { value: 'blocked', label: 'Bị chặn', icon: '🚫', color: 'red' },
-]
-
-const PRIORITY_OPTIONS = [
-  { value: 'low', label: 'Thấp', icon: '🔵', color: 'blue' },
-  { value: 'medium', label: 'Trung bình', icon: '🟡', color: 'yellow' },
-  { value: 'high', label: 'Cao', icon: '🟠', color: 'orange' },
-  { value: 'urgent', label: 'Khẩn cấp', icon: '🔴', color: 'red' },
-]
+import { TASK_STATUS_FILTERS, PRIORITY_OPTIONS } from '../../constants'
+import { formatDate } from '../../utils'
 
 export default function TaskDetails() {
   const { goalId, taskId } = useParams()
@@ -115,7 +103,7 @@ export default function TaskDetails() {
     )
   }
 
-  const statusOption = STATUS_OPTIONS.find(s => s.value === task.status)
+  const statusOption = TASK_STATUS_FILTERS.find(s => s.value === task.status) || TASK_STATUS_FILTERS[1]
   const priorityOption = PRIORITY_OPTIONS.find(p => p.value === task.priority)
   const completedSubtasks = subtasks.filter(s => s.is_completed).length
   const progress = subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0
@@ -167,11 +155,11 @@ export default function TaskDetails() {
             
             <div className="flex items-center gap-4 text-sm text-gray-600">
               <span className="flex items-center gap-1">
-                📅 Bắt đầu: {new Date(task.start_date).toLocaleDateString('vi-VN')}
+                📅 Bắt đầu: {formatDate(task.start_date)}
               </span>
               {task.deadline && (
                 <span className="flex items-center gap-1">
-                  ⏰ Deadline: {new Date(task.deadline).toLocaleDateString('vi-VN')}
+                  ⏰ Deadline: {formatDate(task.deadline)}
                 </span>
               )}
             </div>

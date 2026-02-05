@@ -5,6 +5,7 @@ import FinanceTab from '../components/dashboard/FinanceTab'
 import GoalsTab from '../components/dashboard/GoalsTab'
 import PerformanceTab from '../components/dashboard/PerformanceTab'
 import Loading from '../components/common/Loading'
+import { formatDateTime, getRelativeTime } from '../utils'
 
 export default function Dashboard() {
   // ✅ State cho active tab
@@ -67,27 +68,9 @@ export default function Dashboard() {
   }
 
   const formatLastUpdated = () => {
-    if (!lastUpdated) return 'Chưa cập nhật'
-    
-    const date = new Date(lastUpdated)
-    const now = new Date()
-    const diffMs = now - date
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    
-    if (diffMins < 1) return 'vừa xong'
-    if (diffMins < 60) return `${diffMins} phút trước`
-    if (diffHours < 24) return `${diffHours} giờ trước`
-    
-    return date.toLocaleString('vi-VN', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
+  if (!lastUpdated) return 'Chưa cập nhật'
+  return getRelativeTime(lastUpdated)
+  } 
     const handleManualUpdate = async () => {
     if (!window.confirm('Cập nhật tỷ giá ngay bây giờ?')) return
     

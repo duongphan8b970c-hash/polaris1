@@ -14,6 +14,7 @@ import Modal from '../../components/common/Modal'
 import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
+import { formatCurrency, formatDate, formatNumber } from '../../utils'
 
 export default function FinancialTracking() {
   const [activeTab, setActiveTab] = useState('transactions')
@@ -148,7 +149,7 @@ const filteredStats = useMemo(() => {
   // Group by date
   const byDate = {}
   displayTransactions.forEach(t => {
-    const date = new Date(t.date).toLocaleDateString('vi-VN')
+    const date = formatDate(t.date)
     if (!byDate[date]) {
       byDate[date] = { income: 0, expense: 0, transfer: 0, count: 0 }
     }
@@ -577,7 +578,7 @@ const filteredStats = useMemo(() => {
           <span className="text-xs uppercase font-semibold opacity-90">Thu nhập</span>
         </div>
         <p className="text-2xl font-bold">
-          +{filteredStats.totalIncome.toLocaleString('vi-VN')}
+          +{formatCurrency(filteredStats.totalIncome)}
         </p>
         <p className="text-green-100 text-xs mt-1">
           {safeTransactions.filter(t => t.type === 'income').length} giao dịch
@@ -593,7 +594,7 @@ const filteredStats = useMemo(() => {
           <span className="text-xs uppercase font-semibold opacity-90">Chi tiêu</span>
         </div>
         <p className="text-2xl font-bold">
-          -{filteredStats.totalExpense.toLocaleString('vi-VN')}
+          -{formatCurrency(filteredStats.totalExpense)}
         </p>
         <p className="text-red-100 text-xs mt-1">
           {safeTransactions.filter(t => t.type === 'expense').length} giao dịch
@@ -609,7 +610,7 @@ const filteredStats = useMemo(() => {
           <span className="text-xs uppercase font-semibold opacity-90">Chuyển khoản</span>
         </div>
         <p className="text-2xl font-bold">
-          {filteredStats.totalTransfer.toLocaleString('vi-VN')}
+          {formatCurrency(filteredStats.totalTransfer)}
         </p>
         <p className="text-blue-100 text-xs mt-1">
           {safeTransactions.filter(t => t.type === 'transfer' && t.amount < 0).length} giao dịch
@@ -629,7 +630,7 @@ const filteredStats = useMemo(() => {
           <span className="text-xs uppercase font-semibold opacity-90">Chênh lệch</span>
         </div>
         <p className="text-2xl font-bold">
-          {filteredStats.netAmount >= 0 ? '+' : ''}{filteredStats.netAmount.toLocaleString('vi-VN')}
+          {filteredStats.netAmount >= 0 ? '+' : ''}{formatCurrency(filteredStats.netAmount)}
         </p>
         <p className={`text-xs mt-1 ${filteredStats.netAmount >= 0 ? 'text-emerald-100' : 'text-orange-100'}`}>
           {filteredStats.count} tổng giao dịch

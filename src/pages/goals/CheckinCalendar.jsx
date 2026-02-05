@@ -6,10 +6,7 @@ import { useSubtasks } from '../../hooks/goals/useSubtasks'
 import { useCheckins } from '../../hooks/goals/useCheckins'
 import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
-
-const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
-const MONTHS = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 
-                'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12']
+import { WEEKDAYS, MONTHS } from '../../constants'
 
 export default function CheckinCalendar() {
   const { goalId } = useParams()
