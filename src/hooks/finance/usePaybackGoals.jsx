@@ -67,7 +67,8 @@ export function usePaybackGoals() {
             progress,
             remaining: Math.max(goal.target_amount - currentPaid, 0),
             is_completed: isCompleted,
-            is_overdue: !isCompleted && new Date(goal.deadline) < new Date()
+            is_overdue: !isCompleted && new Date(goal.deadline) < new Date(),
+            transaction_count: transactions?.length || 0  
           }
         })
       )
