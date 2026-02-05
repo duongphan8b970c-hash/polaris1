@@ -14,35 +14,34 @@ export function useGoals() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      // ✅ BỎ query goal_categories
-      const { data, error: fetchError } = await supabase
+      // ✅ Get goals
+      const { data: goalsData, error: goalsError } = await supabase
         .from('goals')
         .select('*')
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
 
-      if (fetchError) throw fetchError
+      if (goalsError) throw goalsError
 
-      // Calculate metrics for each goal
+      // ✅ Calculate metrics for each goal using TASKS (not projects)
       const goalsWithMetrics = await Promise.all(
-        (data || []).map(async (goal) => {
-          // ✅ Count projects
-          const { data: projectsData } = await supabase
-            .from('projects')
+        (goalsData || []).map(async (goal) => {
+          // Get all tasks for this goal DIRECTLY
+          const { data: tasksData, error: tasksError } = await supabase
+            .from('tasks')
             .select('id, status')
-            .eq('goal_id', goal.id)
+            .eq('goal_id', goal.id)  // ✅ Direct link to goal
             .is('deleted_at', null)
 
-          // ✅ Get all tasks for this goal through projects
-          const { data: tasksData } = await supabase
-            .from('tasks')
-            .select(`
-              id,
-              status,
-              projects!inner(goal_id)
-            `)
-            .eq('projects.goal_id', goal.id)
-            .is('deleted_at', null)
+          if (tasksError) {
+            console.error('Error fetching tasks for goal:', goal.id, tasksError)
+            return {
+              ...goal,
+              total_tasks: 0,
+              completed_tasks: 0,
+              progress: 0
+            }
+          }
 
           const totalTasks = tasksData?.length || 0
           const completedTasks = tasksData?.filter(t => t.status === 'completed').length || 0
@@ -52,8 +51,7 @@ export function useGoals() {
             ...goal,
             total_tasks: totalTasks,
             completed_tasks: completedTasks,
-            progress: progress.toFixed(2),
-            projects_count: projectsData?.length || 0
+            progress: progress.toFixed(2)
           }
         })
       )
@@ -62,6 +60,7 @@ export function useGoals() {
     } catch (err) {
       console.error('Error fetching goals:', err)
       setError(err.message)
+      setGoals([])  // ✅ Set empty array on error
     } finally {
       setLoading(false)
     }
