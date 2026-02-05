@@ -2,7 +2,7 @@ import { formatDate } from '../../lib/utils'
 import { useState, useEffect } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
 import { useCategories } from '../../hooks/finance/useCategories'
-import { useCategories } from '../../hooks/finance/usePaybackGoals'
+import { usePaybackGoals } from '../../hooks/finance/usePaybackGoals'
 
 
 export default function TransactionForm({ transaction, onSubmit, onCancel, loading }) {
@@ -12,7 +12,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
   const [formData, setFormData] = useState({
     type: transaction?.type || 'expense',
     wallet_id: transaction?.wallet_id || '',
-    to_wallet_id: transaction?.to_wallet_id || '', // ✅ NEW: For transfers
+    to_wallet_id: transaction?.to_wallet_id || '',
     category_id: transaction?.category_id || '',
     amount: transaction?.amount || '',
     description: transaction?.description || '',

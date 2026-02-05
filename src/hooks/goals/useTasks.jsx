@@ -19,15 +19,14 @@ export function useTasks(projectId = null, filters = {}) {
         .select(`
           *,
           project:projects(
-            id,
-            name,
-            category:goal_categories(
               id,
               name,
+              goal_id,
               goal:goals(
                 id,
-                name
-              )
+                name,
+                icon,
+                color
             )
           ),
           subtasks(
