@@ -10,7 +10,7 @@ export default function Sidebar({ isOpen, onClose }) {
     if (window.innerWidth < 1024) {
       onClose()
     }
-  }, [location.pathname])
+  }, [location.pathname],onClose)
 
   // ✅ NEW: Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function Sidebar({ isOpen, onClose }) {
           )
         },
         {
-          name: 'Trả nợ',
+          name: 'Payback',
           path: '/payback-goals',
           icon: (
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

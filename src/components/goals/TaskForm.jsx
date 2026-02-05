@@ -4,7 +4,6 @@ const PRIORITY_OPTIONS = [
   { value: 'low', label: 'Thấp', icon: '🔵' },
   { value: 'medium', label: 'Trung bình', icon: '🟡' },
   { value: 'high', label: 'Cao', icon: '🟠' },
-  { value: 'urgent', label: 'Khẩn cấp', icon: '🔴' },
 ]
 
 const STATUS_OPTIONS = [
