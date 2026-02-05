@@ -35,10 +35,25 @@ export function useSubtasks(taskId) {
     }
   }
 
+  // ✅ FIXED: createSubtask
   const createSubtask = async (subtaskData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
+
+      // Get current max display_order
+      const { data: existingSubtasks, error: fetchError } = await supabase
+        .from('subtasks')
+        .select('display_order')
+        .eq('task_id', taskId)
+        .is('deleted_at', null)
+        .order('display_order', { ascending: false })
+        .limit(1)
+
+      let nextOrder = 0
+      if (!fetchError && existingSubtasks && existingSubtasks.length > 0) {
+        nextOrder = existingSubtasks[0].display_order + 1
+      }
 
       const { data, error: createError } = await supabase
         .from('subtasks')
@@ -46,18 +61,21 @@ export function useSubtasks(taskId) {
           user_id: user.id,
           task_id: taskId,
           title: subtaskData.title,
-          description: subtaskData.description,
-          display_order: subtasks.length
+          description: subtaskData.description || null,
+          display_order: nextOrder
         }])
         .select()
         .single()
 
-      if (createError) throw createError
+      if (createError) {
+        console.error('❌ Create subtask error:', createError)
+        throw createError
+      }
 
       await fetchSubtasks()
       return { success: true, data }
     } catch (err) {
-      console.error('Error creating subtask:', err)
+      console.error('❌ Error creating subtask:', err)
       return { success: false, error: err.message }
     }
   }
@@ -85,17 +103,22 @@ export function useSubtasks(taskId) {
     }
   }
 
+  // ✅ FIXED: toggleSubtask
   const toggleSubtask = async (id, currentStatus) => {
     try {
+      const newStatus = currentStatus === true ? false : true
+      
       const updateData = {
-        is_completed: !currentStatus
+        is_completed: newStatus
       }
 
-      if (!currentStatus) {
+      if (newStatus === true) {
         updateData.completed_date = new Date().toISOString()
       } else {
         updateData.completed_date = null
       }
+
+      console.log('🔄 Toggling subtask:', { id, currentStatus, newStatus })
 
       const { data, error: updateError } = await supabase
         .from('subtasks')
@@ -104,12 +127,16 @@ export function useSubtasks(taskId) {
         .select()
         .single()
 
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('❌ Toggle error:', updateError)
+        throw updateError
+      }
 
+      console.log('✅ Subtask toggled successfully')
       await fetchSubtasks()
       return { success: true, data }
     } catch (err) {
-      console.error('Error toggling subtask:', err)
+      console.error('❌ Error toggling subtask:', err)
       return { success: false, error: err.message }
     }
   }
