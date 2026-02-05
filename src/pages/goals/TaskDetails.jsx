@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useTasks } from '../hooks/goals/useTasks'
-import { useSubtasks } from '../hooks/goals/useSubtasks'
-import { useGoals } from '../hooks/goals/useGoals'
-import SubtaskList from '../components/goals/SubtaskList'
-import TaskForm from '../components/goals/TaskForm'
-import Modal from '../components/common/Modal'
-import Loading from '../components/common/Loading'
+import { useTasks } from '../../hooks/goals/useTasks'
+import { useSubtasks } from '../../hooks/goals/useSubtasks'
+import { useGoals } from '../../hooks/goals/useGoals'
+import SubtaskList from '../../components/goals/SubtaskList'
+import TaskForm from '../../components/goals/TaskForm'
+import Modal from '../../components/common/Modal'
+import Loading from '../../components/common/Loading'
 
 const STATUS_OPTIONS = [
   { value: 'todo', label: 'Cần làm', icon: '📝', color: 'gray' },
