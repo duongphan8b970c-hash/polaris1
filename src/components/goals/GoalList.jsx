@@ -1,7 +1,10 @@
 import GoalCard from './GoalCard'
 
 export default function GoalList({ goals, onEdit, onDelete, onComplete, onGoalClick }) {
-  if (goals.length === 0) {
+  // ✅ FIX: Ensure goals is always an array
+  const safeGoals = Array.isArray(goals) ? goals : []
+  
+  if (safeGoals.length === 0) {
     return (
       <div className="card text-center py-16">
         <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -17,9 +20,9 @@ export default function GoalList({ goals, onEdit, onDelete, onComplete, onGoalCl
     )
   }
 
-  // Separate active and completed goals
-  const activeGoals = goals.filter(g => g.status === 'active')
-  const completedGoals = goals.filter(g => g.status === 'completed')
+  // ✅ FIX: Use safeGoals instead of goals
+  const activeGoals = safeGoals.filter(g => g.status === 'active')
+  const completedGoals = safeGoals.filter(g => g.status === 'completed')
 
   return (
     <div className="space-y-6">
