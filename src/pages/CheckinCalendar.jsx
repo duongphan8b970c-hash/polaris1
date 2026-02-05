@@ -92,22 +92,62 @@ export default function CheckinCalendar() {
     return dayCheckins.some(c => c.is_completed)
   }
 
-  // ✅ NEW: Calculate progress based on target days
+  // Calculate progress based on goal settings
   const calculateProgress = () => {
-    const targetDays = goal?.checkin_target_days || lastDay.getDate()
-    const completedDays = checkins.filter(c => c.is_completed).length
-    const progress = (completedDays / targetDays) * 100
+    const daysInMonth = lastDay.getDate()
+    let targetDays = daysInMonth
     
+    if (goal?.checkin_target_days) {
+      targetDays = goal.checkin_target_days
+    } else if (goal?.checkin_frequency) {
+      switch (goal.checkin_frequency) {
+        case 'daily':
+          targetDays = daysInMonth
+          break
+
+        case 'weekdays':
+          let weekdayCount = 0
+          const year = currentDate.getFullYear()
+          const month = currentDate.getMonth()
+          for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day)
+            const dayOfWeek = date.getDay()
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+              weekdayCount++
+            }
+          }
+          targetDays = weekdayCount
+          break
+
+        case 'weekly':
+          const daysPerWeek = goal.checkin_days_per_week || 7
+          const weeksInMonth = daysInMonth / 7
+          targetDays = Math.round(daysPerWeek * weeksInMonth)
+          break
+
+        case 'custom':
+          targetDays = goal.checkin_target_days || daysInMonth
+          break
+
+        default:
+          targetDays = daysInMonth
+      }
+    }
+
+    const completedDays = checkins.filter(c => c.is_completed).length
+    const progress = targetDays > 0 ? (completedDays / targetDays) * 100 : 0
+    const remaining = Math.max(0, targetDays - completedDays)
+
     return {
       targetDays,
       completedDays,
-      progress: Math.min(progress, 100).toFixed(1)
+      progress: Math.min(progress, 100).toFixed(1),
+      remaining
     }
   }
 
   const progressStats = calculateProgress()
 
-  // ✅ NEW: Handle date click - Create OR Delete checkin
   const handleDateClick = (date) => {
     if (!date) return
     
@@ -115,18 +155,15 @@ export default function CheckinCalendar() {
     const existingCheckin = dayCheckins.find(c => c.is_completed)
     
     if (existingCheckin) {
-      // Already checked in → Show delete modal
       setSelectedCheckin(existingCheckin)
       setSelectedDate(date)
       setShowDeleteModal(true)
     } else {
-      // Not checked in → Show create modal
       setSelectedDate(date)
       setShowCheckinModal(true)
     }
   }
 
-  // Create checkin
   const handleCreateCheckin = async () => {
     if (!selectedDate) return
     
@@ -152,7 +189,6 @@ export default function CheckinCalendar() {
     }
   }
 
-  // ✅ NEW: Delete checkin
   const handleDeleteCheckin = async () => {
     if (!selectedCheckin) return
     
@@ -168,7 +204,6 @@ export default function CheckinCalendar() {
     }
   }
 
-  // Navigate months
   const goToPreviousMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))
   }
@@ -222,21 +257,41 @@ export default function CheckinCalendar() {
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900">{goal.name}</h1>
               <p className="text-gray-600">Lịch Checkin & Theo Dõi Tiến Độ</p>
+              
+              {/* ✅ NEW: Checkin frequency info */}
+              {goal.is_checkin_enabled && goal.checkin_frequency && (
+                <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-full text-sm border border-gray-200">
+                  <span className="text-gray-600">📅</span>
+                  <span className="text-gray-700 font-medium">
+                    {goal.checkin_frequency === 'daily' && 'Checkin mỗi ngày'}
+                    {goal.checkin_frequency === 'weekdays' && 'Checkin T2-T6'}
+                    {goal.checkin_frequency === 'weekly' && `${goal.checkin_days_per_week} ngày/tuần`}
+                    {goal.checkin_frequency === 'custom' && `${goal.checkin_target_days} ngày/tháng`}
+                  </span>
+                </div>
+              )}
             </div>
             
-            {/* ✅ Progress Stats */}
+            {/* ✅ ENHANCED: Progress Stats */}
             <div className="text-right">
-              <p className="text-sm text-gray-600 mb-1">Tiến độ tháng này</p>
+              <p className="text-sm text-gray-600 mb-1">
+                Tiến độ tháng {currentDate.getMonth() + 1}/{currentDate.getFullYear()}
+              </p>
               <p className="text-3xl font-bold" style={{ color: goal.color }}>
                 {progressStats.progress}%
               </p>
               <p className="text-xs text-gray-600 mt-1">
                 {progressStats.completedDays} / {progressStats.targetDays} ngày
               </p>
+              {progressStats.remaining > 0 && (
+                <p className="text-xs font-medium mt-1" style={{ color: goal.color }}>
+                  Còn {progressStats.remaining} ngày
+                </p>
+              )}
             </div>
           </div>
           
-          {/* ✅ Progress Bar */}
+          {/* Progress Bar */}
           <div className="mt-4">
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div 
