@@ -14,6 +14,7 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
     icon: '🎯',
     color: '#3b82f6',
     category: 'personal',
+    start_date: new Date().toISOString().split('T')[0],  // ✅ ADD
     target_date: '',
     priority: 'medium',
     is_checkin_enabled: false,
@@ -30,6 +31,7 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
         icon: goal.icon || '🎯',
         color: goal.color || '#3b82f6',
         category: goal.category || 'personal',
+        start_date: goal.start_date || new Date().toISOString().split('T')[0],  // ✅ ADD
         target_date: goal.target_date || '',
         priority: goal.priority || 'medium',
         is_checkin_enabled: goal.is_checkin_enabled || false,
@@ -48,8 +50,8 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
     }))
   }
 
-  // ✅ Calculate target days based on frequency
-  const calculateTargetDays = () => {
+  // ✅ IMPROVED: Calculate target days for preview only
+  const calculateTargetDaysPreview = () => {
     const today = new Date()
     const year = today.getFullYear()
     const month = today.getMonth()
@@ -60,7 +62,6 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
         return daysInMonth
 
       case 'weekdays':
-        // Count weekdays (Mon-Fri) in current month
         let weekdayCount = 0
         for (let day = 1; day <= daysInMonth; day++) {
           const date = new Date(year, month, day)
@@ -72,7 +73,6 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
         return weekdayCount
 
       case 'weekly':
-        // X days per week * ~4.3 weeks
         const weeksInMonth = daysInMonth / 7
         return Math.round(formData.checkin_days_per_week * weeksInMonth)
 
@@ -84,7 +84,7 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
     }
   }
 
-  const targetDays = calculateTargetDays()
+  const previewDays = calculateTargetDaysPreview()
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -94,12 +94,26 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
       return
     }
 
-    // ✅ Add calculated target days
-    const submitData = {
-      ...formData,
-      checkin_target_days: formData.is_checkin_enabled ? targetDays : null
+    // ✅ FIX: Don't override user's custom input with calculated value
+    let submitData = { ...formData }
+
+    // Only calculate target_days if NOT custom or if custom but empty
+    if (formData.is_checkin_enabled) {
+      if (formData.checkin_frequency === 'custom') {
+        // Keep user's input for custom
+        submitData.checkin_target_days = parseInt(formData.checkin_target_days) || null
+      } else {
+        // For daily/weekdays/weekly, store frequency settings but not fixed target
+        // The CheckinCalendar will calculate dynamically each month
+        submitData.checkin_target_days = null
+      }
+    } else {
+      submitData.checkin_target_days = null
+      submitData.checkin_frequency = 'daily'
+      submitData.checkin_days_per_week = 7
     }
 
+    console.log('📤 Submitting goal data:', submitData)
     onSubmit(submitData)
   }
 
@@ -212,19 +226,37 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
         </div>
       </div>
 
-      {/* Target Date */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Ngày hoàn thành dự kiến
-        </label>
-        <input
-          type="date"
-          name="target_date"
-          value={formData.target_date}
-          onChange={handleChange}
-          className="input"
-          disabled={loading}
-        />
+      {/* ✅ NEW: Start Date & Target Date */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Ngày bắt đầu <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            name="start_date"
+            value={formData.start_date}
+            onChange={handleChange}
+            className="input"
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Ngày hoàn thành dự kiến
+          </label>
+          <input
+            type="date"
+            name="target_date"
+            value={formData.target_date}
+            onChange={handleChange}
+            className="input"
+            min={formData.start_date}  // ✅ Can't be before start date
+            disabled={loading}
+          />
+        </div>
       </div>
 
       {/* ✅ CHECKIN SETTINGS */}
@@ -319,8 +351,13 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
             {/* Preview */}
             <div className="bg-blue-100 border border-blue-300 rounded-lg p-3">
               <p className="text-sm text-blue-900">
-                <strong>Tháng này:</strong> Cần checkin <strong>{targetDays} ngày</strong>
+                <strong>Tháng này:</strong> Cần checkin <strong>{previewDays} ngày</strong>
               </p>
+              {formData.checkin_frequency !== 'custom' && (
+                <p className="text-xs text-gray-600 mt-1">
+                  💡 Số ngày sẽ tự động tính lại mỗi tháng
+                </p>
+              )}
             </div>
           </div>
         )}

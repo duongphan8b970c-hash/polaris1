@@ -74,8 +74,11 @@ export default function TaskDetails() {
     }
   }
 
-  const handleToggleSubtask = async (subtask) => {
-    await toggleSubtask(subtask.id, !subtask.is_completed)
+  const handleToggleSubtask = async (id, currentStatus) => {
+  const result = await toggleSubtask(id, currentStatus)
+  if (!result.success) {
+    alert('Lỗi: ' + result.error)
+    }
   }
 
   const handleUpdateSubtask = async (id, data) => {
