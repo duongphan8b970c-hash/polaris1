@@ -2,7 +2,7 @@ import { formatDate } from '../../lib/utils'
 import { useState, useEffect } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
 import { useCategories } from '../../hooks/finance/useCategories'
-import { usePaybackGoals } from '../hooks/goals/usePaybackGoals'
+import { usePaybackGoals } from '../hooks/finance/usePaybackGoals'
 
 
 export default function TransactionForm({ transaction, onSubmit, onCancel, loading }) {
