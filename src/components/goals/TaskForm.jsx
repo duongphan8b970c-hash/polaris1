@@ -8,15 +8,15 @@ const PRIORITY_OPTIONS = [
 ]
 
 const STATUS_OPTIONS = [
-  { value: 'todo', label: 'Cần làm', icon: '⏳' },
+  { value: 'todo', label: 'Cần làm', icon: '📝' },
   { value: 'in_progress', label: 'Đang làm', icon: '⏳' },
   { value: 'completed', label: 'Hoàn thành', icon: '✅' },
   { value: 'blocked', label: 'Bị chặn', icon: '🚫' },
 ]
 
-export default function TaskForm({ task, projects, onSubmit, onCancel, loading }) {
+// ✅ FIX: Remove "projects" prop, add "goalId"
+export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) {
   const [formData, setFormData] = useState({
-    project_id: '',
     title: '',
     description: '',
     start_date: '',
@@ -32,7 +32,6 @@ export default function TaskForm({ task, projects, onSubmit, onCancel, loading }
   useEffect(() => {
     if (task) {
       setFormData({
-        project_id: task.project_id,
         title: task.title,
         description: task.description || '',
         start_date: task.start_date || '',
@@ -73,10 +72,7 @@ export default function TaskForm({ task, projects, onSubmit, onCancel, loading }
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    if (!formData.project_id) {
-      alert('Vui lòng chọn dự án')
-      return
-    }
+    // ✅ REMOVED: project_id validation
 
     if (!formData.title.trim()) {
       alert('Vui lòng nhập tên công việc')
@@ -93,32 +89,7 @@ export default function TaskForm({ task, projects, onSubmit, onCancel, loading }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Project */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Dự án <span className="text-red-500">*</span>
-        </label>
-        <select
-          name="project_id"
-          value={formData.project_id}
-          onChange={handleChange}
-          className="input"
-          required
-          disabled={loading || task}
-        >
-          <option value="">Chọn dự án</option>
-          {projects.map(project => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </select>
-        {task && (
-          <p className="text-xs text-amber-600 mt-1">
-            ⚠️ Không thể thay đổi dự án
-          </p>
-        )}
-      </div>
+      {/* ✅ REMOVED: Project selector - Not needed anymore */}
 
       {/* Title */}
       <div>
@@ -217,7 +188,7 @@ export default function TaskForm({ task, projects, onSubmit, onCancel, loading }
         {/* Due Date */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Ngày dự kiến hoàn thành <span className="text-red-500">*</span>
+            Ngày dự kiến hoàn thành
           </label>
           <input
             type="date"
@@ -225,7 +196,6 @@ export default function TaskForm({ task, projects, onSubmit, onCancel, loading }
             value={formData.due_date}
             onChange={handleChange}
             className="input"
-            required
             disabled={loading}
           />
         </div>
