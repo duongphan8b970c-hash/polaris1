@@ -88,7 +88,7 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       {/* ✅ REMOVED: Project selector - Not needed anymore */}
 
       {/* Title */}
