@@ -16,11 +16,12 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
   const statusInfo = STATUS_INFO[task.status] || STATUS_INFO.todo
   const priorityInfo = PRIORITY_INFO[task.priority] || PRIORITY_INFO.medium
   const progress = parseFloat(task.progress) || 0
+  const navigate = useNavigate()
 
   return (
     <div 
       className="card hover:shadow-lg transition-all cursor-pointer"
-      onClick={onClick}
+      onClick={() => navigate(`/goals/${task.goal_id}/tasks/${task.id}`)}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
@@ -124,20 +125,28 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
       )}
 
       {/* Actions */}
-      <div className="flex gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-end gap-2 ml-7">
         <button
-          onClick={() => onEdit(task)}
-          className="flex-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium transition-colors"
+          onClick={(e) => {
+            e.stopPropagation() // Prevent card click
+            onEdit(task)
+          }}
+          className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+          title="Sửa"
         >
-          Sửa
+          {/* Edit icon */}
         </button>
         <button
-          onClick={() => onDelete(task)}
-          className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-medium transition-colors"
+          onClick={(e) => {
+            e.stopPropagation() // Prevent card click
+            onDelete(task)
+          }}
+          className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+          title="Xóa"
         >
-          Xóa
-        </button>
+          {/* Delete icon */}
+          </button>
+        </div>
       </div>
-    </div>
-  )
-}
+    )
+  }
