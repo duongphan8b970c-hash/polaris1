@@ -88,58 +88,31 @@ export default function Dashboard() {
     })
   }
 
-  const handleManualUpdate = async () => {
+    const handleManualUpdate = async () => {
     if (!window.confirm('Cập nhật tỷ giá ngay bây giờ?')) return
     
     setUpdatingRates(true)
     setUpdateResult(null)
     
     try {
-      const response = await fetch('/api/update-rates', {
-        method: 'GET',
-        headers: {
-          'Authorization': 'Bearer db5d50fd8d3e81bc2d4fbcf3642ff0a4d0f6b013eca79e32744e2eb37e0ad1b6'
-        }
+      // ✅ Call Supabase function directly
+      const { data, error } = await supabase.rpc('update_exchange_rates')
+      
+      if (error) throw error
+      
+      setUpdateResult({
+        success: true,
+        message: `✅ Đã cập nhật ${data.updated_currencies} tỷ giá!`
       })
       
-      const contentType = response.headers.get('content-type')
+      await fetchData()
       
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text()
-        console.error('Non-JSON response:', text.substring(0, 300))
-        
-        setUpdateResult({
-          success: false,
-          message: '❌ Server error'
-        })
-        return
-      }
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}`)
-      }
-      
-      if (data.success) {
-        setUpdateResult({
-          success: true,
-          message: `✅ Đã cập nhật ${data.updated_currencies} tỷ giá!`
-        })
-        
-        await fetchData()
-        
-        setTimeout(() => {
-          window.location.reload()
-        }, 2000)
-      } else {
-        setUpdateResult({
-          success: false,
-          message: `❌ ${data.error || 'Lỗi'}`
-        })
-      }
+      setTimeout(() => {
+        setUpdateResult(null)
+      }, 3000)
       
     } catch (error) {
+      console.error('Error updating exchange rates:', error)
       setUpdateResult({
         success: false,
         message: `❌ ${error.message}`
@@ -148,7 +121,6 @@ export default function Dashboard() {
       setUpdatingRates(false)
     }
   }
-
   // Convert trade P&L to VND
   useEffect(() => {
     const convertTradePL = async () => {

@@ -22,7 +22,12 @@ export default function CheckinCalendar() {
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedTask, setSelectedTask] = useState(null)
   const [selectedSubtask, setSelectedSubtask] = useState(null)
+  
+  // ✅ NEW: Modal states
   const [showCheckinModal, setShowCheckinModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [selectedCheckin, setSelectedCheckin] = useState(null)
+  
   const [checkinNotes, setCheckinNotes] = useState('')
   
   const { subtasks } = useSubtasks(selectedTask?.id)
@@ -36,7 +41,13 @@ export default function CheckinCalendar() {
     to: lastDay.toISOString().split('T')[0]
   }
   
-  const { checkins, loading: checkinsLoading, createCheckin, toggleCheckin, refetch } = useCheckins(goalId, dateRange)
+  const { 
+    checkins, 
+    loading: checkinsLoading, 
+    createCheckin, 
+    deleteCheckin,  // ✅ NEW
+    refetch 
+  } = useCheckins(goalId, dateRange)
   
   const goal = goals.find(g => g.id === goalId)
 
@@ -81,19 +92,41 @@ export default function CheckinCalendar() {
     return dayCheckins.some(c => c.is_completed)
   }
 
-  // Get checkin count for date
-  const getCheckinCount = (date) => {
-    return getCheckinsForDate(date).length
+  // ✅ NEW: Calculate progress based on target days
+  const calculateProgress = () => {
+    const targetDays = goal?.checkin_target_days || lastDay.getDate()
+    const completedDays = checkins.filter(c => c.is_completed).length
+    const progress = (completedDays / targetDays) * 100
+    
+    return {
+      targetDays,
+      completedDays,
+      progress: Math.min(progress, 100).toFixed(1)
+    }
   }
 
-  // Handle date click
+  const progressStats = calculateProgress()
+
+  // ✅ NEW: Handle date click - Create OR Delete checkin
   const handleDateClick = (date) => {
     if (!date) return
-    setSelectedDate(date)
-    setShowCheckinModal(true)
+    
+    const dayCheckins = getCheckinsForDate(date)
+    const existingCheckin = dayCheckins.find(c => c.is_completed)
+    
+    if (existingCheckin) {
+      // Already checked in → Show delete modal
+      setSelectedCheckin(existingCheckin)
+      setSelectedDate(date)
+      setShowDeleteModal(true)
+    } else {
+      // Not checked in → Show create modal
+      setSelectedDate(date)
+      setShowCheckinModal(true)
+    }
   }
 
-  // Handle create checkin
+  // Create checkin
   const handleCreateCheckin = async () => {
     if (!selectedDate) return
     
@@ -119,10 +152,20 @@ export default function CheckinCalendar() {
     }
   }
 
-  // Handle toggle checkin
-  const handleToggleCheckin = async (checkin) => {
-    await toggleCheckin(checkin.id, checkin.is_completed)
-    refetch()
+  // ✅ NEW: Delete checkin
+  const handleDeleteCheckin = async () => {
+    if (!selectedCheckin) return
+    
+    const result = await deleteCheckin(selectedCheckin.id)
+    
+    if (result.success) {
+      setShowDeleteModal(false)
+      setSelectedCheckin(null)
+      setSelectedDate(null)
+      refetch()
+    } else {
+      alert('Lỗi: ' + result.error)
+    }
   }
 
   // Navigate months
@@ -136,33 +179,6 @@ export default function CheckinCalendar() {
 
   const goToToday = () => {
     setCurrentDate(new Date())
-  }
-
-  // Calculate stats
-  const stats = {
-    totalDays: calendarDays.filter(d => d !== null).length,
-    checkedDays: calendarDays.filter(d => d && hasCompletedCheckin(d)).length,
-    currentStreak: calculateCurrentStreak(),
-    completionRate: 0
-  }
-  stats.completionRate = stats.totalDays > 0 ? (stats.checkedDays / stats.totalDays) * 100 : 0
-
-  function calculateCurrentStreak() {
-    let streak = 0
-    const today = new Date()
-    const sortedDays = calendarDays
-      .filter(d => d && d <= today)
-      .sort((a, b) => b - a)
-    
-    for (let day of sortedDays) {
-      if (hasCompletedCheckin(day)) {
-        streak++
-      } else {
-        break
-      }
-    }
-    
-    return streak
   }
 
   if (goalsLoading || checkinsLoading) {
@@ -201,39 +217,35 @@ export default function CheckinCalendar() {
             borderLeft: `4px solid ${goal.color}`
           }}
         >
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-4">
             <span className="text-4xl">{goal.icon}</span>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900">{goal.name}</h1>
               <p className="text-gray-600">Lịch Checkin & Theo Dõi Tiến Độ</p>
             </div>
+            
+            {/* ✅ Progress Stats */}
+            <div className="text-right">
+              <p className="text-sm text-gray-600 mb-1">Tiến độ tháng này</p>
+              <p className="text-3xl font-bold" style={{ color: goal.color }}>
+                {progressStats.progress}%
+              </p>
+              <p className="text-xs text-gray-600 mt-1">
+                {progressStats.completedDays} / {progressStats.targetDays} ngày
+              </p>
+            </div>
           </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg p-3 shadow-sm">
-              <p className="text-xs text-gray-600 mb-1">Số ngày checkin</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {stats.checkedDays}/{stats.totalDays}
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-3 shadow-sm">
-              <p className="text-xs text-gray-600 mb-1">Tỷ lệ hoàn thành</p>
-              <p className="text-2xl font-bold text-green-600">
-                {stats.completionRate.toFixed(0)}%
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-3 shadow-sm">
-              <p className="text-xs text-gray-600 mb-1">Chuỗi hiện tại</p>
-              <p className="text-2xl font-bold text-orange-600">
-                {stats.currentStreak} 🔥
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-3 shadow-sm">
-              <p className="text-xs text-gray-600 mb-1">Tổng checkins</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {checkins.filter(c => c.is_completed).length}
-              </p>
+          
+          {/* ✅ Progress Bar */}
+          <div className="mt-4">
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div 
+                className="h-3 rounded-full transition-all duration-500"
+                style={{ 
+                  width: `${progressStats.progress}%`,
+                  backgroundColor: goal.color 
+                }}
+              />
             </div>
           </div>
         </div>
@@ -296,7 +308,6 @@ export default function CheckinCalendar() {
               date.toDateString() === new Date().toDateString()
             
             const hasCheckin = date && hasCompletedCheckin(date)
-            const checkinCount = date ? getCheckinCount(date) : 0
             const isPast = date && date < new Date().setHours(0, 0, 0, 0)
             
             return (
@@ -305,7 +316,7 @@ export default function CheckinCalendar() {
                 onClick={() => handleDateClick(date)}
                 disabled={!date}
                 className={`
-                  aspect-square p-2 rounded-lg transition-all relative
+                  aspect-square p-2 rounded-lg transition-all relative group
                   ${!date ? 'invisible' : ''}
                   ${isToday ? 'ring-2 ring-primary-500' : ''}
                   ${hasCheckin 
@@ -326,17 +337,19 @@ export default function CheckinCalendar() {
                     </div>
                     
                     {hasCheckin && (
-                      <div className="absolute top-1 right-1">
-                        <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    )}
-                    
-                    {checkinCount > 1 && (
-                      <div className="absolute bottom-1 right-1 text-xs bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                        {checkinCount}
-                      </div>
+                      <>
+                        {/* ✅ Checkmark */}
+                        <div className="absolute top-1 right-1">
+                          <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        
+                        {/* ✅ Hover hint */}
+                        <div className="absolute inset-0 bg-red-500 bg-opacity-0 group-hover:bg-opacity-10 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-xs text-red-600 font-semibold">Hủy</span>
+                        </div>
+                      </>
                     )}
                   </>
                 )}
@@ -344,85 +357,9 @@ export default function CheckinCalendar() {
             )
           })}
         </div>
-
-        {/* Legend */}
-        <div className="flex items-center gap-4 mt-6 pt-4 border-t text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-green-100 border-2 border-green-500 rounded"></div>
-            <span className="text-gray-600">Đã checkin</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-white border-2 border-gray-200 rounded"></div>
-            <span className="text-gray-600">Chưa checkin</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 ring-2 ring-primary-500 rounded"></div>
-            <span className="text-gray-600">Hôm nay</span>
-          </div>
-        </div>
       </div>
 
-      {/* Checkin List for Selected Date */}
-      {selectedDate && (
-        <div className="card mt-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">
-            Checkin ngày {selectedDate.getDate()}/{selectedDate.getMonth() + 1}/{selectedDate.getFullYear()}
-          </h3>
-          
-          {getCheckinsForDate(selectedDate).length > 0 ? (
-            <div className="space-y-3">
-              {getCheckinsForDate(selectedDate).map(checkin => (
-                <div
-                  key={checkin.id}
-                  className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
-                >
-                  <button
-                    onClick={() => handleToggleCheckin(checkin)}
-                    className="flex-shrink-0 mt-0.5"
-                  >
-                    {checkin.is_completed ? (
-                      <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    ) : (
-                      <svg className="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )}
-                  </button>
-                  
-                  <div className="flex-1">
-                    {checkin.task && (
-                      <p className="font-medium text-gray-900">
-                        📋 {checkin.task.title}
-                      </p>
-                    )}
-                    {checkin.subtask && (
-                      <p className="text-sm text-gray-600">
-                        └ {checkin.subtask.title}
-                      </p>
-                    )}
-                    {!checkin.task && !checkin.subtask && (
-                      <p className="font-medium text-gray-900">
-                        🎯 Checkin chung
-                      </p>
-                    )}
-                    {checkin.notes && (
-                      <p className="text-sm text-gray-600 mt-1">{checkin.notes}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>Chưa có checkin nào cho ngày này</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Checkin Modal */}
+      {/* ✅ CREATE Checkin Modal */}
       <Modal
         isOpen={showCheckinModal}
         onClose={() => {
@@ -513,6 +450,61 @@ export default function CheckinCalendar() {
               className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
             >
               ✓ Checkin
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ✅ DELETE Checkin Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false)
+          setSelectedCheckin(null)
+          setSelectedDate(null)
+        }}
+        title="Hủy checkin"
+      >
+        <div className="space-y-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex gap-3">
+              <svg className="w-6 h-6 text-yellow-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <h3 className="font-semibold text-yellow-900 mb-1">
+                  Xác nhận hủy checkin
+                </h3>
+                <p className="text-sm text-yellow-700">
+                  Bạn có chắc muốn hủy checkin ngày {selectedDate?.getDate()}/{selectedDate?.getMonth() + 1}?
+                  Hành động này không thể hoàn tác.
+                </p>
+                {selectedCheckin?.notes && (
+                  <div className="mt-3 p-2 bg-white rounded border border-yellow-300">
+                    <p className="text-xs text-gray-600 mb-1">Ghi chú:</p>
+                    <p className="text-sm text-gray-900">{selectedCheckin.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => {
+                setShowDeleteModal(false)
+                setSelectedCheckin(null)
+                setSelectedDate(null)
+              }}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+            >
+              Giữ lại
+            </button>
+            <button
+              onClick={handleDeleteCheckin}
+              className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+            >
+              Hủy checkin
             </button>
           </div>
         </div>

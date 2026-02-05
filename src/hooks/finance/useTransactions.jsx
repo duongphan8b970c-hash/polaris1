@@ -76,13 +76,14 @@ export function useTransactions(filters = {}) {
     // TRANSFER LOGIC WITH CURRENCY CONVERSION
     // ========================================
     if (transactionData.type === 'transfer') {
-      const { wallet_id, to_wallet_id, amount, description, date } = transactionData
+      const { wallet_id, to_wallet_id, amount, description, date, time } = transactionData
       const transferAmount = Math.abs(parseFloat(amount))
 
       console.log('💸 Starting transfer:', {
         from: wallet_id,
         to: to_wallet_id,
-        amount: transferAmount
+        amount: transferAmount,
+        time: time
       })
 
       // ✅ 1. GET SOURCE WALLET WITH CURRENT BALANCE
@@ -190,6 +191,7 @@ export function useTransactions(filters = {}) {
         amount: -transferAmount, // Source currency amount (negative)
         description: description || `Chuyển → ${destWallet.name}${conversionNote}`,
         date: date,
+        time: time || '12:00:00',
         category_id: null,
         transfer_pair_id: transferPairId
       }
@@ -215,6 +217,7 @@ export function useTransactions(filters = {}) {
         amount: convertedAmount, // Converted amount (positive)
         description: description || `Nhận ← ${sourceWallet.name}${conversionNote}`,
         date: date,
+        time: time || '12:00:00',
         category_id: null,
         transfer_pair_id: transferPairId
       }
@@ -296,6 +299,8 @@ export function useTransactions(filters = {}) {
               : Math.abs(parseFloat(transactionData.amount)),
             description: transactionData.description,
             date: transactionData.date,
+            time: transactionData.time || '12:00:00',
+            payback_goal_id: transactionData.payback_goal_id || null,
             to_wallet_id: null,
             transfer_pair_id: null
           })
@@ -356,6 +361,8 @@ export function useTransactions(filters = {}) {
             : Math.abs(parseFloat(transactionData.amount)),
           description: transactionData.description,
           date: transactionData.date,
+          time: transactionData.time || '12:00:00',  
+          payback_goal_id: transactionData.payback_goal_id || null,
         })
         .eq('id', id)
 

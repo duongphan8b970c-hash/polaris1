@@ -169,6 +169,8 @@ export function useCheckins(goalId = null, dateRange = {}) {
     return streak
   }
 
+
+  
   useEffect(() => {
     fetchCheckins()
   }, [goalId, dateRange.from, dateRange.to])

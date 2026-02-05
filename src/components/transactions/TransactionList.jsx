@@ -93,11 +93,17 @@ export default function TransactionList({
             <tbody className="bg-white divide-y divide-gray-200">
               {currentTransactions.map((txn) => (
                 <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
-                  {/* Date */}
+                  {/* Date - ✅ ADD TIME */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {new Date(txn.date).toLocaleDateString('vi-VN')}
+                    <div>
+                      {new Date(txn.date).toLocaleDateString('vi-VN')}
+                    </div>
+                    {txn.time && (
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {txn.time.slice(0, 5)}  {/* Display HH:MM */}
+                      </div>
+                    )}
                   </td>
-                  
                   {/* Type Badge */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     {txn.type === 'income' && (

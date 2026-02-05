@@ -2,11 +2,11 @@ import { formatDate } from '../../lib/utils'
 import { useState, useEffect } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
 import { useCategories } from '../../hooks/finance/useCategories'
-import { usePaybackGoals } from '../../hooks/finance/usePaybackGoals'  // ✅ ĐÚNG
+import { usePaybackGoals } from '../../hooks/finance/usePaybackGoals'
 
 export default function TransactionForm({ transaction, onSubmit, onCancel, loading }) {
   const { wallets } = useWallets()
-  const { goals: paybackGoals } = usePaybackGoals()  // ✅ THÊM
+  const { goals: paybackGoals } = usePaybackGoals()
   const isEditingTransfer = transaction && transaction.type === 'transfer'
   
   const [formData, setFormData] = useState({
@@ -14,10 +14,12 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
     wallet_id: transaction?.wallet_id || '',
     to_wallet_id: transaction?.to_wallet_id || '',
     category_id: transaction?.category_id || '',
-    amount: transaction?.amount ? Math.abs(transaction.amount) : '',  // ✅ Fix: Show absolute value
+    amount: transaction?.amount ? Math.abs(transaction.amount) : '',
     description: transaction?.description || '',
-    payback_goal_id: transaction?.payback_goal_id || '',  // ✅ FIX: Load from transaction
-    date: transaction?.date ? transaction.date.split('T')[0] : new Date().toISOString().split('T')[0]
+    payback_goal_id: transaction?.payback_goal_id || '',
+    date: transaction?.date ? transaction.date.split('T')[0] : new Date().toISOString().split('T')[0],
+    // ✅ ADD: Time field
+    time: transaction?.time || new Date().toTimeString().slice(0, 5)  // HH:MM format
   })
 
   const [transactionType, setTransactionType] = useState(transaction?.type || 'expense')
@@ -27,7 +29,6 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
     setTransactionType(formData.type)
   }, [formData.type])
 
-  // ✅ THÊM: Check if selected category is Payback
   const selectedCategory = categories.find(c => c.id === formData.category_id)
   const isPaybackCategory = selectedCategory?.name === 'Payback' && formData.type === 'expense'
 
@@ -42,13 +43,11 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Validation
     if (!formData.wallet_id) {
       alert('Vui lòng chọn ví')
       return
     }
 
-    // ✅ Transfer validation
     if (formData.type === 'transfer') {
       if (!formData.to_wallet_id) {
         alert('Vui lòng chọn ví đích')
@@ -59,14 +58,12 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
         return
       }
     } else {
-      // Regular transaction validation
       if (!formData.category_id) {
         alert('Vui lòng chọn danh mục')
         return
       }
     }
 
-    // ✅ THÊM: Payback category warning if no goal selected
     if (isPaybackCategory && !formData.payback_goal_id) {
       const confirmWithoutGoal = confirm(
         'Bạn chưa chọn mục tiêu.\n\n' +
@@ -81,22 +78,19 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
       return
     }
 
-    // Prepare data
     const submitData = {
       ...formData,
       amount: formData.type === 'expense' 
-        ? -Math.abs(parseFloat(formData.amount))  // ✅ Negative for expense
-        : Math.abs(parseFloat(formData.amount))   // ✅ Positive for income
+        ? -Math.abs(parseFloat(formData.amount))
+        : Math.abs(parseFloat(formData.amount))
     }
 
-    // ✅ For transfers, remove category_id and payback_goal_id
     if (formData.type === 'transfer') {
       delete submitData.category_id
       delete submitData.payback_goal_id
     } else {
       delete submitData.to_wallet_id
       
-      // ✅ FIX: Only keep payback_goal_id if category is Payback
       if (!isPaybackCategory) {
         delete submitData.payback_goal_id
       }
@@ -105,7 +99,6 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
     onSubmit(submitData)
   }
 
-  // ✅ FIX: Move this OUTSIDE handleSubmit, make it main return
   if (isEditingTransfer) {
     return (
       <div className="text-center py-8">
@@ -164,7 +157,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
                 ? 'bg-green-100 text-green-700 border-2 border-green-500'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
             }`}
-            disabled={transaction}  // ✅ Disable when editing
+            disabled={transaction}
           >
             <svg className="w-5 h-5 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -180,7 +173,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
                 ? 'bg-red-100 text-red-700 border-2 border-red-500'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
             }`}
-            disabled={transaction}  // ✅ Disable when editing
+            disabled={transaction}
           >
             <svg className="w-5 h-5 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
@@ -196,7 +189,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
                 ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
             }`}
-            disabled={transaction}  // ✅ Disable when editing
+            disabled={transaction}
           >
             <svg className="w-5 h-5 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -306,7 +299,6 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
       ) : (
         <>
           {/* REGULAR TRANSACTION LAYOUT */}
-          {/* Wallet Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Ví <span className="text-red-500">*</span>
@@ -327,7 +319,6 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
             </select>
           </div>
 
-          {/* Category Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Danh mục <span className="text-red-500">*</span>
@@ -423,19 +414,36 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
         />
       </div>
 
-      {/* Date */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Ngày giao dịch <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="date"
-          name="date"
-          value={formData.date}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          required
-        />
+      {/* ✅ Date & Time (side by side) */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Ngày <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+        </div>
+
+        {/* ✅ ADD: Time input */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Thời gian <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="time"
+            name="time"
+            value={formData.time}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+        </div>
       </div>
 
       {/* Action Buttons */}
