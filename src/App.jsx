@@ -10,9 +10,9 @@ import Reports from './pages/Reports'
 import Login from './pages/Login'
 import PaybackTracking from './pages/finance/PaybackTracking'
 import GoalsDashboard from './pages/goals/GoalsDashboard'
-import GoalDetails from './pages/GoalDetails'
-import CheckinCalendar from './pages/CheckinCalendar'
-import TaskDetails from './pages/TaskDetails'
+import GoalDetails from './pages/goals/GoalDetails'
+import CheckinCalendar from './pages/goals/CheckinCalendar'
+import TaskDetails from './pages/goals/TaskDetails'
 
 // ✅ Create ProtectedRoute component
 function ProtectedRoute({ children, session }) {

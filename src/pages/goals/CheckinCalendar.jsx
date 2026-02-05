@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useGoals } from '../hooks/goals/useGoals'
-import { useTasks } from '../hooks/goals/useTasks'
-import { useSubtasks } from '../hooks/goals/useSubtasks'
-import { useCheckins } from '../hooks/goals/useCheckins'
-import Modal from '../components/common/Modal'
-import Loading from '../components/common/Loading'
+import { useGoals } from '../../hooks/goals/useGoals'
+import { useTasks } from '../../hooks/goals/useTasks'
+import { useSubtasks } from '../../hooks/goals/useSubtasks'
+import { useCheckins } from '../../hooks/goals/useCheckins'
+import Modal from '../../components/common/Modal'
+import Loading from '../../components/common/Loading'
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 const MONTHS = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useGoals } from '../hooks/goals/useGoals'
-import { useTasks } from '../hooks/goals/useTasks'
-import TaskCard from '../components/goals/TaskCard'
-import TaskForm from '../components/goals/TaskForm'
-import Modal from '../components/common/Modal'
-import Loading from '../components/common/Loading'
-import ErrorMessage from '../components/common/ErrorMessage'
+import { useGoals } from '../../hooks/goals/useGoals'
+import { useTasks } from '../../hooks/goals/useTasks'
+import TaskCard from '../../components/goals/TaskCard'
+import TaskForm from '../../components/goals/TaskForm'
+import Modal from '../../components/common/Modal'
+import Loading from '../../components/common/Loading'
+import ErrorMessage from '../../components/common/ErrorMessage'
 
 const STATUS_FILTERS = [
   { value: 'all', label: 'Tất cả', icon: '📋' },
