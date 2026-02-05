@@ -66,61 +66,92 @@ export function useGoals() {
     }
   }
 
-  const createGoal = async (goalData) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not authenticated')
+  // REPLACE createGoal function (lines ~68-95):
 
-      const { data, error: createError } = await supabase
-        .from('goals')
-        .insert([{
-          user_id: user.id,
-          name: goalData.name,
-          description: goalData.description,
-          icon: goalData.icon || '🎯',
-          color: goalData.color || '#3B82F6',
-          start_date: goalData.start_date,
-          target_date: goalData.target_date,
-          status: 'active'
-        }])
-        .select()
-        .single()
+const createGoal = async (goalData) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
 
-      if (createError) throw createError
+    console.log('📤 Creating goal with data:', goalData)  // ✅ Debug log
 
-      await fetchGoals()
-      return { success: true, data }
-    } catch (err) {
-      console.error('Error creating goal:', err)
-      return { success: false, error: err.message }
+    const { data, error: createError } = await supabase
+      .from('goals')
+      .insert([{
+        user_id: user.id,
+        name: goalData.name,
+        description: goalData.description,
+        icon: goalData.icon || '🎯',
+        color: goalData.color || '#3B82F6',
+        category: goalData.category || 'personal',
+        priority: goalData.priority || 'medium',
+        start_date: goalData.start_date,
+        target_date: goalData.target_date,
+        status: 'active',
+        // ✅ ADD: Checkin settings
+        is_checkin_enabled: goalData.is_checkin_enabled || false,
+        checkin_frequency: goalData.checkin_frequency || 'daily',
+        checkin_days_per_week: goalData.checkin_days_per_week || 7,
+        checkin_target_days: goalData.checkin_target_days || null
+      }])
+      .select()
+      .single()
+
+    if (createError) {
+      console.error('❌ Create error:', createError)
+      throw createError
     }
+
+    console.log('✅ Goal created:', data)
+    await fetchGoals()
+    return { success: true, data }
+  } catch (err) {
+    console.error('Error creating goal:', err)
+    return { success: false, error: err.message }
   }
+}
 
-  const updateGoal = async (id, goalData) => {
-    try {
-      const { data, error: updateError } = await supabase
-        .from('goals')
-        .update({
-          name: goalData.name,
-          description: goalData.description,
-          icon: goalData.icon,
-          color: goalData.color,
-          target_date: goalData.target_date,
-          status: goalData.status
-        })
-        .eq('id', id)
-        .select()
-        .single()
+// REPLACE updateGoal function (lines ~97-119):
 
-      if (updateError) throw updateError
+const updateGoal = async (id, goalData) => {
+  try {
+    console.log('📤 Updating goal with data:', goalData)  // ✅ Debug log
 
-      await fetchGoals()
-      return { success: true, data }
-    } catch (err) {
-      console.error('Error updating goal:', err)
-      return { success: false, error: err.message }
+    const { data, error: updateError } = await supabase
+      .from('goals')
+      .update({
+        name: goalData.name,
+        description: goalData.description,
+        icon: goalData.icon,
+        color: goalData.color,
+        category: goalData.category,
+        priority: goalData.priority,
+        start_date: goalData.start_date,  // ✅ ADD
+        target_date: goalData.target_date,
+        status: goalData.status,
+        // ✅ ADD: Checkin settings
+        is_checkin_enabled: goalData.is_checkin_enabled || false,
+        checkin_frequency: goalData.checkin_frequency || 'daily',
+        checkin_days_per_week: goalData.checkin_days_per_week || 7,
+        checkin_target_days: goalData.checkin_target_days || null
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      console.error('❌ Update error:', updateError)
+      throw updateError
     }
+
+    console.log('✅ Goal updated:', data)
+    await fetchGoals()
+    return { success: true, data }
+  } catch (err) {
+    console.error('Error updating goal:', err)
+    return { success: false, error: err.message }
   }
+}
 
   const deleteGoal = async (id) => {
     try {
