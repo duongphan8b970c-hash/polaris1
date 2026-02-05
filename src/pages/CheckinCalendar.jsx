@@ -92,59 +92,76 @@ export default function CheckinCalendar() {
     return dayCheckins.some(c => c.is_completed)
   }
 
-  // Calculate progress based on goal settings
-  const calculateProgress = () => {
-    const daysInMonth = lastDay.getDate()
-    let targetDays = daysInMonth
-    
-    if (goal?.checkin_target_days) {
-      targetDays = goal.checkin_target_days
-    } else if (goal?.checkin_frequency) {
-      switch (goal.checkin_frequency) {
-        case 'daily':
-          targetDays = daysInMonth
-          break
+ const calculateProgress = () => {
+  const daysInMonth = lastDay.getDate()
+  let targetDays = daysInMonth
+  
+  console.log('🔍 Goal settings:', {
+    checkin_target_days: goal?.checkin_target_days,
+    checkin_frequency: goal?.checkin_frequency,
+    checkin_days_per_week: goal?.checkin_days_per_week,
+    is_checkin_enabled: goal?.is_checkin_enabled
+  })
+  
+  // ✅ FIX: Check custom first (highest priority)
+  if (goal?.checkin_frequency === 'custom' && goal?.checkin_target_days) {
+    targetDays = goal.checkin_target_days
+    console.log('✅ Using CUSTOM target:', targetDays)
+  } else if (goal?.checkin_frequency) {
+    switch (goal.checkin_frequency) {
+      case 'daily':
+        targetDays = daysInMonth
+        console.log('✅ Using DAILY target:', targetDays)
+        break
 
-        case 'weekdays':
-          let weekdayCount = 0
-          const year = currentDate.getFullYear()
-          const month = currentDate.getMonth()
-          for (let day = 1; day <= daysInMonth; day++) {
-            const date = new Date(year, month, day)
-            const dayOfWeek = date.getDay()
-            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-              weekdayCount++
-            }
+      case 'weekdays':
+        let weekdayCount = 0
+        const year = currentDate.getFullYear()
+        const month = currentDate.getMonth()
+        for (let day = 1; day <= daysInMonth; day++) {
+          const date = new Date(year, month, day)
+          const dayOfWeek = date.getDay()
+          if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+            weekdayCount++
           }
-          targetDays = weekdayCount
-          break
+        }
+        targetDays = weekdayCount
+        console.log('✅ Using WEEKDAYS target:', targetDays)
+        break
 
-        case 'weekly':
-          const daysPerWeek = goal.checkin_days_per_week || 7
-          const weeksInMonth = daysInMonth / 7
-          targetDays = Math.round(daysPerWeek * weeksInMonth)
-          break
+      case 'weekly':
+        const daysPerWeek = goal.checkin_days_per_week || 7
+        const weeksInMonth = daysInMonth / 7
+        targetDays = Math.round(daysPerWeek * weeksInMonth)
+        console.log('✅ Using WEEKLY target:', targetDays, `(${daysPerWeek} days/week)`)
+        break
 
-        case 'custom':
-          targetDays = goal.checkin_target_days || daysInMonth
-          break
-
-        default:
-          targetDays = daysInMonth
-      }
+      default:
+        targetDays = daysInMonth
+        console.log('⚠️ Using DEFAULT target:', targetDays)
     }
-
-    const completedDays = checkins.filter(c => c.is_completed).length
-    const progress = targetDays > 0 ? (completedDays / targetDays) * 100 : 0
-    const remaining = Math.max(0, targetDays - completedDays)
-
-    return {
-      targetDays,
-      completedDays,
-      progress: Math.min(progress, 100).toFixed(1),
-      remaining
-    }
+  } else {
+    console.log('⚠️ No frequency set, using days in month:', targetDays)
   }
+
+  const completedDays = checkins.filter(c => c.is_completed).length
+  const progress = targetDays > 0 ? (completedDays / targetDays) * 100 : 0
+  const remaining = Math.max(0, targetDays - completedDays)
+
+  console.log('📊 Progress stats:', {
+    targetDays,
+    completedDays,
+    progress: progress.toFixed(1) + '%',
+    remaining
+  })
+
+  return {
+    targetDays,
+    completedDays,
+    progress: Math.min(progress, 100).toFixed(1),
+    remaining
+  }
+}
 
   const progressStats = calculateProgress()
 

@@ -1,9 +1,29 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
   const [expandedMenu, setExpandedMenu] = useState('financial')
+
+  // ✅ NEW: Close sidebar when route changes (mobile only)
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      onClose()
+    }
+  }, [location.pathname])
+
+  // ✅ NEW: Prevent body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (isOpen && window.innerWidth < 1024) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
 
   const menuSections = [
     {
@@ -40,22 +60,22 @@ export default function Sidebar({ isOpen, onClose }) {
           path: '/transactions',
           icon: (
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
           )
         },
         {
-          name: 'Trades',
-          path: '/trades',
+          name: 'Danh mục',
+          path: '/categories',
           icon: (
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
             </svg>
           )
         },
         {
-          name: 'Payback',
-          path: '/payback',
+          name: 'Trả nợ',
+          path: '/payback-goals',
           icon: (
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -102,19 +122,27 @@ export default function Sidebar({ isOpen, onClose }) {
     return false
   }
 
-  // ✅ Đóng sidebar khi click vào menu item trên mobile
+  // ✅ IMPROVED: Close sidebar after clicking menu item
   const handleMenuClick = () => {
-    if (window.innerWidth < 1024) { // lg breakpoint
-      onClose()
-    }
+    // Small delay to allow navigation to complete
+    setTimeout(() => {
+      if (window.innerWidth < 1024) {
+        onClose()
+      }
+    }, 100)
   }
 
   return (
     <>
-      {/* ✅ Sidebar với animation */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      {/* ✅ Sidebar với proper z-index và transform */}
+      <div 
+        className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl 
+          transform transition-transform duration-300 ease-in-out
+          lg:translate-x-0 lg:static lg:inset-0
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
         {/* Logo */}
         <div className="h-20 flex items-center justify-between px-4 border-b-2 border-gray-100">
           <div className="flex items-center space-x-3">
@@ -126,10 +154,11 @@ export default function Sidebar({ isOpen, onClose }) {
             <span className="text-xl font-bold text-gray-900">Polaris</span>
           </div>
 
-          {/* ✅ Close button chỉ hiện trên mobile */}
+          {/* ✅ Close button - visible on mobile only */}
           <button
             onClick={onClose}
             className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="Close sidebar"
           >
             <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
