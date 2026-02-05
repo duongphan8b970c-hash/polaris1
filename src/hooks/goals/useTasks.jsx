@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
-export function useCheckins(goalId = null, dateRange = {}) {
-  const [checkins, setCheckins] = useState([])
+export function useTasks(goalId = null, filters = {}) {
+  const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const fetchCheckins = async () => {
+  const fetchTasks = async () => {
     try {
       setLoading(true)
       setError(null)
@@ -15,173 +15,173 @@ export function useCheckins(goalId = null, dateRange = {}) {
       if (!user) throw new Error('User not authenticated')
 
       let query = supabase
-        .from('checkin_calendar')
+        .from('tasks')
         .select(`
           *,
-          goal:goals(id, name, icon, color),
-          task:tasks(id, title),
-          subtask:subtasks(id, title)
+          goal:goals(
+            id,
+            name,
+            icon,
+            color
+          ),
+          subtasks(
+            id,
+            title,
+            is_completed
+          )
         `)
         .is('deleted_at', null)
-        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (goalId) {
         query = query.eq('goal_id', goalId)
       }
 
-      if (dateRange.from) {
-        query = query.gte('date', dateRange.from)
+      if (filters.status) {
+        query = query.eq('status', filters.status)
       }
 
-      if (dateRange.to) {
-        query = query.lte('date', dateRange.to)
+      if (filters.priority) {
+        query = query.eq('priority', filters.priority)
+      }
+
+      if (filters.date_from) {
+        query = query.gte('due_date', filters.date_from)
+      }
+
+      if (filters.date_to) {
+        query = query.lte('due_date', filters.date_to)
       }
 
       const { data, error: fetchError } = await query
 
       if (fetchError) throw fetchError
 
-      setCheckins(data || [])
+      const tasksWithMetrics = (data || []).map(task => {
+        const totalSubtasks = task.subtasks?.length || 0
+        const completedSubtasks = task.subtasks?.filter(s => s.is_completed).length || 0
+        const progress = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0
+
+        const isOverdue = task.due_date && 
+                         task.status !== 'completed' && 
+                         new Date(task.due_date) < new Date()
+
+        return {
+          ...task,
+          total_subtasks: totalSubtasks,
+          completed_subtasks: completedSubtasks,
+          progress: progress.toFixed(2),
+          is_overdue: isOverdue
+        }
+      })
+
+      setTasks(tasksWithMetrics)
     } catch (err) {
-      console.error('Error fetching checkins:', err)
+      console.error('Error fetching tasks:', err)
       setError(err.message)
     } finally {
       setLoading(false)
     }
   }
 
-  const createCheckin = async (checkinData) => {
+  const createTask = async (taskData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
       const { data, error: createError } = await supabase
-        .from('checkin_calendar')
+        .from('tasks')
         .insert([{
           user_id: user.id,
-          goal_id: checkinData.goal_id,
-          task_id: checkinData.task_id || null,
-          subtask_id: checkinData.subtask_id || null,
-          date: checkinData.date,
-          is_completed: checkinData.is_completed || false,
-          notes: checkinData.notes || ''
+          goal_id: taskData.goal_id,
+          title: taskData.title,
+          description: taskData.description,
+          start_date: taskData.start_date || null,
+          due_date: taskData.due_date || null,
+          priority: taskData.priority || 'medium',
+          status: 'todo',
+          tags: taskData.tags || [],
+          estimated_hours: taskData.estimated_hours ? parseFloat(taskData.estimated_hours) : null
         }])
         .select()
         .single()
 
       if (createError) throw createError
 
-      await fetchCheckins()
+      await fetchTasks()
       return { success: true, data }
     } catch (err) {
-      console.error('Error creating checkin:', err)
+      console.error('Error creating task:', err)
       return { success: false, error: err.message }
     }
   }
 
-  const updateCheckin = async (id, checkinData) => {
+  const updateTask = async (id, taskData) => {
     try {
+      const updateData = {
+        title: taskData.title,
+        description: taskData.description,
+        due_date: taskData.due_date || null,
+        priority: taskData.priority,
+        status: taskData.status,
+        tags: taskData.tags
+      }
+
+      if (taskData.status === 'completed' && !taskData.completed_date) {
+        updateData.completed_date = new Date().toISOString().split('T')[0]
+      }
+
       const { data, error: updateError } = await supabase
-        .from('checkin_calendar')
-        .update({
-          is_completed: checkinData.is_completed,
-          notes: checkinData.notes,
-          updated_at: new Date().toISOString()
-        })
+        .from('tasks')
+        .update(updateData)
         .eq('id', id)
         .select()
         .single()
 
       if (updateError) throw updateError
 
-      await fetchCheckins()
+      await fetchTasks()
       return { success: true, data }
     } catch (err) {
-      console.error('Error updating checkin:', err)
+      console.error('Error updating task:', err)
       return { success: false, error: err.message }
     }
   }
 
-  const toggleCheckin = async (id, currentStatus) => {
-    return updateCheckin(id, { is_completed: !currentStatus })
-  }
-
-  const deleteCheckin = async (id) => {
+  const deleteTask = async (id) => {
     try {
       const { error: deleteError } = await supabase
-        .from('checkin_calendar')
+        .from('tasks')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', id)
 
       if (deleteError) throw deleteError
 
-      await fetchCheckins()
+      await fetchTasks()
       return { success: true }
     } catch (err) {
-      console.error('Error deleting checkin:', err)
+      console.error('Error deleting task:', err)
       return { success: false, error: err.message }
     }
   }
 
-  // Get checkin stats for a goal
-  const getCheckinStats = async (goalId, startDate, endDate) => {
-    try {
-      const { data, error } = await supabase
-        .from('checkin_calendar')
-        .select('is_completed')
-        .eq('goal_id', goalId)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .is('deleted_at', null)
-
-      if (error) throw error
-
-      const total = data.length
-      const completed = data.filter(c => c.is_completed).length
-      const streak = calculateStreak(data)
-
-      return {
-        total,
-        completed,
-        completion_rate: total > 0 ? (completed / total) * 100 : 0,
-        streak
-      }
-    } catch (err) {
-      console.error('Error getting checkin stats:', err)
-      return null
-    }
-  }
-
-  const calculateStreak = (checkins) => {
-    // Calculate current streak (consecutive days)
-    let streak = 0
-    const today = new Date().toISOString().split('T')[0]
-    
-    const sortedCheckins = [...checkins]
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-    
-    for (let i = 0; i < sortedCheckins.length; i++) {
-      const checkin = sortedCheckins[i]
-      if (!checkin.is_completed) break
-      streak++
-    }
-    
-    return streak
+  const toggleTaskStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus === 'completed' ? 'todo' : 'completed'
+    return updateTask(id, { status: newStatus })
   }
 
   useEffect(() => {
-    fetchCheckins()
-  }, [goalId, dateRange.from, dateRange.to])
+    fetchTasks()
+  }, [goalId, filters.status, filters.priority, filters.date_from, filters.date_to])
 
   return {
-    checkins,
+    tasks,
     loading,
     error,
-    createCheckin,
-    updateCheckin,
-    toggleCheckin,
-    deleteCheckin,
-    getCheckinStats,
-    refetch: fetchCheckins
+    createTask,
+    updateTask,
+    deleteTask,
+    toggleTaskStatus,
+    refetch: fetchTasks
   }
 }

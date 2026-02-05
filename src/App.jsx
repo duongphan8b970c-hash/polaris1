@@ -10,7 +10,7 @@ import Reports from './pages/Reports'
 import Login from './pages/Login'
 import PaybackTracking from './pages/finance/PaybackTracking'
 import GoalsDashboard from './pages/goals/GoalsDashboard'
-import GoalDetails from './pages/goals/GoalDetails'
+import GoalDetails from './pages/GoalDetails'
 
 // ✅ Create ProtectedRoute component
 function ProtectedRoute({ children, session }) {
@@ -91,7 +91,6 @@ function App() {
           <Route path="payback" element={<PaybackTracking />} />
           <Route path="goals" element={<GoalsDashboard />} />
           <Route path="goals/:goalId" element={<GoalDetails />} />
-          <Route path="goals/projects/:projectId" element={<ProjectDetails />} />
           <Route path="goals/:goalId/checkin" element={<CheckinCalendar />} />
         </Route>
 
