@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { useGoals } from '../hooks/goals/useGoals'
-import GoalList from '../components/goals/GoalList'
-import GoalForm from '../components/goals/GoalForm'
-import Modal from '../components/common/Modal'
-import PageHeader from '../components/layout/PageHeader'
-import Loading from '../components/common/Loading'
-import ErrorMessage from '../components/common/ErrorMessage'
+import { useGoals } from '../../hooks/goals/useGoals'
+import GoalList from '../../components/goals/GoalList'
+import GoalForm from '../../components/goals/GoalForm'
+import Modal from '../../components/common/Modal'
+import PageHeader from '../../components/layout/PageHeader'
+import Loading from '../../components/common/Loading'
+import ErrorMessage from '../../components/common/ErrorMessage'
 import { useNavigate } from 'react-router-dom'
 
 export default function GoalsDashboard() {

@@ -9,9 +9,8 @@ import Wallets from './pages/finance/WalletConfig'
 import Reports from './pages/Reports'
 import Login from './pages/Login'
 import PaybackTracking from './pages/finance/PaybackTracking'
-import GoalsDashboard from './pages/GoalsDashboard'
-import GoalDetails from './pages/GoalDetails'
-import ProjectDetails from './pages/ProjectDetails'
+import GoalsDashboard from './pages/goals/GoalsDashboard'
+import GoalDetails from './pages/goals/GoalDetails'
 
 // ✅ Create ProtectedRoute component
 function ProtectedRoute({ children, session }) {
@@ -93,6 +92,7 @@ function App() {
           <Route path="goals" element={<GoalsDashboard />} />
           <Route path="goals/:goalId" element={<GoalDetails />} />
           <Route path="goals/projects/:projectId" element={<ProjectDetails />} />
+          <Route path="goals/:goalId/checkin" element={<CheckinCalendar />} />
         </Route>
 
         {/* ✅ Catch all - redirect to dashboard or login */}

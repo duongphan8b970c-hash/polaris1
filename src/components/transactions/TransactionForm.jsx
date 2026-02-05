@@ -69,7 +69,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
     // ✅ THÊM: Payback category warning if no goal selected
     if (isPaybackCategory && !formData.payback_goal_id) {
       const confirmWithoutGoal = confirm(
-        'Bạn chưa chọn mục tiêu trả nợ.\n\n' +
+        'Bạn chưa chọn mục tiêu.\n\n' +
         'Giao dịch này sẽ không được tính vào bất kỳ mục tiêu nào.\n\n' +
         'Bạn có muốn tiếp tục không?'
       )
@@ -354,7 +354,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
       {isPaybackCategory && (
         <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            💳 Mục tiêu trả nợ
+            💳 Mục tiêu
           </label>
           <select
             name="payback_goal_id"
@@ -376,11 +376,11 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
           
           {paybackGoals.filter(g => g.status === 'active').length === 0 ? (
             <p className="text-xs text-amber-600 mt-2">
-              ⚠️ Chưa có mục tiêu trả nợ nào. Tạo mục tiêu trước để theo dõi tiến độ.
+              ⚠️ Chưa có mục tiêu nào. Tạo mục tiêu trước để theo dõi tiến độ.
             </p>
           ) : (
             <p className="text-xs text-gray-600 mt-2">
-              💡 Chọn mục tiêu để giao dịch này được tính vào tiến độ trả nợ
+              💡 Chọn mục tiêu để giao dịch này được tính vào tiến độ
             </p>
           )}
         </div>
