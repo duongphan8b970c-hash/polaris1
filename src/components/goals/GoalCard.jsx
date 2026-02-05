@@ -70,7 +70,6 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
         </div>
         <div className="flex justify-between text-xs text-gray-600 mt-2">
           <span>{goal.completed_tasks || 0} / {goal.total_tasks || 0} tasks</span>
-          <span>{goal.projects_count || 0} dự án</span>
         </div>
       </div>
 
