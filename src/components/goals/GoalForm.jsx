@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { PRIORITY_OPTIONS } from '../../constants'
 
 const CHECKIN_FREQUENCY_OPTIONS = [
   { value: 'daily', label: 'Mỗi ngày', description: 'Checkin tất cả các ngày trong tháng' },
@@ -218,10 +219,11 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
             className="input"
             disabled={loading}
           >
-            <option value="low">🔵 Thấp</option>
-            <option value="medium">🟡 Trung bình</option>
-            <option value="high">🟠 Cao</option>
-            <option value="urgent">🔴 Khẩn cấp</option>
+            {PRIORITY_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.icon} {option.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>
