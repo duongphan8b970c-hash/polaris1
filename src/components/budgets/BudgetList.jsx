@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { formatNumber } from '../../utils'
 
 export default function BudgetList({ budgets, onEdit, onDelete }) {
   const [budgetUsage, setBudgetUsage] = useState({})
@@ -99,13 +100,13 @@ export default function BudgetList({ budgets, onEdit, onDelete }) {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Đã chi:</span>
                 <span className={`font-bold ${isOverBudget ? 'text-red-600' : 'text-gray-900'}`}>
-                  {usage.spent.toLocaleString('vi-VN')} ₫
+                  {formatNumber(usage.spent)} ₫
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Hạn mức:</span>
                 <span className="font-bold text-gray-900">
-                  {budget.amount.toLocaleString('vi-VN')} ₫
+                  {formatNumber(budget.amount)} ₫
                 </span>
               </div>
             </div>
@@ -136,19 +137,19 @@ export default function BudgetList({ budgets, onEdit, onDelete }) {
             {isOverBudget ? (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                 <p className="text-sm text-red-700 font-medium">
-                  ⚠️ Vượt {usage.remaining < 0 ? Math.abs(usage.remaining).toLocaleString('vi-VN') : 0} ₫
+                  ⚠️ {usage.remaining < 0 ? formatNumber(Math.abs(usage.remaining)) : 0} ₫
                 </p>
               </div>
             ) : isNearLimit ? (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                 <p className="text-sm text-yellow-700 font-medium">
-                  ⚡ Còn {usage.remaining.toLocaleString('vi-VN')} ₫
+                  ⚡{formatNumber(usage.remaining)} ₫
                 </p>
               </div>
             ) : (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-sm text-green-700 font-medium">
-                  ✅ Còn {usage.remaining.toLocaleString('vi-VN')} ₫
+                  ✅ {formatNumber(usage.remaining)} ₫
                 </p>
               </div>
             )}

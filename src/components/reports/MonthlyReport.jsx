@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { formatCurrency } from '../../lib/utils'
+import { formatCurrency } from '../../utils'
 import ResponsiveTable from '../common/ResponsiveTable'
 
 export default function MonthlyReport({ transactions, trades, wallets }) {

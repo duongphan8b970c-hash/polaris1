@@ -1,4 +1,4 @@
-import { formatDate } from '../../lib/utils'
+import { formatDate } from '../../utils'
 import { useState, useEffect } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
 import { useCategories } from '../../hooks/finance/useCategories'

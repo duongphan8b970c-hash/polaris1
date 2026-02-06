@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { formatNumber, formatDate } from '../../utils'
 
 export default function FinanceTab({ 
   wallets, 
@@ -167,7 +168,7 @@ export default function FinanceTab({
             </div>
           </div>
           <p className="text-2xl md:text-3xl font-bold mb-1 break-words">
-            {stats.totalBalance.toLocaleString('vi-VN')}
+              +{formatNumber(displayStats.totalBalance)}
           </p>
           <p className="text-blue-100 text-sm font-medium">VND</p>
         </div>
@@ -189,7 +190,7 @@ export default function FinanceTab({
             </div>
           </div>
           <p className="text-2xl md:text-3xl font-bold mb-1 break-words">
-            +{displayStats.income.toLocaleString('vi-VN')}
+              +{formatNumber(displayStats.income)}
           </p>
           <p className="text-green-100 text-sm font-medium">
             VND tháng này {displayStats.tradePL > 0 && '(bao gồm trade)'}
@@ -210,7 +211,7 @@ export default function FinanceTab({
             </div>
           </div>
           <p className="text-2xl md:text-3xl font-bold mb-1 break-words">
-            -{displayStats.expense.toLocaleString('vi-VN')}
+            -{formatNumber(displayStats.expense)}
           </p>
           <p className="text-red-100 text-sm font-medium">VND tháng này</p>
         </div>
@@ -229,7 +230,7 @@ export default function FinanceTab({
             </div>
           </div>
           <p className="text-2xl md:text-3xl font-bold mb-1 break-words">
-            {displayStats.tradePL >= 0 ? '+' : ''}{displayStats.tradePL.toLocaleString('vi-VN')}
+            {displayStats.tradePL >= 0 ? '+' : ''}{formatNumber(Math.abs(displayStats.tradePL))}
           </p>
           <p className="text-purple-100 text-sm font-medium">VND tổng P&L</p>
         </div>
@@ -317,7 +318,7 @@ export default function FinanceTab({
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-red-600">
-                          -{cat.amount.toLocaleString('vi-VN')} ₫
+                          -{formatNumber(cat.amount)} ₫
                         </p>
                         <p className="text-xs text-gray-500">{percentage.toFixed(1)}%</p>
                       </div>
@@ -378,7 +379,7 @@ export default function FinanceTab({
                         {txn.description || 'Không có mô tả'}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {new Date(txn.date).toLocaleDateString('vi-VN')}
+                        {formatDate(txn.date)}
                         {txn.categories && ` • ${txn.categories.name}`}
                       </p>
                     </div>
@@ -387,7 +388,7 @@ export default function FinanceTab({
                     txn.type === 'income' ? 'text-green-600' : 'text-red-600'
                   }`}>
                     {txn.type === 'income' ? '+' : '-'}
-                    {Math.abs(txn.amount).toLocaleString('vi-VN')}
+                    {formatNumber(Math.abs(txn.amount))}
                   </p>
                 </div>
               ))}

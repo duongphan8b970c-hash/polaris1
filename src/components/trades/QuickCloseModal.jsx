@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { formatCurrency } from '../../lib/utils'
+import { formatCurrency } from '../../utils'
 
 export default function QuickCloseModal({ isOpen, trade, resultType, onConfirm, onCancel }) {
   const [exitPrice, setExitPrice] = useState('')

@@ -1,3 +1,5 @@
+import { formatNumber, formatDate } from '../../utils'
+
 export default function PaybackGoalList({ goals, onEdit, onDelete, onComplete }) {
   if (goals.length === 0) {
     return (
@@ -112,13 +114,13 @@ function PaybackGoalCard({ goal, onEdit, onDelete, onComplete }) {
         <div className="flex justify-between text-sm mb-2">
           <span className="text-gray-600">Đã trả:</span>
           <span className="font-bold text-gray-900">
-            {goal.current_paid.toLocaleString('vi-VN')} ₫
+            {formatNumber(goal.current_paid)} ₫
           </span>
         </div>
         <div className="flex justify-between text-sm mb-2">
           <span className="text-gray-600">Mục tiêu:</span>
           <span className="font-bold text-gray-900">
-            {goal.target_amount.toLocaleString('vi-VN')} ₫
+            {formatNumber(goal.target_amount)} ₫
           </span>
         </div>
         
@@ -146,7 +148,7 @@ function PaybackGoalCard({ goal, onEdit, onDelete, onComplete }) {
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Còn lại:</span>
             <span className="font-bold text-red-600">
-              {goal.remaining.toLocaleString('vi-VN')} ₫
+              {formatNumber(goal.remaining)} ₫
             </span>
           </div>
         )}
@@ -166,7 +168,7 @@ function PaybackGoalCard({ goal, onEdit, onDelete, onComplete }) {
              '📅 Hạn chót:'}
           </span>
           <span className="font-bold text-gray-900">
-            {new Date(isCompleted ? goal.completed_date : goal.deadline).toLocaleDateString('vi-VN')}
+            {formatDate(isCompleted ? goal.completed_date : goal.deadline)}
           </span>
         </div>
         {!isCompleted && (
@@ -210,7 +212,7 @@ function PaybackGoalCard({ goal, onEdit, onDelete, onComplete }) {
         <div className="mt-3 pt-3 border-t text-xs text-gray-500">
           <div className="flex justify-between">
             <span>Tổng tiền ban đầu:</span>
-            <span className="font-medium">{goal.initial_amount.toLocaleString('vi-VN')} ₫</span>
+            <span className="font-medium">{formatNumber(goal.initial_amount)} ₫</span>
           </div>
           <div className="flex justify-between mt-1">
             <span>% đã trả (so với tổng tiền ban đầu):</span>

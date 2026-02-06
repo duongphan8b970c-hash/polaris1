@@ -6,7 +6,7 @@ import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { useTrades } from '../../hooks/finance/useTrades'
-import { formatCurrency } from '../../lib/utils'
+import { formatCurrency } from '../../utils'
 import ErrorModal from '../../components/common/ErrorModal'
 import QuickCloseModal from '../../components/trades/QuickCloseModal'
 

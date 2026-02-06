@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { formatNumber } from '../../utils'
 
 export function useTransactions(filters = {}) {
   const [transactions, setTransactions] = useState([])
@@ -108,9 +109,8 @@ export function useTransactions(filters = {}) {
       // ✅ 2. CHECK SOURCE BALANCE
       if (sourceWallet.current_amount < transferAmount) {
         const errorMsg = `Số dư không đủ trong ví "${sourceWallet.name}".\n` +
-          `Hiện có: ${sourceWallet.current_amount.toLocaleString('vi-VN')} ${sourceWallet.currency}\n` +
-          `Cần: ${transferAmount.toLocaleString('vi-VN')} ${sourceWallet.currency}`
-        
+          `Hiện có: ${formatNumber(sourceWallet.current_amount)} ${sourceWallet.currency}\n` +
+          `Cần: ${formatNumber(transferAmount)} ${sourceWallet.currency}`
         console.error('❌ Insufficient balance')
         throw new Error(errorMsg)
       }
@@ -165,7 +165,7 @@ export function useTransactions(filters = {}) {
         conversionRate = parseFloat(rateData.rate)
         convertedAmount = transferAmount * conversionRate
 
-        conversionNote = ` (${transferAmount.toLocaleString('vi-VN')} ${sourceWallet.currency} × ${conversionRate} = ${convertedAmount.toLocaleString('vi-VN')} ${destWallet.currency})`
+        conversionNote = ` (${formatNumber(transferAmount)} ${sourceWallet.currency} × ${conversionRate} = ${formatNumber(convertedAmount)} ${destWallet.currency})`
 
         console.log('💱 Currency conversion:', {
           from: sourceWallet.currency,
