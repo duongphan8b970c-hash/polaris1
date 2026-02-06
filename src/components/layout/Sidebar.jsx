@@ -10,7 +10,7 @@ export default function Sidebar({ isOpen, onClose }) {
     if (window.innerWidth < 1024) {
       onClose()
     }
-  }, [location.pathname],onClose)
+  }, [location.pathname,onClose])
 
   // ✅ NEW: Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
