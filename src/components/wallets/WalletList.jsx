@@ -1,4 +1,4 @@
-import { formatCurrency } from '../../lib/utils'
+import { formatCurrency } from '../../utils'
 
 export default function WalletList({ wallets, onEdit }) {
   if (wallets.length === 0) {

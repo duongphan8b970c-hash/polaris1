@@ -1,4 +1,4 @@
-import { formatCurrency } from '../../lib/utils'
+import { formatCurrency } from '../../utils'
 import ResponsiveTable from '../common/ResponsiveTable'
 
 export default function TradeList({ trades, onEdit, onClose, onQuickClose }) {

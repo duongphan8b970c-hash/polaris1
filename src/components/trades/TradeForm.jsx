@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
-import { formatCurrency } from '../../lib/utils'
+import { formatCurrency } from '../../utils'
 
 export default function TradeForm({ trade, onSubmit, onCancel, loading }) {
   const { wallets } = useWallets()

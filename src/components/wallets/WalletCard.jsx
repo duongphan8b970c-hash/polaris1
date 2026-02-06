@@ -1,4 +1,4 @@
-import { formatCurrency } from '../../lib/utils'
+import { formatCurrency } from '../../utils'
 
 export default function WalletCard({ wallet, onEdit, onDelete }) {
   const balanceChange = wallet.current_amount - wallet.initial_amount
