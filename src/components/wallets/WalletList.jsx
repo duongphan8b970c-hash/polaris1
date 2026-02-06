@@ -31,48 +31,48 @@ export default function WalletList({ wallets, onEdit }) {
         return (
           <div key={wallet.id} className="card hover:shadow-lg transition-shadow">
             {/* Header */}
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-900">{wallet.name}</h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm text-gray-500">{wallet.type}</span>
+                <h3 className="text-base font-bold text-gray-900">{wallet.name}</h3>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="text-xs text-gray-500">{wallet.type}</span>
                   <span className="text-xs text-gray-400">•</span>
-                  <span className="text-sm text-gray-500">{wallet.currency}</span>
+                  <span className="text-xs text-gray-500">{wallet.currency}</span>
                 </div>
               </div>
               <button
                 onClick={() => onEdit(wallet)}
-                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0"
+                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0"
                 title="Sửa ví"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </button>
             </div>
 
             {/* Current Balance - Main Display */}
-            <div className="mb-4">
-              <p className="text-sm text-gray-500 mb-1">Số dư hiện tại</p>
-              <p className="text-4xl font-bold text-gray-900">
+            <div className="mb-3">
+              <p className="text-xs text-gray-500 mb-0.5">Số dư hiện tại</p>
+              <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(wallet.current_amount, wallet.currency)}
               </p>
             </div>
 
             {/* Monthly Change */}
             {hasMonthlyData && monthChange !== 0 && (
-              <div className={`mb-4 p-3 rounded-lg ${
+              <div className={`mb-3 p-3 rounded-lg ${
                 monthChange >= 0 ? 'bg-green-50' : 'bg-red-50'
               }`}>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Thay đổi tháng này:</span>
+                  <span className="text-xs text-gray-600">Thay đổi tháng này:</span>
                   <div className="flex items-center">
                     {monthChange >= 0 ? (
-                      <svg className="w-4 h-4 text-green-600 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-3 h-3 text-green-600 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4 text-red-600 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-3 h-3 text-red-600 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     )}
