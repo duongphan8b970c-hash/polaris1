@@ -219,34 +219,10 @@ export default function TaskDetails() {
         onToggle={handleToggleSubtask}
         onUpdate={handleUpdateSubtask}
         onDelete={handleDeleteSubtask}
+        onAdd={handleAddSubtask}
+        loading={subtasksLoading}
       />
-      
-      {/* Add subtask form inline */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <form onSubmit={(e) => {
-              e.preventDefault()
-              const title = e.target.subtaskTitle.value
-              if (title.trim()) {
-                handleAddSubtask({ task_id: taskId, title })
-                e.target.reset()
-              }
-            }} className="flex gap-2">
-              <input
-                type="text"
-                name="subtaskTitle"
-                placeholder="Thêm subtask mới..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
-              >
-                Thêm
-              </button>
-            </form>
-          </div>
-        </div>
-
+      </div>
       {/* Edit Task Modal */}
       <Modal
         isOpen={showEditModal}
