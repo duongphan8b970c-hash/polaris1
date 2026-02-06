@@ -6,6 +6,7 @@ import Modal from '../../components/common/Modal'
 import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
+import { formatNumber } from '../../utils'
 
 export default function PaybackTracking() {
   const { goals, loading, error, createGoal, updateGoal, completeGoal, deleteGoal, refetch } = usePaybackGoals()
@@ -120,7 +121,7 @@ export default function PaybackTracking() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <p className="text-3xl font-bold">{stats.totalDebt.toLocaleString('vi-VN')}</p>
+            <p className="text-3xl font-bold">{formatNumber(stats.totalDebt)}</p>
             <p className="text-red-100 text-xs">VND</p>
           </div>
 
@@ -132,7 +133,7 @@ export default function PaybackTracking() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-3xl font-bold">{stats.totalPaid.toLocaleString('vi-VN')}</p>
+            <p className="text-3xl font-bold">{formatNumber(stats.totalPaid)}</p>
             <p className="text-green-100 text-xs">VND</p>
           </div>
 
@@ -144,7 +145,7 @@ export default function PaybackTracking() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-3xl font-bold">{stats.totalRemaining.toLocaleString('vi-VN')}</p>
+            <p className="text-3xl font-bold">{formatNumber(stats.totalRemaining)}</p>
             <p className="text-orange-100 text-xs">VND</p>
           </div>
         </div>

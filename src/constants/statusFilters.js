@@ -17,6 +17,7 @@ export const PRIORITY_OPTIONS = [
 export const TRANSACTION_TYPES = [
   { value: 'income', label: 'Thu nhập', icon: '💰', color: 'green' },
   { value: 'expense', label: 'Chi tiêu', icon: '💸', color: 'red' },
+  { value: 'transfer', label: 'Chuyển khoản', icon: '🔄', color: 'blue' }
 ]
 
 // Goal status
