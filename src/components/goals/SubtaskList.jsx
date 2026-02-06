@@ -16,12 +16,6 @@ export default function SubtaskList({ subtasks, onToggle, onEdit, onDelete, onAd
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="text-sm font-semibold text-gray-900">
-          Subtasks ({subtasks.filter(s => s.is_completed).length} / {subtasks.length})
-        </h4>
-      </div>
-
       {/* Subtasks List */}
       {subtasks.length > 0 ? (
         <div className="space-y-1.5">
