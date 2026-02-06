@@ -76,10 +76,13 @@ export default function TaskDetails() {
     }
   }
 
-  const handleDeleteSubtask = async (subtask) => {
+  const handleDeleteSubtask = async (subtaskId) => {
+    const subtask = subtasks.find(s => s.id === subtaskId)
+    if (!subtask) return
+    
     if (!confirm(`Xóa subtask "${subtask.title}"?`)) return
     
-    const result = await deleteSubtask(subtask.id)
+    const result = await deleteSubtask(subtaskId)
     if (!result.success) {
       alert('Lỗi: ' + result.error)
     }
@@ -109,9 +112,9 @@ export default function TaskDetails() {
   const progress = subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       {/* Breadcrumb */}
-      <nav className="mb-6 flex items-center gap-2 text-sm">
+      <nav className="mb-4 flex items-center gap-2 text-xs">
         <button 
           onClick={() => navigate('/goals')}
           className="text-gray-600 hover:text-gray-900 transition-colors"
@@ -130,12 +133,12 @@ export default function TaskDetails() {
       </nav>
 
       {/* Task Header Card */}
-      <div className="card mb-6">
-        <div className="flex items-start justify-between mb-4">
+      <div className="card mb-4">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <h1 className="text-3xl font-bold text-gray-900">{task.title}</h1>
-              <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+            <div className="flex items-center gap-2 mb-2">
+              <h1 className="text-2xl font-bold text-gray-900">{task.title}</h1>
+              <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${
                 statusOption.value === 'completed' ? 'bg-green-100 text-green-700' :
                 statusOption.value === 'in_progress' ? 'bg-blue-100 text-blue-700' :
                 statusOption.value === 'blocked' ? 'bg-red-100 text-red-700' :
@@ -143,7 +146,7 @@ export default function TaskDetails() {
               }`}>
                 {statusOption.icon} {statusOption.label}
               </span>
-              <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+              <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${
                 priorityOption.value === 'urgent' ? 'bg-red-100 text-red-700' :
                 priorityOption.value === 'high' ? 'bg-orange-100 text-orange-700' :
                 priorityOption.value === 'medium' ? 'bg-yellow-100 text-yellow-700' :
@@ -153,7 +156,7 @@ export default function TaskDetails() {
               </span>
             </div>
             
-            <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-3 text-xs text-gray-600">
               <span className="flex items-center gap-1">
                 📅 Bắt đầu: {formatDate(task.start_date)}
               </span>
@@ -165,20 +168,20 @@ export default function TaskDetails() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setShowEditModal(true)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </button>
             <button
               onClick={handleDeleteTask}
-              className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+              className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
@@ -186,16 +189,16 @@ export default function TaskDetails() {
         </div>
         
         {/* Progress Card */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-gray-700">Tiến độ hoàn thành</span>
-            <span className="text-lg font-bold text-blue-600">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-semibold text-gray-700">Tiến độ hoàn thành</span>
+            <span className="text-base font-bold text-blue-600">
               {completedSubtasks} / {subtasks.length} subtasks ({progress.toFixed(0)}%)
             </span>
           </div>
-          <div className="w-full bg-blue-200 rounded-full h-3 shadow-inner">
+          <div className="w-full bg-blue-200 rounded-full h-2 shadow-inner">
             <div 
-              className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+              className="bg-blue-600 h-2 rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -203,14 +206,46 @@ export default function TaskDetails() {
       </div>
 
       {/* Subtasks Section */}
+    <div className="card">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xl">📝</span>
+        <h2 className="text-xl font-bold">Subtasks</h2>
+      </div>
+      
+      <p className="text-gray-600 mb-3">Subtasks ({completedSubtasks} / {subtasks.length})</p>
+      
       <SubtaskList
         subtasks={subtasks}
         onToggle={handleToggleSubtask}
-        onEdit={handleUpdateSubtask}
+        onUpdate={handleUpdateSubtask}
         onDelete={handleDeleteSubtask}
-        onAdd={handleAddSubtask}  
-        loading={subtasksLoading}  
       />
+      
+      {/* Add subtask form inline */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              const title = e.target.subtaskTitle.value
+              if (title.trim()) {
+                handleAddSubtask({ task_id: taskId, title })
+                e.target.reset()
+              }
+            }} className="flex gap-2">
+              <input
+                type="text"
+                name="subtaskTitle"
+                placeholder="Thêm subtask mới..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button
+                type="submit"
+                className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+              >
+                Thêm
+              </button>
+            </form>
+          </div>
+        </div>
 
       {/* Edit Task Modal */}
       <Modal
