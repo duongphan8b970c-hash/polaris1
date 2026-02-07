@@ -57,6 +57,13 @@ export default async function handler(req, res) {
           updated_at: new Date().toISOString()
         })
 
+        updates.push({
+          from_currency: 'VND',
+          to_currency: currency,
+          rate: parseFloat((1 / rateToVnd).toFixed(8)),
+          updated_at: new Date().toISOString()
+        })
+
         console.log(`💱 ${currency} to VND: ${rateToVnd.toFixed(2)}`)
       }
     }
