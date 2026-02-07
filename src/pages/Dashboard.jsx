@@ -54,11 +54,13 @@ export default function Dashboard() {
         .select('updated_at')
         .order('updated_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (rateData) {
         setLastUpdated(rateData.updated_at)
-      }
+      } else {
+              setLastUpdated(null)  // Table rỗng, chưa có data
+            }
 
     } catch (error) {
       console.error('Error fetching data:', error)
