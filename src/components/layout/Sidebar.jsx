@@ -1,9 +1,10 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
   const [expandedMenu, setExpandedMenu] = useState('financial')
+  const prevPathname = useRef(location.pathname)
 
   useEffect(() => {
     if (prevPathname.current !== location.pathname) {
