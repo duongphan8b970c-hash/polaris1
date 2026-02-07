@@ -211,7 +211,6 @@ export default function Sidebar({ isOpen, onClose }) {
                               <Link
                                 key={item.path}
                                 to={item.path}
-                                onClick={handleMenuClick}
                                 className={`flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all text-sm font-medium ${
                                   isSubmenuActive
                                     ? 'bg-primary-100 text-primary-700'
