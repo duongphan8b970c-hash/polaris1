@@ -10,7 +10,7 @@ const SUPPORTED_CURRENCIES = ['USD', 'EUR', 'JPY', 'CNY', 'THB', 'SGD', 'KRW', '
 export default async function handler(req, res) {
   try {
     const authHeader = req.headers.authorization
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (authHeader !== `Bearer ${process.env.VITE_CRON_SECRET}`) {
       return res.status(401).json({ error: 'Unauthorized' })
     }
 
