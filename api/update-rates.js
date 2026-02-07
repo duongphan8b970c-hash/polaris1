@@ -79,18 +79,22 @@ export default async function handler(req, res) {
     // Update database
     console.log('💾 Updating database...')
     
-    for (const update of updates) {
-      const { error } = await supabase
-        .from('exchange_rates')
-        .upsert(update, {
-          onConflict: 'from_currency,to_currency'
-        })
+    // ✅ BATCH UPSERT - Nhanh hơn nhiều!
+    console.log(`💾 Updating ${updates.length} exchange rates...`)
 
-      if (error) {
-        console.error(`❌ Error updating ${update.from_currency}:`, error)
-        throw error
-      }
+    const { error: upsertError } = await supabase
+      .from('exchange_rates')
+      .upsert(updates, {
+        onConflict: 'from_currency,to_currency',
+        ignoreDuplicates: false  // Update nếu đã tồn tại
+      })
+
+    if (upsertError) {
+      console.error('❌ Error batch updating exchange rates:', upsertError)
+      throw upsertError
     }
+
+    console.log('✅ All exchange rates updated successfully!')
 
     console.log('🔢 Recalculating wallet balances...')
     
