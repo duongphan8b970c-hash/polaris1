@@ -16,14 +16,6 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={handleCloseSidebar}
-        />
-      )}
-
       <div className="flex h-screen overflow-hidden">
         {/* Sidebar */}
         <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />

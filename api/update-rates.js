@@ -37,31 +37,42 @@ export default async function handler(req, res) {
       updated_at: new Date().toISOString()
     })
 
-    // ✅ PHẦN ĐÃ SỬA: Thêm tỷ giá 2 chiều
     for (const currency of SUPPORTED_CURRENCIES) {
-      if (data.rates[currency]) {
-        const rateToVnd = currency === 'USD' 
-          ? usdToVnd 
-          : usdToVnd / data.rates[currency]
+  if (data.rates[currency]) {
+    // Bước 1: Tính 1 Currency = ? VND
+    let currencyToVnd
+    
+    if (currency === 'USD') {
+      currencyToVnd = usdToVnd  // 1 USD = usdToVnd VND
+    } else {
+      // VD: EUR → VND
+      // 1 EUR = (rate[EUR] / rate[USD]) * usdToVnd
+      // VD: 1 EUR = 1.1 USD → 1 EUR = 1.1 * 25000 = 27500 VND
+      currencyToVnd = (data.rates[currency] / data.rates.USD) * usdToVnd
+    }
 
-        // XUÔI: Currency → VND
-        updates.push({
-          from_currency: currency,
-          to_currency: 'VND',
-          rate: parseFloat(rateToVnd.toFixed(4)),
-          updated_at: new Date().toISOString()
-        })
+    // Bước 2: Tính 1 VND = ? Currency
+    const vndToCurrency = 1 / currencyToVnd
 
-        // NGƯỢC: VND → Currency
-        const rateFromVnd = 1 / rateToVnd
-        updates.push({
-          from_currency: 'VND',
-          to_currency: currency,
-          rate: parseFloat(rateFromVnd.toFixed(8)),
-          updated_at: new Date().toISOString()
-        })
+    // XUÔI: Currency → VND (VD: USD → VND)
+    updates.push({
+      from_currency: currency,
+      to_currency: 'VND',
+      rate: parseFloat(currencyToVnd.toFixed(4)),
+      updated_at: new Date().toISOString()
+    })
 
-        console.log(`💱 ${currency} → VND: ${rateToVnd.toFixed(2)} | VND → ${currency}: ${rateFromVnd.toFixed(8)}`)
+    // NGƯỢC: VND → Currency (VD: VND → USD)
+    updates.push({
+      from_currency: 'VND',
+      to_currency: currency,
+      rate: parseFloat(vndToCurrency.toFixed(8)),
+      updated_at: new Date().toISOString()
+    })
+
+    console.log(`💱 ${currency} ↔ VND:`)
+    console.log(`   ${currency} → VND: ${currencyToVnd.toFixed(2)}`)
+    console.log(`   VND → ${currency}: ${vndToCurrency.toFixed(8)}`)
       }
     }
 
