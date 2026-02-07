@@ -115,49 +115,54 @@ export default function Dashboard() {
     }
   }
   // Convert trade P&L to VND
-  useEffect(() => {
-    const convertTradePL = async () => {
-      const now = new Date()
-      const currentMonth = now.getMonth()
-      const currentYear = now.getFullYear()
+useEffect(() => {
+  const convertTradePL = async () => {
+    const now = new Date()
+    const currentMonth = now.getMonth()
+    const currentYear = now.getFullYear()
 
-      const monthlyClosedTrades = trades.filter(trade => {
-        if (trade.status !== 'closed' || !trade.updated_at) return false
-        const tradeDate = new Date(trade.updated_at)
-        return tradeDate.getMonth() === currentMonth && tradeDate.getFullYear() === currentYear
-      })
+    const monthlyClosedTrades = trades.filter(trade => {
+      if (trade.status !== 'closed' || !trade.updated_at) return false
+      const tradeDate = new Date(trade.updated_at)
+      return tradeDate.getMonth() === currentMonth && tradeDate.getFullYear() === currentYear
+    })
 
-      if (monthlyClosedTrades.length === 0) {
-        setTradePLConverted(0)
-        return
-      }
-
-      let totalVND = 0
-
-      for (const trade of monthlyClosedTrades) {
-        const pl = trade.profit_loss || 0
-        const currency = (trade.exit_currency || 'USDT').toUpperCase()
-
-        if (currency === 'VND') {
-          totalVND += pl
-          continue
-        }
-
-        const { data: rateData } = await supabase
-          .from('exchange_rates')
-          .select('rate')
-          .eq('from_currency', currency)
-          .eq('to_currency', 'VND')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-
-        const rate = rateData?.rate || (currency === 'USD' || currency === 'USDT' ? 24000 : 1)
-        totalVND += pl * rate
-      }
-
-      setTradePLConverted(totalVND)
+    if (monthlyClosedTrades.length === 0) {
+      setTradePLConverted(0)
+      return
     }
+
+    // ✅ FIX: Query tất cả rates một lần duy nhất
+    const { data: allRates } = await supabase
+      .from('exchange_rates')
+      .select('from_currency, to_currency, rate')
+      .eq('to_currency', 'VND')
+
+    // Tạo Map để lookup nhanh
+    const ratesMap = new Map()
+    allRates?.forEach(r => {
+      ratesMap.set(r.from_currency, parseFloat(r.rate))
+    })
+
+    // Tính tổng với cached rates
+    let totalVND = 0
+
+    for (const trade of monthlyClosedTrades) {
+      const pl = trade.profit_loss || 0
+      const currency = (trade.exit_currency || 'USDT').toUpperCase()
+
+      if (currency === 'VND') {
+        totalVND += pl
+        continue
+      }
+
+      // Lấy rate từ Map (nhanh hơn nhiều)
+      const rate = ratesMap.get(currency) || (currency === 'USD' || currency === 'USDT' ? 24000 : 1)
+      totalVND += pl * rate
+    }
+
+    setTradePLConverted(totalVND)
+  }
 
     convertTradePL()
   }, [trades])

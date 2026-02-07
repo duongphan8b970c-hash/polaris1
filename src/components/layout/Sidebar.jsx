@@ -112,7 +112,8 @@ export default function Sidebar({ isOpen, onClose }) {
   }
 
   // ✅ IMPROVED: Close sidebar after clicking menu item
-  const handleMenuClick = () => {
+  const handleMenuClick = (e) => {
+    e.preventDefault()
     // Small delay to allow navigation to complete
     setTimeout(() => {
       if (window.innerWidth < 1024) {
@@ -145,7 +146,10 @@ export default function Sidebar({ isOpen, onClose }) {
 
           {/* ✅ Close button - visible on mobile only */}
           <button
-            onClick={onClose}
+            onClick={(e) => {
+            e.stopPropagation()
+            onClose()
+            }}
             className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
             aria-label="Close sidebar"
           >
