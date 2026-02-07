@@ -5,21 +5,22 @@ export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
   const [expandedMenu, setExpandedMenu] = useState('financial')
 
-  // ✅ NEW: Close sidebar when route changes (mobile only)
   useEffect(() => {
-    if (window.innerWidth < 1024) {
-      onClose()
+    if (prevPathname.current !== location.pathname) {
+      prevPathname.current = location.pathname
+      if (window.innerWidth < 1024 && isOpen) {
+        onClose()
+      }
     }
-  }, [location.pathname])
+  }, [location.pathname, onClose, isOpen])
 
-  // ✅ NEW: Prevent body scroll when sidebar is open on mobile
+  /// Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
     if (isOpen && window.innerWidth < 1024) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
     }
-    
     return () => {
       document.body.style.overflow = 'unset'
     }
@@ -110,19 +111,14 @@ export default function Sidebar({ isOpen, onClose }) {
     }
     return false
   }
-
-  // ✅ IMPROVED: Close sidebar after clicking menu item
-      const handleMenuClick = () => {
-      // Chỉ đóng sidebar trên mobile, không block navigation
-      if (window.innerWidth < 1024) {
-        setTimeout(() => {
-          onClose()
-        }, 150) // Tăng delay để navigation hoàn thành trước
-      }
-    }
-
   return (
     <>
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
       {/* ✅ Sidebar với proper z-index và transform */}
       <div 
         className={`
@@ -171,7 +167,6 @@ export default function Sidebar({ isOpen, onClose }) {
                   {!hasSubmenu ? (
                     <Link
                       to={section.path}
-                      onClick={handleMenuClick}
                       className={`flex items-center justify-between space-x-3 px-4 py-3.5 rounded-xl transition-all font-semibold ${
                         isActive
                           ? 'bg-primary-50 text-primary-600 shadow-sm'
