@@ -112,8 +112,7 @@ export default function Sidebar({ isOpen, onClose }) {
   }
 
   // ✅ IMPROVED: Close sidebar after clicking menu item
-  const handleMenuClick = (e) => {
-    e.preventDefault()
+  const handleMenuClick = () => {
     // Small delay to allow navigation to complete
     setTimeout(() => {
       if (window.innerWidth < 1024) {
