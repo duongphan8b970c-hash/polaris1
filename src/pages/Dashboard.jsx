@@ -79,9 +79,19 @@ export default function Dashboard() {
     
     try {
       // ✅ Call Supabase function directly
-      const { data, error } = await supabase.rpc('update_exchange_rates')
-      
-      if (error) throw error
+      const response = await fetch('/api/update-rates', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.CRON_SECRET}`
+      }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update rates')
+      }
+
+      const data = await response.json()
       
       setUpdateResult({
         success: true,
