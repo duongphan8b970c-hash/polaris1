@@ -112,14 +112,14 @@ export default function Sidebar({ isOpen, onClose }) {
   }
 
   // ✅ IMPROVED: Close sidebar after clicking menu item
-  const handleMenuClick = () => {
-    // Small delay to allow navigation to complete
-    setTimeout(() => {
+      const handleMenuClick = () => {
+      // Chỉ đóng sidebar trên mobile, không block navigation
       if (window.innerWidth < 1024) {
-        onClose()
+        setTimeout(() => {
+          onClose()
+        }, 150) // Tăng delay để navigation hoàn thành trước
       }
-    }, 100)
-  }
+    }
 
   return (
     <>
