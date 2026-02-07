@@ -1,17 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Initialize Supabase client
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.VITE_SUPABASE_ANON_KEY
 )
 
-// Supported currencies to track
 const SUPPORTED_CURRENCIES = ['USD', 'EUR', 'JPY', 'CNY', 'THB', 'SGD', 'KRW', 'GBP']
 
 export default async function handler(req, res) {
   try {
-    // Security: Verify cron secret
     const authHeader = req.headers.authorization
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return res.status(401).json({ error: 'Unauthorized' })
@@ -19,7 +16,6 @@ export default async function handler(req, res) {
 
     console.log('🔄 Fetching latest exchange rates...')
 
-    // Fetch rates from ExchangeRate-API (Free, no API key needed)
     const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
     
     if (!response.ok) {
@@ -31,10 +27,9 @@ export default async function handler(req, res) {
 
     console.log(`💵 USD to VND: ${usdToVnd}`)
 
-    // Prepare rate updates
     const updates = []
 
-    // VND to VND = 1 (base currency)
+    // VND to VND = 1
     updates.push({
       from_currency: 'VND',
       to_currency: 'VND',
@@ -42,14 +37,14 @@ export default async function handler(req, res) {
       updated_at: new Date().toISOString()
     })
 
-    // Calculate each currency to VND
+    // ✅ PHẦN ĐÃ SỬA: Thêm tỷ giá 2 chiều
     for (const currency of SUPPORTED_CURRENCIES) {
       if (data.rates[currency]) {
-        // Convert: 1 CURRENCY = ? VND
         const rateToVnd = currency === 'USD' 
           ? usdToVnd 
           : usdToVnd / data.rates[currency]
 
+        // XUÔI: Currency → VND
         updates.push({
           from_currency: currency,
           to_currency: 'VND',
@@ -57,18 +52,20 @@ export default async function handler(req, res) {
           updated_at: new Date().toISOString()
         })
 
+        // NGƯỢC: VND → Currency
+        const rateFromVnd = 1 / rateToVnd
         updates.push({
           from_currency: 'VND',
           to_currency: currency,
-          rate: parseFloat((1 / rateToVnd).toFixed(8)),
+          rate: parseFloat(rateFromVnd.toFixed(8)),
           updated_at: new Date().toISOString()
         })
 
-        console.log(`💱 ${currency} to VND: ${rateToVnd.toFixed(2)}`)
+        console.log(`💱 ${currency} → VND: ${rateToVnd.toFixed(2)} | VND → ${currency}: ${rateFromVnd.toFixed(8)}`)
       }
     }
 
-    // Update Supabase exchange_rates table
+    // Update database
     console.log('💾 Updating database...')
     
     for (const update of updates) {
@@ -84,7 +81,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // Recalculate all wallet balances with new rates
     console.log('🔢 Recalculating wallet balances...')
     
     const { error: recalcError } = await supabase.rpc('recalculate_all_wallet_balances')
@@ -109,10 +105,11 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('❌ Error updating exchange rates:', error)
-    return res.status(500).json({
+    return res.status(500).json({ 
       success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
+      error: error.message 
     })
   }
 }
+    
+    
