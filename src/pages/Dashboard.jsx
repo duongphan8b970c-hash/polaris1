@@ -82,7 +82,7 @@ export default function Dashboard() {
       const response = await fetch('/api/update-rates', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${import.meta.env.CRON_SECRET}`
+        'Authorization': `Bearer ${import.meta.env.VITE_CRON_SECRET}`
       }
       })
 
