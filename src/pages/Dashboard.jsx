@@ -45,7 +45,7 @@ export default function Dashboard() {
       const { data: tradeData } = await supabase
         .from('trades')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
 
       setTrades(tradeData || [])
 
