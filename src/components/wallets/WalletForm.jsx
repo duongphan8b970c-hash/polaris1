@@ -1,13 +1,5 @@
 import { useState, useEffect } from 'react'
-
-const WALLET_TYPES = [
-  { value: 'bank', label: 'Ngân hàng', icon: '🏦' },
-  { value: 'cash', label: 'Tiền mặt', icon: '💵' },
-  { value: 'ewallet', label: 'Ví điện tử', icon: '📱' },
-  { value: 'credit_card', label: 'Thẻ tín dụng', icon: '💳' },
-  { value: 'investment', label: 'Đầu tư', icon: '📈' },
-  { value: 'other', label: 'Khác', icon: '💰' },
-]
+import { WALLET_TYPE_OPTIONS } from '../../constants'
 
 const CURRENCIES = [
   { value: 'VND', label: 'VND (₫)', symbol: '₫' },
@@ -91,7 +83,7 @@ export default function WalletForm({ wallet, onSubmit, onCancel, loading }) {
           Loại ví <span className="text-red-500">*</span>
         </label>
         <div className="grid grid-cols-2 gap-3">
-          {WALLET_TYPES.map(type => (
+          {WALLET_TYPE_OPTIONS.map(type => (
             <button
               key={type.value}
               type="button"
