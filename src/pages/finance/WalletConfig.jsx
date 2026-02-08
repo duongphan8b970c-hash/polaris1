@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
 import WalletList from '../../components/wallets/WalletList'
 import WalletForm from '../../components/wallets/WalletForm'
@@ -13,6 +13,7 @@ export default function WalletConfig() {
   const [showForm, setShowForm] = useState(false)
   const [editingWallet, setEditingWallet] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [selectedType, setSelectedType] = useState('all')
 
   // ✅ Filter wallets by type
   const filteredWallets = useMemo(() => {
