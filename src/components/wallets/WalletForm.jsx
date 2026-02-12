@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { WALLET_TYPE_OPTIONS } from '../../constants'
+import { WALLET_TYPES, getWalletTypeInfo } from '../../constants' 
 
 const CURRENCIES = [
   { value: 'VND', label: 'VND (₫)', symbol: '₫' },
@@ -55,7 +56,7 @@ export default function WalletForm({ wallet, onSubmit, onCancel, loading }) {
     }))
   }
 
-  const selectedType = WALLET_TYPES.find(t => t.value === formData.type)
+  const selectedType = getWalletTypeInfo(formData.type)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
