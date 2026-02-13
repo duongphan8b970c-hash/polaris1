@@ -111,7 +111,8 @@ export function usePaybackGoals() {
           initial_amount: parseFloat(goalData.initial_amount) || 0,
           start_date: goalData.start_date,
           deadline: goalData.deadline,
-          status: 'active'
+          status: 'active',
+          priority_id: goalData.priority_id || null
         }])
         .select()
         .single()
@@ -137,7 +138,8 @@ export function usePaybackGoals() {
           target_amount: parseFloat(goalData.target_amount),
           initial_amount: parseFloat(goalData.initial_amount) || 0,
           deadline: goalData.deadline,
-          status: goalData.status
+          status: goalData.status,
+          priority_id: goalData.priority_id || null
         })
         .eq('id', id)
         .select()
