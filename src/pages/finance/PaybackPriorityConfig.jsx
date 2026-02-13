@@ -79,21 +79,21 @@ export default function PaybackPriorityConfig() {
       {/* Priority List */}
       {priorities.length === 0 ? (
         <div className="card text-center py-12">
-          <div className="text-4xl mb-4">📌</div>
+          <div className="text-3xl mb-3">📌</div>
           <p className="text-gray-500 font-medium">Chưa có priority nào</p>
           <button onClick={handleCreate} className="mt-4 text-sm text-blue-600 hover:text-blue-700">
             + Tạo priority đầu tiên
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {priorities.map(priority => (
             <div 
               key={priority.id}
               className="card hover:shadow-lg transition-shadow"
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
+              <div className="flex items-start justify-between mb-2.5">
+                <div className="flex items-center gap-2">
                   <span className="text-3xl">{priority.icon}</span>
                   <div>
                     <h3 className="font-bold text-gray-900">{priority.name}</h3>
@@ -104,7 +104,7 @@ export default function PaybackPriorityConfig() {
 
               {/* Color Preview */}
               <div 
-                className="px-3 py-2 rounded-lg mb-3 text-sm font-medium"
+                className="px-3 py-2 rounded-lg mb-2.5 text-xs font-medium"
                 style={{ 
                   backgroundColor: `${priority.color}20`, 
                   color: priority.color,
@@ -115,16 +115,16 @@ export default function PaybackPriorityConfig() {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 <button
                   onClick={() => handleEdit(priority)}
-                  className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors"
                 >
                   Sửa
                 </button>
                 <button
                   onClick={() => handleDelete(priority)}
-                  className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-medium transition-colors"
                 >
                   Xóa
                 </button>

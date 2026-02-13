@@ -1,71 +1,121 @@
-// Payback priority definitions (3 levels only)
-export const PAYBACK_PRIORITIES = [
-  { 
-    value: 'all', 
-    label: 'Tất cả', 
-    icon: '💼', 
-    color: 'bg-gray-100 text-gray-700',
-    hoverColor: 'hover:bg-gray-200',
-    activeRing: 'ring-gray-500',
-    badgeColor: 'bg-gray-100 text-gray-700'
-  },
-  { 
-    value: 1, 
-    label: 'Cao', 
-    icon: '🔴', 
-    color: 'bg-red-100 text-red-700',
-    hoverColor: 'hover:bg-red-200',
-    activeRing: 'ring-red-500',
-    badgeColor: 'bg-red-500 text-white',
-    sortOrder: 1
-  },
-  { 
-    value: 2, 
-    label: 'Trung bình', 
-    icon: '🟡', 
-    color: 'bg-yellow-100 text-yellow-700',
-    hoverColor: 'hover:bg-yellow-200',
-    activeRing: 'ring-yellow-500',
-    badgeColor: 'bg-yellow-500 text-white',
-    sortOrder: 2
-  },
-  { 
-    value: 3, 
-    label: 'Thấp', 
-    icon: '🟢', 
-    color: 'bg-green-100 text-green-700',
-    hoverColor: 'hover:bg-green-200',
-    activeRing: 'ring-green-500',
-    badgeColor: 'bg-green-500 text-white',
-    sortOrder: 3
-  },
-]
+import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabase'
 
-// Priority options for form select (exclude 'all')
-export const PAYBACK_PRIORITY_OPTIONS = PAYBACK_PRIORITIES.filter(p => p.value !== 'all')
+export function usePaybackPriorities() {
+  const [priorities, setPriorities] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-// Helper: Get priority info by sort_order
-export const getPriorityInfo = (sortOrder) => {
-  return PAYBACK_PRIORITIES.find(p => p.value === sortOrder) || PAYBACK_PRIORITIES.find(p => p.value === 2)
-}
+  useEffect(() => {
+    fetchPriorities()
+  }, [])
 
-// Helper: Get priority label with icon
-export const getPriorityLabel = (sortOrder) => {
-  const info = getPriorityInfo(sortOrder)
-  return `${info.icon} ${info.label}`
-}
+  const fetchPriorities = async () => {
+    try {
+      setLoading(true)
+      const { data, error: fetchError } = await supabase
+        .from('payback_priorities')
+        .select('*')
+        .order('sort_order', { ascending: true })
 
-// Helper: Get priority badge color
-export const getPriorityBadgeColor = (sortOrder) => {
-  const info = getPriorityInfo(sortOrder)
-  return info.badgeColor
-}
+      if (fetchError) throw fetchError
 
-// Helper: Sort goals by priority
-export const sortByPriority = (goals) => {
-  return [...goals].sort((a, b) => {
-    const priorityA = a.priority_sort_order || 2
-    const priorityB = b.priority_sort_order || 2
-    return priorityA - priorityB  // 1 (Cao) comes first
-  })
+      setPriorities(data || [])
+    } catch (err) {
+      console.error('Error fetching priorities:', err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const createPriority = async (priorityData) => {
+    try {
+      const { data, error: createError } = await supabase
+        .from('payback_priorities')
+        .insert([{
+          name: priorityData.name,
+          description: priorityData.description || null,
+          color: priorityData.color || '#6B7280',
+          icon: priorityData.icon || '📌',
+          sort_order: priorityData.sort_order || 999
+        }])
+        .select()
+        .single()
+
+      if (createError) throw createError
+
+      await fetchPriorities()
+      return { success: true, data }
+    } catch (err) {
+      console.error('Error creating priority:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
+  const updatePriority = async (id, priorityData) => {
+    try {
+      const { data, error: updateError } = await supabase
+        .from('payback_priorities')
+        .update({
+          name: priorityData.name,
+          description: priorityData.description || null,
+          color: priorityData.color || '#6B7280',
+          icon: priorityData.icon || '📌',
+          sort_order: priorityData.sort_order || 999,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
+
+      await fetchPriorities()
+      return { success: true, data }
+    } catch (err) {
+      console.error('Error updating priority:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
+  const deletePriority = async (id) => {
+    try {
+      // Check if priority is in use
+      const { count } = await supabase
+        .from('payback_goals')
+        .select('id', { count: 'exact', head: true })
+        .eq('priority_id', id)
+
+      if (count > 0) {
+        return { 
+          success: false, 
+          error: `Không thể xóa priority đang được sử dụng bởi ${count} mục tiêu` 
+        }
+      }
+
+      const { error: deleteError } = await supabase
+        .from('payback_priorities')
+        .delete()
+        .eq('id', id)
+
+      if (deleteError) throw deleteError
+
+      await fetchPriorities()
+      return { success: true }
+    } catch (err) {
+      console.error('Error deleting priority:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
+  return {
+    priorities,
+    loading,
+    error,
+    createPriority,
+    updatePriority,
+    deletePriority,
+    refetch: fetchPriorities
+  }
 }

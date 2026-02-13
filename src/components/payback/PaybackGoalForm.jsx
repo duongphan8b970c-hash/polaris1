@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { usePaybackPriorities } from '../../hooks/finance/usePaybackPriorities' 
-import { useNavigate } from 'react-router-dom'
 
 export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
   const { priorities } = usePaybackPriorities()

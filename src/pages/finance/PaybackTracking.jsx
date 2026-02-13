@@ -14,38 +14,51 @@ export default function PaybackTracking() {
   const navigate = useNavigate()
   const { goals, loading, error, createGoal, updateGoal, completeGoal, deleteGoal, refetch } = usePaybackGoals()
   const { priorities } = usePaybackPriorities()
+  
   const [showForm, setShowForm] = useState(false)
   const [editingGoal, setEditingGoal] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [selectedPriority, setSelectedPriority] = useState('all')
 
-  // Calculate summary stats
+  // ✅ Separate active and completed
+  const activeGoals = goals.filter(g => g.status === 'active')
+  const completedGoals = goals.filter(g => g.status === 'completed')
+
+  // Debug
+  console.log('🔍 Goals breakdown:', {
+    total: goals.length,
+    active: activeGoals.length,
+    completed: completedGoals.length,
+    activeNames: activeGoals.map(g => g.name),
+    completedNames: completedGoals.map(g => g.name)
+  })
+
+  // Calculate summary stats (chỉ cho active)
   const stats = {
     total: goals.length,
-    active: goals.filter(g => g.status === 'active').length,
-    completed: goals.filter(g => g.status === 'completed').length,
-    totalDebt: goals.filter(g => g.status === 'active').reduce((sum, g) => sum + g.target_amount, 0),
-    totalPaid: goals.filter(g => g.status === 'active').reduce((sum, g) => sum + g.current_paid, 0),
-    totalRemaining: goals.filter(g => g.status === 'active').reduce((sum, g) => sum + g.remaining, 0)
+    active: activeGoals.length,
+    completed: completedGoals.length,
+    totalDebt: activeGoals.reduce((sum, g) => sum + g.target_amount, 0),
+    totalPaid: activeGoals.reduce((sum, g) => sum + g.current_paid, 0),
+    totalRemaining: activeGoals.reduce((sum, g) => sum + g.remaining, 0)
   }
 
-  // ✅ THÊM: Filter goals by priority
-  const filteredGoals = selectedPriority === 'all'
-    ? goals
-    : goals.filter(g => {
-        // Find priority by goal's priority_id
+  // ✅ Filter active goals by priority
+  const filteredActiveGoals = selectedPriority === 'all'
+    ? activeGoals
+    : activeGoals.filter(g => {
         const goalPriority = priorities.find(p => p.id === g.priority_id)
         return goalPriority?.sort_order === selectedPriority
       })
 
-  // ✅ THÊM: Group goals by priority (for "Tất cả" view)
-  const groupedGoals = goals.reduce((acc, goal) => {
+  // ✅ Group active goals by priority
+  const groupedActiveGoals = activeGoals.reduce((acc, goal) => {
     const priority = priorities.find(p => p.id === goal.priority_id)
     const sortOrder = priority?.sort_order || 999
     
     if (!acc[sortOrder]) {
       acc[sortOrder] = {
-        priority: priority || { name: 'Chưa phân loại', icon: '❓', sort_order: 999 },
+        priority: priority || { name: 'Chưa phân loại', icon: '❓', color: '#6B7280', sort_order: 999 },
         goals: []
       }
     }
@@ -142,7 +155,6 @@ export default function PaybackTracking() {
       {/* Summary Stats */}
       {stats.active > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Total Active */}
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <p className="text-blue-100 text-sm font-medium">Đang theo dõi</p>
@@ -154,7 +166,6 @@ export default function PaybackTracking() {
             <p className="text-blue-100 text-xs">mục tiêu</p>
           </div>
 
-          {/* Total Debt */}
           <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 text-white shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <p className="text-red-100 text-sm font-medium">Tổng tiền</p>
@@ -166,7 +177,6 @@ export default function PaybackTracking() {
             <p className="text-red-100 text-xs">VND</p>
           </div>
 
-          {/* Total Paid */}
           <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <p className="text-green-100 text-sm font-medium">Đã trả</p>
@@ -178,7 +188,6 @@ export default function PaybackTracking() {
             <p className="text-green-100 text-xs">VND</p>
           </div>
 
-          {/* Total Remaining */}
           <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <p className="text-orange-100 text-sm font-medium">Còn lại</p>
@@ -192,111 +201,151 @@ export default function PaybackTracking() {
         </div>
       )}
 
-      {/* ✅ THÊM: Priority Filter Buttons */}
-<div className="mb-6 flex flex-wrap gap-2">
-  <button
-    onClick={() => setSelectedPriority('all')}
-    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-      selectedPriority === 'all'
-        ? 'bg-gray-100 text-gray-700 ring-2 ring-offset-2 ring-gray-500 shadow-md'
-        : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
-    }`}
-  >
-    💼 Tất cả
-    <span className="ml-1.5 text-xs opacity-70">({goals.length})</span>
-  </button>
-
-  {priorities
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map(priority => {
-      const count = goals.filter(g => g.priority_id === priority.id).length
-      const isSelected = selectedPriority === priority.sort_order
-
-      return (
-        <button
-          key={priority.id}
-          onClick={() => setSelectedPriority(priority.sort_order)}
-          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-            isSelected
-              ? 'ring-2 ring-offset-2 shadow-md'
-              : 'border hover:shadow'
-          }`}
-          style={{
-            backgroundColor: isSelected ? `${priority.color}40` : `${priority.color}10`,
-            color: priority.color,
-            borderColor: isSelected ? priority.color : `${priority.color}40`
-          }}
-        >
-          {priority.icon} {priority.name}
-          <span className="ml-1.5 text-xs opacity-70">({count})</span>
-        </button>
-      )
-    })}
-</div>
-
-{/* Goals List - OPTION C: Grouped khi "Tất cả", Filtered khi chọn priority */}
-{selectedPriority === 'all' ? (
-  /* Show grouped by priority */
-  Object.entries(groupedGoals)
-    .sort(([a], [b]) => parseInt(a) - parseInt(b))
-    .map(([sortOrder, { priority, goals: priorityGoals }]) => (
-      <div key={sortOrder} className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div 
-            className="px-3 py-1.5 rounded-lg font-medium text-sm"
-            style={{
-              backgroundColor: `${priority.color || '#6B7280'}20`,
-              color: priority.color || '#6B7280'
-            }}
+      {/* Priority Filter Buttons */}
+      {activeGoals.length > 0 && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedPriority('all')}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+              selectedPriority === 'all'
+                ? 'bg-gray-100 text-gray-700 ring-2 ring-offset-2 ring-gray-500 shadow-md'
+                : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+            }`}
           >
-            <span className="mr-1.5">{priority.icon}</span>
-            {priority.name}
-            <span className="ml-1.5 opacity-70">({priorityGoals.length})</span>
-          </div>
-          <div className="flex-1 h-px bg-gray-200"></div>
-        </div>
-        <PaybackGoalList
-          goals={priorityGoals}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onComplete={handleComplete}
-        />
-      </div>
-    ))
-) : (
-  /* Show filtered flat list */
-  filteredGoals.length > 0 ? (
-    <PaybackGoalList
-      goals={filteredGoals}
-      onEdit={handleEdit}
-      onDelete={handleDelete}
-      onComplete={handleComplete}
-    />
-  ) : (
-    <div className="card text-center py-12">
-      <div className="text-4xl mb-4">
-        {priorities.find(p => p.sort_order === selectedPriority)?.icon || '📋'}
-      </div>
-      <p className="text-gray-500 font-medium">
-        Chưa có mục tiêu nào với priority này
-      </p>
-      <button 
-        onClick={handleCreate}
-        className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
-      >
-        + Tạo mục tiêu mới
-      </button>
-    </div>
-    )
-  )}
+            💼 Tất cả
+            <span className="ml-1.5 text-xs opacity-70">({activeGoals.length})</span>
+          </button>
 
-      {/* Goals List */}
-      <PaybackGoalList
-        goals={goals}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onComplete={handleComplete}
-      />
+          {priorities
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map(priority => {
+              const count = activeGoals.filter(g => g.priority_id === priority.id).length
+              const isSelected = selectedPriority === priority.sort_order
+
+              return (
+                <button
+                  key={priority.id}
+                  onClick={() => setSelectedPriority(priority.sort_order)}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                    isSelected
+                      ? 'ring-2 ring-offset-2 shadow-md'
+                      : 'border hover:shadow'
+                  }`}
+                  style={{
+                    backgroundColor: isSelected ? `${priority.color}40` : `${priority.color}10`,
+                    color: priority.color,
+                    borderColor: isSelected ? priority.color : `${priority.color}40`
+                  }}
+                >
+                  {priority.icon} {priority.name}
+                  <span className="ml-1.5 text-xs opacity-70">({count})</span>
+                </button>
+              )
+            })}
+        </div>
+      )}
+
+      {/* ✅ ACTIVE GOALS SECTION */}
+      {activeGoals.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <svg className="w-6 h-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Đang trả ({activeGoals.length})
+          </h2>
+
+          {selectedPriority === 'all' ? (
+            /* Grouped by priority */
+            Object.entries(groupedActiveGoals)
+              .sort(([a], [b]) => parseInt(a) - parseInt(b))
+              .map(([sortOrder, { priority, goals: priorityGoals }]) => (
+                <div key={sortOrder} className="mb-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div 
+                      className="px-3 py-1.5 rounded-lg font-medium text-sm"
+                      style={{
+                        backgroundColor: `${priority.color}20`,
+                        color: priority.color,
+                        border: `2px solid ${priority.color}40`
+                      }}
+                    >
+                      <span className="mr-1.5">{priority.icon}</span>
+                      {priority.name}
+                      <span className="ml-1.5 opacity-70">({priorityGoals.length})</span>
+                    </div>
+                    <div className="flex-1 h-px bg-gray-200"></div>
+                  </div>
+                  <PaybackGoalList
+                    goals={priorityGoals}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onComplete={handleComplete}
+                  />
+                </div>
+              ))
+          ) : (
+            /* Filtered flat list */
+            filteredActiveGoals.length > 0 ? (
+              <PaybackGoalList
+                goals={filteredActiveGoals}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onComplete={handleComplete}
+              />
+            ) : (
+              <div className="card text-center py-12">
+                <div className="text-4xl mb-4">
+                  {priorities.find(p => p.sort_order === selectedPriority)?.icon || '📋'}
+                </div>
+                <p className="text-gray-500 font-medium">
+                  Chưa có mục tiêu nào với priority này
+                </p>
+                <button 
+                  onClick={handleCreate}
+                  className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  + Tạo mục tiêu mới
+                </button>
+              </div>
+            )
+          )}
+        </div>
+      )}
+
+      {/* ✅ COMPLETED GOALS SECTION */}
+      {completedGoals.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <svg className="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Đã hoàn thành ({completedGoals.length})
+          </h2>
+          <PaybackGoalList
+            goals={completedGoals}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onComplete={handleComplete}
+          />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {activeGoals.length === 0 && completedGoals.length === 0 && (
+        <div className="card text-center py-16">
+          <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-10 h-10 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Chưa có mục tiêu nào</h3>
+          <p className="text-gray-600 mb-6">Tạo mục tiêu đầu tiên để bắt đầu theo dõi payback</p>
+          <button onClick={handleCreate} className="btn btn-primary">
+            + Tạo mục tiêu mới
+          </button>
+        </div>
+      )}
 
       {/* Form Modal */}
       <Modal
