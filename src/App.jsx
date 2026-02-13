@@ -13,6 +13,7 @@ import GoalsDashboard from './pages/goals/GoalsDashboard'
 import GoalDetails from './pages/goals/GoalDetails'
 import CheckinCalendar from './pages/goals/CheckinCalendar'
 import TaskDetails from './pages/goals/TaskDetails'
+import PaybackPriorityConfig from './pages/finance/PaybackPriorityConfig'
 
 // ✅ Create ProtectedRoute component
 function ProtectedRoute({ children, session }) {
@@ -91,6 +92,7 @@ function App() {
           <Route path="wallets" element={<Wallets />} />
           <Route path="reports" element={<Reports />} />
           <Route path="payback" element={<PaybackTracking />} />
+          <Route path="payback/priorities" element={<PaybackPriorityConfig />} />
           <Route path="goals" element={<GoalsDashboard />} />
           <Route path="goals/:goalId" element={<GoalDetails />} />
           <Route path="goals/:goalId/checkin" element={<CheckinCalendar />} />

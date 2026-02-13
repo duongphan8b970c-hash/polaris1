@@ -18,10 +18,19 @@ export function usePaybackGoals() {
 
       // Get payback goals
       const { data: goalsData, error: goalsError } = await supabase
-        .from('payback_goals')
-        .select('*')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
+      .from('payback_goals')
+      .select(`
+        *,
+        priority:payback_priorities(
+          id,
+          name,
+          icon,
+          color,
+          sort_order
+        )
+      `)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
 
       if (goalsError) throw goalsError
 
@@ -68,7 +77,11 @@ export function usePaybackGoals() {
             remaining: Math.max(goal.target_amount - currentPaid, 0),
             is_completed: isCompleted,
             is_overdue: !isCompleted && new Date(goal.deadline) < new Date(),
-            transaction_count: transactions?.length || 0  
+            transaction_count: transactions?.length || 0,  
+            priority_sort_order: goal.priority?.sort_order || 999,  
+            priority_name: goal.priority?.name || 'Chưa phân loại',  
+            priority_icon: goal.priority?.icon || '❓',            
+            priority_color: goal.priority?.color || '#6B7280'        
           }
         })
       )

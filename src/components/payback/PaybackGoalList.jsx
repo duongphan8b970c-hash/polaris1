@@ -15,62 +15,23 @@ export default function PaybackGoalList({ goals, onEdit, onDelete, onComplete })
     )
   }
 
-  // Separate active and completed goals
-  const activeGoals = goals.filter(g => g.status === 'active')
-  const completedGoals = goals.filter(g => g.status === 'completed')
-
+  // ✅ Simple grid render - no filtering
   return (
-    <div className="space-y-6">
-      {/* Active Goals */}
-      {activeGoals.length > 0 && (
-        <div>
-          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Đang trả ({activeGoals.length})
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activeGoals.map(goal => (
-              <PaybackGoalCard 
-                key={goal.id} 
-                goal={goal} 
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onComplete={onComplete}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Completed Goals */}
-      {completedGoals.length > 0 && (
-        <div>
-          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Đã hoàn thành ({completedGoals.length})
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {completedGoals.map(goal => (
-              <PaybackGoalCard 
-                key={goal.id} 
-                goal={goal} 
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onComplete={onComplete}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {goals.map(goal => (
+        <PaybackGoalCard 
+          key={goal.id} 
+          goal={goal} 
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onComplete={onComplete}
+        />
+      ))}
     </div>
   )
 }
 
-// ✅ Card component for individual goal
+// ✅ Card component
 function PaybackGoalCard({ goal, onEdit, onDelete, onComplete }) {
   const isCompleted = goal.status === 'completed'
   const isOverdue = goal.is_overdue && !isCompleted
@@ -89,8 +50,23 @@ function PaybackGoalCard({ goal, onEdit, onDelete, onComplete }) {
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="font-bold text-gray-900 truncate">{goal.name}</h3>
+            
+            {/* ✅ Priority Badge */}
+            {goal.priority && (
+              <span 
+                className="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                style={{
+                  backgroundColor: `${goal.priority.color}20`,
+                  color: goal.priority.color,
+                  border: `1px solid ${goal.priority.color}40`
+                }}
+              >
+                {goal.priority.icon} {goal.priority.name}
+              </span>
+            )}
+            
             {isCompleted && (
               <span className="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                 ✓ Hoàn thành

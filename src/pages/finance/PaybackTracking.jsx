@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { usePaybackGoals } from '../../hooks/finance/usePaybackGoals'
+import { usePaybackPriorities } from '../../hooks/finance/usePaybackPriorities'
 import PaybackGoalList from '../../components/payback/PaybackGoalList'
 import PaybackGoalForm from '../../components/payback/PaybackGoalForm'
 import Modal from '../../components/common/Modal'
@@ -9,11 +11,13 @@ import ErrorMessage from '../../components/common/ErrorMessage'
 import { formatNumber } from '../../utils'
 
 export default function PaybackTracking() {
+  const navigate = useNavigate()
   const { goals, loading, error, createGoal, updateGoal, completeGoal, deleteGoal, refetch } = usePaybackGoals()
-  
+  const { priorities } = usePaybackPriorities()
   const [showForm, setShowForm] = useState(false)
   const [editingGoal, setEditingGoal] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [selectedPriority, setSelectedPriority] = useState('all')
 
   // Calculate summary stats
   const stats = {
@@ -24,6 +28,30 @@ export default function PaybackTracking() {
     totalPaid: goals.filter(g => g.status === 'active').reduce((sum, g) => sum + g.current_paid, 0),
     totalRemaining: goals.filter(g => g.status === 'active').reduce((sum, g) => sum + g.remaining, 0)
   }
+
+  // ✅ THÊM: Filter goals by priority
+  const filteredGoals = selectedPriority === 'all'
+    ? goals
+    : goals.filter(g => {
+        // Find priority by goal's priority_id
+        const goalPriority = priorities.find(p => p.id === g.priority_id)
+        return goalPriority?.sort_order === selectedPriority
+      })
+
+  // ✅ THÊM: Group goals by priority (for "Tất cả" view)
+  const groupedGoals = goals.reduce((acc, goal) => {
+    const priority = priorities.find(p => p.id === goal.priority_id)
+    const sortOrder = priority?.sort_order || 999
+    
+    if (!acc[sortOrder]) {
+      acc[sortOrder] = {
+        priority: priority || { name: 'Chưa phân loại', icon: '❓', sort_order: 999 },
+        goals: []
+      }
+    }
+    acc[sortOrder].goals.push(goal)
+    return acc
+  }, {})
 
   const handleCreate = () => {
     setEditingGoal(null)
@@ -89,12 +117,25 @@ export default function PaybackTracking() {
       <PageHeader 
         title="Theo Dõi Payback" 
         action={
-          <button onClick={handleCreate} className="btn btn-primary">
-            <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Tạo mục tiêu mới
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => navigate('/payback/priorities')}
+              className="btn btn-secondary"
+            >
+              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Quản lý Priorities
+            </button>
+
+            <button onClick={handleCreate} className="btn btn-primary">
+              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Tạo mục tiêu mới
+            </button>
+          </div>
         }
       />
 
@@ -150,6 +191,104 @@ export default function PaybackTracking() {
           </div>
         </div>
       )}
+
+      {/* ✅ THÊM: Priority Filter Buttons */}
+<div className="mb-6 flex flex-wrap gap-2">
+  <button
+    onClick={() => setSelectedPriority('all')}
+    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+      selectedPriority === 'all'
+        ? 'bg-gray-100 text-gray-700 ring-2 ring-offset-2 ring-gray-500 shadow-md'
+        : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+    }`}
+  >
+    💼 Tất cả
+    <span className="ml-1.5 text-xs opacity-70">({goals.length})</span>
+  </button>
+
+  {priorities
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map(priority => {
+      const count = goals.filter(g => g.priority_id === priority.id).length
+      const isSelected = selectedPriority === priority.sort_order
+
+      return (
+        <button
+          key={priority.id}
+          onClick={() => setSelectedPriority(priority.sort_order)}
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+            isSelected
+              ? 'ring-2 ring-offset-2 shadow-md'
+              : 'border hover:shadow'
+          }`}
+          style={{
+            backgroundColor: isSelected ? `${priority.color}40` : `${priority.color}10`,
+            color: priority.color,
+            borderColor: isSelected ? priority.color : `${priority.color}40`
+          }}
+        >
+          {priority.icon} {priority.name}
+          <span className="ml-1.5 text-xs opacity-70">({count})</span>
+        </button>
+      )
+    })}
+</div>
+
+{/* Goals List - OPTION C: Grouped khi "Tất cả", Filtered khi chọn priority */}
+{selectedPriority === 'all' ? (
+  /* Show grouped by priority */
+  Object.entries(groupedGoals)
+    .sort(([a], [b]) => parseInt(a) - parseInt(b))
+    .map(([sortOrder, { priority, goals: priorityGoals }]) => (
+      <div key={sortOrder} className="mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div 
+            className="px-3 py-1.5 rounded-lg font-medium text-sm"
+            style={{
+              backgroundColor: `${priority.color || '#6B7280'}20`,
+              color: priority.color || '#6B7280'
+            }}
+          >
+            <span className="mr-1.5">{priority.icon}</span>
+            {priority.name}
+            <span className="ml-1.5 opacity-70">({priorityGoals.length})</span>
+          </div>
+          <div className="flex-1 h-px bg-gray-200"></div>
+        </div>
+        <PaybackGoalList
+          goals={priorityGoals}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onComplete={handleComplete}
+        />
+      </div>
+    ))
+) : (
+  /* Show filtered flat list */
+  filteredGoals.length > 0 ? (
+    <PaybackGoalList
+      goals={filteredGoals}
+      onEdit={handleEdit}
+      onDelete={handleDelete}
+      onComplete={handleComplete}
+    />
+  ) : (
+    <div className="card text-center py-12">
+      <div className="text-4xl mb-4">
+        {priorities.find(p => p.sort_order === selectedPriority)?.icon || '📋'}
+      </div>
+      <p className="text-gray-500 font-medium">
+        Chưa có mục tiêu nào với priority này
+      </p>
+      <button 
+        onClick={handleCreate}
+        className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
+      >
+        + Tạo mục tiêu mới
+      </button>
+    </div>
+    )
+  )}
 
       {/* Goals List */}
       <PaybackGoalList

@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
+import { usePaybackPriorities } from '../../hooks/finance/usePaybackPriorities' 
+import { useNavigate } from 'react-router-dom'
 
 export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
+  const { priorities } = usePaybackPriorities()
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     target_amount: '',
     initial_amount: '',
     start_date: new Date().toISOString().split('T')[0],
-    deadline: ''
+    deadline: '',
+    priority_id: ''
   })
 
   useEffect(() => {
@@ -18,7 +22,8 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
         target_amount: goal.target_amount,
         initial_amount: goal.initial_amount || 0,
         start_date: goal.start_date,
-        deadline: goal.deadline
+        deadline: goal.deadline,
+        priority_id: goal.priority_id || ''
       })
     }
   }, [goal])
@@ -95,6 +100,47 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
           disabled={loading}
         />
       </div>
+
+      <div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Mức độ ưu tiên <span className="text-red-500">*</span>
+  </label>
+  <div className="grid grid-cols-3 gap-3">
+    {priorities.map(priority => {
+      const isSelected = formData.priority_id === priority.id
+      return (
+        <button
+          key={priority.id}
+          type="button"
+          onClick={() => setFormData(prev => ({ ...prev, priority_id: priority.id }))}
+          className={`p-3 rounded-lg border-2 transition-all text-center ${
+            isSelected
+              ? 'border-current ring-2 ring-offset-2'
+              : 'border-gray-200 hover:border-gray-300'
+          }`}
+          style={{
+            backgroundColor: isSelected ? `${priority.color}20` : 'white',
+            color: isSelected ? priority.color : '#374151',
+            borderColor: isSelected ? priority.color : '#E5E7EB'
+          }}
+          disabled={loading}
+        >
+          <div className="text-2xl mb-1">{priority.icon}</div>
+          <div className="text-sm font-semibold">{priority.name}</div>
+          {priority.description && (
+            <div className="text-xs opacity-70 mt-1">{priority.description}</div>
+          )}
+        </button>
+          )
+        })}
+      </div>
+      {priorities.length === 0 && (
+        <p className="text-sm text-amber-600 mt-2">
+          ⚠️ Chưa có priority nào. 
+          <a href="/payback/priorities" className="underline ml-1">Tạo priority</a>
+        </p>
+      )}
+    </div>
 
       {/* Amounts */}
       <div className="grid grid-cols-2 gap-4">
