@@ -94,7 +94,7 @@ const createGoal = async (goalData) => {
         checkin_days_per_week: goalData.checkin_days_per_week || 7,
         checkin_target_days: goalData.checkin_target_days || null
       }])
-      .select()
+      .select('*, assigned_to, created_by')
       .single()
 
     if (createError) {

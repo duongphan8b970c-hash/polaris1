@@ -40,11 +40,20 @@ export default function SubtaskItem({ subtask, onToggle, onEdit, onDelete }) {
           type="text"
           value={editTitle}
           onChange={(e) => setEditTitle(e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === 'Enter') handleSave()
-            if (e.key === 'Escape') handleCancel()
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              handleSave()
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              handleCancel()
+            }
           }}
-          onBlur={handleSave}
+          onBlur={() => {
+            // Delay to allow Enter key to trigger first
+            setTimeout(() => handleSave(), 100)
+          }}
           className="flex-1 px-2 py-1 border border-blue-500 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
           autoFocus
         />

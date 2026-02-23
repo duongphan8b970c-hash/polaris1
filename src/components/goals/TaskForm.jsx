@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import UserSelector from './UserSelector'
 
 const PRIORITY_OPTIONS = [
   { value: 'low', label: 'Thấp', icon: '🔵' },
@@ -23,7 +24,8 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
     priority: 'medium',
     status: 'todo',
     tags: [],
-    estimated_hours: ''
+    estimated_hours: '',
+    assigned_to: [],
   })
 
   const [tagInput, setTagInput] = useState('')
@@ -38,7 +40,8 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
         priority: task.priority || 'medium',
         status: task.status || 'todo',
         tags: task.tags || [],
-        estimated_hours: task.estimated_hours || ''
+        estimated_hours: task.estimated_hours || '',
+        assigned_to: task.assigned_to || [],
       })
     }
   }, [task])
@@ -199,7 +202,13 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
           />
         </div>
       </div>
-
+       <UserSelector
+        selectedUserIds={formData.assigned_to}
+        onChange={(userIds) => setFormData(prev => ({ ...prev, assigned_to: userIds }))}
+        label="Assign to users"
+        placeholder="Select users to assign..."
+        disabled={loading}
+      />
       {/* Estimated Hours */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">

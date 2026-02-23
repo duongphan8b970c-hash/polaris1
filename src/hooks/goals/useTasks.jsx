@@ -15,23 +15,25 @@ export function useTasks(goalId = null, filters = {}) {
       if (!user) throw new Error('User not authenticated')
 
       let query = supabase
-        .from('tasks')
-        .select(`
-          *,
-          goal:goals(
-            id,
-            name,
-            icon,
-            color
-          ),
-          subtasks(
-            id,
-            title,
-            is_completed
-          )
-        `)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
+      .from('tasks')
+      .select(`
+        *,
+        assigned_to,
+        created_by,
+        goal:goals(
+          id,
+          name,
+          icon,
+          color
+        ),
+        subtasks(
+          id,
+          title,
+          is_completed
+        )
+      `)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
 
       if (goalId) {
         query = query.eq('goal_id', goalId)

@@ -1,3 +1,5 @@
+import UserAvatar from '../common/UserAvatar'
+
 export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }) {
   const isCompleted = goal.status === 'completed'
   const progress = parseFloat(goal.progress) || 0
@@ -51,7 +53,24 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
           </div>
         </div>
       </div>
-
+      {/* ✅ ADD THIS: Assignees section - Before or after progress */}
+      {goal.assigned_to && goal.assigned_to.length > 0 && (
+        <div className="flex items-center gap-2 mt-3">
+          <span className="text-xs text-gray-600">Assigned to:</span>
+          <div className="flex -space-x-2">
+            {goal.assigned_to.slice(0, 3).map((userId, index) => (
+              <div key={userId} style={{ zIndex: 10 - index }}>
+                <UserAvatar userId={userId} size="sm" />
+              </div>
+            ))}
+            {goal.assigned_to.length > 3 && (
+              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-semibold text-gray-600">
+                +{goal.assigned_to.length - 3}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       <div className="mb-4">
         <div className="flex justify-between text-sm mb-2">
           <span className="text-gray-600">Tiến độ</span>

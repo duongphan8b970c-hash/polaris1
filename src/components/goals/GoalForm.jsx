@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import UserSelector from './UserSelector'
 import { PRIORITY_OPTIONS } from '../../constants'
 
 const CHECKIN_FREQUENCY_OPTIONS = [
@@ -21,7 +22,8 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
     is_checkin_enabled: false,
     checkin_frequency: 'daily',
     checkin_days_per_week: 7,
-    checkin_target_days: null
+    checkin_target_days: null,
+    assigned_to: [],
   })
 
   useEffect(() => {
@@ -38,7 +40,8 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
         is_checkin_enabled: goal.is_checkin_enabled || false,
         checkin_frequency: goal.checkin_frequency || 'daily',
         checkin_days_per_week: goal.checkin_days_per_week || 7,
-        checkin_target_days: goal.checkin_target_days || null
+        checkin_target_days: goal.checkin_target_days || null,
+        assigned_to: goal.assigned_to || [],
       })
     }
   }, [goal])
@@ -260,7 +263,13 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
           />
         </div>
       </div>
-
+      <UserSelector
+        selectedUserIds={formData.assigned_to}
+        onChange={(userIds) => setFormData(prev => ({ ...prev, assigned_to: userIds }))}
+        label="Assign to users"
+        placeholder="Select users to assign..."
+        disabled={loading}
+      />
       {/* ✅ CHECKIN SETTINGS */}
       <div className="border-t pt-6">
         <div className="flex items-center gap-3 mb-4">

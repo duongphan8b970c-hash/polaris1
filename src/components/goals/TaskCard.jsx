@@ -1,4 +1,6 @@
 import { useNavigate } from 'react-router-dom'
+import UserAvatar from '../common/UserAvatar'
+
 const STATUS_INFO = {
   todo: { label: 'Cần làm', icon: '📝', color: 'gray' },
   in_progress: { label: 'Đang làm', icon: '⏳', color: 'blue' },
@@ -96,7 +98,24 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
           </div>
         </div>
       )}
-
+      {/* ✅ ADD THIS: Assignees - After progress, before tags */}
+      {task.assigned_to && task.assigned_to.length > 0 && (
+        <div className="flex items-center gap-2 mb-3 ml-7">
+          <span className="text-xs text-gray-500">👥</span>
+          <div className="flex -space-x-2">
+            {task.assigned_to.slice(0, 3).map((userId, index) => (
+              <div key={userId} style={{ zIndex: 10 - index }}>
+                <UserAvatar userId={userId} size="xs" />
+              </div>
+            ))}
+            {task.assigned_to.length > 3 && (
+              <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[9px] font-semibold text-gray-600">
+                +{task.assigned_to.length - 3}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {/* Tags */}
       {task.tags && task.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3 ml-7">
