@@ -15,43 +15,15 @@ export function useUsers() {
       setLoading(true)
       setError(null)
 
-      // Fetch all users from auth.users (via a view or RPC)
-      // Note: Direct access to auth.users is restricted, 
-      // so we'll get users who have created goals/tasks
-      const { data: goalUsers, error: goalError } = await supabase
-        .from('goals')
-        .select('user_id, created_by')
-        .not('user_id', 'is', null)
+      // Fetch all profiles
+      const { data, error: fetchError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, avatar_url')
+        .order('full_name', { ascending: true })
 
-      if (goalError) throw goalError
+      if (fetchError) throw fetchError
 
-      const { data: taskUsers, error: taskError } = await supabase
-        .from('tasks')
-        .select('user_id, created_by')
-        .not('user_id', 'is', null)
-
-      if (taskError) throw taskError
-
-      // Combine and deduplicate user IDs
-      const allUserIds = new Set()
-      goalUsers?.forEach(g => {
-        if (g.user_id) allUserIds.add(g.user_id)
-        if (g.created_by) allUserIds.add(g.created_by)
-      })
-      taskUsers?.forEach(t => {
-        if (t.user_id) allUserIds.add(t.user_id)
-        if (t.created_by) allUserIds.add(t.created_by)
-      })
-
-      // For now, create user objects with IDs
-      // In production, you'd fetch email/name from a users table
-      const usersList = Array.from(allUserIds).map(id => ({
-        id,
-        email: null, // Will be populated if you have a profiles table
-        name: null,
-      }))
-
-      setUsers(usersList)
+      setUsers(data || [])
     } catch (err) {
       console.error('Error fetching users:', err)
       setError(err.message)

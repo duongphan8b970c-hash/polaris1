@@ -1,4 +1,25 @@
+import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabase'
+
 export default function UserAvatar({ userId, size = 'md', showTooltip = true }) {
+  const [profile, setProfile] = useState(null)
+
+  useEffect(() => {
+    fetchProfile()
+  }, [userId])
+
+  const fetchProfile = async () => {
+    if (!userId) return
+    
+    const { data } = await supabase
+      .from('profiles')
+      .select('full_name, avatar_url, email')
+      .eq('id', userId)
+      .single()
+    
+    if (data) setProfile(data)
+  }
+
   const sizeClasses = {
     xs: 'w-5 h-5 text-[10px]',
     sm: 'w-6 h-6 text-xs',
@@ -8,7 +29,7 @@ export default function UserAvatar({ userId, size = 'md', showTooltip = true }) 
 
   // Generate color from userId
   const getColorFromId = (id) => {
-    if (!id) return '#94a3b8' // gray-400
+    if (!id) return '#94a3b8'
     const colors = [
       '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
       '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
@@ -19,27 +40,46 @@ export default function UserAvatar({ userId, size = 'md', showTooltip = true }) 
     return colors[hash % colors.length]
   }
 
-  // Get initials from userId (first 2 chars)
-  const getInitials = (id) => {
-    if (!id) return '?'
-    return id.substring(0, 2).toUpperCase()
+  // Get initials from name or email
+  const getInitials = () => {
+    if (profile?.full_name) {
+      return profile.full_name
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase()
+    }
+    if (profile?.email) {
+      return profile.email.substring(0, 2).toUpperCase()
+    }
+    return '?'
   }
 
   const bgColor = getColorFromId(userId)
-  const initials = getInitials(userId)
+  const initials = getInitials()
+  const displayName = profile?.full_name || profile?.email || 'Unknown User'
 
   return (
     <div className="relative group">
-      <div
-        className={`${sizeClasses[size]} rounded-full flex items-center justify-center text-white font-semibold`}
-        style={{ backgroundColor: bgColor }}
-      >
-        {initials}
-      </div>
+      {profile?.avatar_url ? (
+        <img
+          src={profile.avatar_url}
+          alt={displayName}
+          className={`${sizeClasses[size]} rounded-full object-cover`}
+        />
+      ) : (
+        <div
+          className={`${sizeClasses[size]} rounded-full flex items-center justify-center text-white font-semibold`}
+          style={{ backgroundColor: bgColor }}
+        >
+          {initials}
+        </div>
+      )}
       
       {showTooltip && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-          User: {userId.substring(0, 8)}...
+          {displayName}
         </div>
       )}
     </div>
