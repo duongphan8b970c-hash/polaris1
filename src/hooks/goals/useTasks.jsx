@@ -91,63 +91,89 @@ export function useTasks(goalId = null, filters = {}) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
+      console.log('🔵 createTask called with:', taskData)
+      console.log('🔵 assigned_to:', taskData.assigned_to)
+
+      const insertPayload = {
+        user_id: user.id,
+        goal_id: taskData.goal_id,
+        title: taskData.title,
+        description: taskData.description,
+        start_date: taskData.start_date || null,
+        due_date: taskData.due_date || null,
+        priority: taskData.priority || 'medium',
+        status: 'todo',
+        tags: taskData.tags || [],
+        estimated_hours: taskData.estimated_hours ? parseFloat(taskData.estimated_hours) : null,
+        assigned_to: taskData.assigned_to || [], // ✅ FIX: Add assigned_to
+      }
+
+      console.log('🔵 Insert payload:', insertPayload)
+
       const { data, error: createError } = await supabase
         .from('tasks')
-        .insert([{
-          user_id: user.id,
-          goal_id: taskData.goal_id,
-          title: taskData.title,
-          description: taskData.description,
-          start_date: taskData.start_date || null,
-          due_date: taskData.due_date || null,
-          priority: taskData.priority || 'medium',
-          status: 'todo',
-          tags: taskData.tags || [],
-          estimated_hours: taskData.estimated_hours ? parseFloat(taskData.estimated_hours) : null,
-          assigned_to: taskData.assigned_to || []
-        }])
-        .select('*, assigned_to, created_by')
+        .insert([insertPayload])
+        .select('*, assigned_to, created_by') // ✅ FIX: Select assigned_to
         .single()
 
-      if (createError) throw createError
+      if (createError) {
+        console.error('❌ Create error:', createError)
+        throw createError
+      }
+
+      console.log('✅ Task created:', data)
+      console.log('✅ Returned assigned_to:', data.assigned_to)
 
       await fetchTasks()
       return { success: true, data }
     } catch (err) {
-      console.error('Error creating task:', err)
+      console.error('❌ Error creating task:', err)
       return { success: false, error: err.message }
     }
   }
 
   const updateTask = async (id, taskData) => {
     try {
+      console.log('🔵 updateTask called for ID:', id)
+      console.log('🔵 taskData:', taskData)
+
       const updateData = {
         title: taskData.title,
         description: taskData.description,
+        start_date: taskData.start_date || null,
         due_date: taskData.due_date || null,
         priority: taskData.priority,
         status: taskData.status,
-        tags: taskData.tags,
-        assigned_to: taskData.assigned_to || [],
+        tags: taskData.tags || [],
+        estimated_hours: taskData.estimated_hours ? parseFloat(taskData.estimated_hours) : null,
+        assigned_to: taskData.assigned_to || [], // ✅ FIX: Add assigned_to
       }
 
       if (taskData.status === 'completed' && !taskData.completed_date) {
         updateData.completed_date = new Date().toISOString().split('T')[0]
       }
 
+      console.log('🔵 Update payload:', updateData)
+
       const { data, error: updateError } = await supabase
         .from('tasks')
         .update(updateData)
         .eq('id', id)
-        .select('*, assigned_to, created_by')
+        .select('*, assigned_to, created_by') // ✅ FIX: Select assigned_to
         .single()
 
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('❌ Update error:', updateError)
+        throw updateError
+      }
+
+      console.log('✅ Task updated:', data)
+      console.log('✅ Returned assigned_to:', data.assigned_to)
 
       await fetchTasks()
       return { success: true, data }
     } catch (err) {
-      console.error('Error updating task:', err)
+      console.error('❌ Error updating task:', err)
       return { success: false, error: err.message }
     }
   }
