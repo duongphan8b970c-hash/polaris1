@@ -7,11 +7,10 @@ import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { useNavigate } from 'react-router-dom'
-import AssignmentHistory from '../../components/goals/AssignmentHistory'
 
 export default function GoalsDashboard() {
   const navigate = useNavigate()
-  const { goals, loading, error, createGoal, updateGoal, deleteGoal, completeGoal } = useGoals()
+  const { goals, loading, error, createGoal, updateGoal, deleteGoal } = useGoals()
   
   const [showForm, setShowForm] = useState(false)
   const [editingGoal, setEditingGoal] = useState(null)
@@ -38,7 +37,7 @@ export default function GoalsDashboard() {
   }
 
   const handleDelete = async (goal) => {
-    if (!confirm(`Xóa mục tiêu "${goal.name}"?\n\nLưu ý: Tất cả categories, projects và tasks bên trong cũng sẽ bị xóa.`)) return
+    if (!confirm(`Xóa mục tiêu "${goal.name}"?\n\nLưu ý: Tất cả tasks bên trong cũng sẽ bị xóa.`)) return
     
     const result = await deleteGoal(goal.id)
     if (!result.success) {
@@ -46,22 +45,21 @@ export default function GoalsDashboard() {
     }
   }
 
+  // ✅ FIX: handleComplete receives (goal, endDate) from GoalCard
   const handleComplete = async (goal, endDate) => {
-  // ✅ FIX: Use goal.name properly
-  if (!confirm(`Đánh dấu "${goal?.name || 'goal này'}" là đã hoàn thành?`)) return
-  
-  // ✅ FIX: Pass end_date to update
-  const result = await updateGoal(goal.id, {
-    status: 'completed',
-    end_date: endDate || new Date().toISOString().split('T')[0],
-    progress: 100
-  })
-  
-  if (result.success) {
-    alert('🎉 Chúc mừng! Bạn đã hoàn thành mục tiêu!')
-  } else {
-    alert('Lỗi: ' + result.error)
-  }
+    if (!confirm(`Đánh dấu "${goal?.name || 'mục tiêu này'}" là đã hoàn thành?`)) return
+    
+    const result = await updateGoal(goal.id, {
+      status: 'completed',
+      end_date: endDate || new Date().toISOString().split('T')[0],
+      progress: 100
+    })
+    
+    if (result.success) {
+      alert('🎉 Chúc mừng! Bạn đã hoàn thành mục tiêu!')
+    } else {
+      alert('Lỗi: ' + result.error)
+    }
   }
 
   const handleCloseForm = () => {
@@ -104,66 +102,75 @@ export default function GoalsDashboard() {
         subtitle="Quản lý và theo dõi tiến độ các mục tiêu của bạn"
         action={
           <button onClick={handleCreate} className="btn btn-primary">
-            <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Tạo mục tiêu mới
+            + Tạo mục tiêu mới
           </button>
         }
       />
 
       {/* Summary Stats */}
-      {goals.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Total Goals */}
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-blue-100 text-sm font-medium">Tổng mục tiêu</p>
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="card bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-blue-600 font-medium mb-1">Tổng mục tiêu</p>
+              <p className="text-3xl font-bold text-blue-900">{stats.total}</p>
+            </div>
+            <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
               </svg>
             </div>
-            <p className="text-3xl font-bold">{stats.total}</p>
-            <p className="text-blue-100 text-xs">mục tiêu</p>
           </div>
+          <p className="text-xs text-blue-600 mt-2">mục tiêu</p>
+        </div>
 
-          {/* Active Goals */}
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-green-100 text-sm font-medium">Đang thực hiện</p>
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="card bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-green-600 font-medium mb-1">Đang thực hiện</p>
+              <p className="text-3xl font-bold text-green-900">{stats.active}</p>
+            </div>
+            <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <p className="text-3xl font-bold">{stats.active}</p>
-            <p className="text-green-100 text-xs">mục tiêu</p>
           </div>
+          <p className="text-xs text-green-600 mt-2">mục tiêu</p>
+        </div>
 
-          {/* Completed Goals */}
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-purple-100 text-sm font-medium">Hoàn thành</p>
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="card bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-purple-600 font-medium mb-1">Hoàn thành</p>
+              <p className="text-3xl font-bold text-purple-900">{stats.completed}</p>
+            </div>
+            <div className="w-12 h-12 bg-purple-200 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-3xl font-bold">{stats.completed}</p>
-            <p className="text-purple-100 text-xs">mục tiêu</p>
           </div>
+          <p className="text-xs text-purple-600 mt-2">mục tiêu</p>
+        </div>
 
-          {/* Average Progress */}
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-orange-100 text-sm font-medium">Tiến độ TB</p>
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        <div className="card bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-orange-600 font-medium mb-1">Tiến độ TB</p>
+              <p className="text-3xl font-bold text-orange-900">
+                {stats.totalProgress.toFixed(1)}%
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-orange-200 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-orange-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
               </svg>
             </div>
-            <p className="text-3xl font-bold">{stats.totalProgress.toFixed(1)}%</p>
-            <p className="text-orange-100 text-xs">hoàn thành</p>
           </div>
+          <p className="text-xs text-orange-600 mt-2">hoàn thành</p>
         </div>
-      )}
+      </div>
 
       {/* Goals List */}
       <GoalList
@@ -173,14 +180,6 @@ export default function GoalsDashboard() {
         onComplete={handleComplete}
         onGoalClick={handleGoalClick}
       />
-      
-      {/* Assignment History Section */}
-      <div className="card mt-4">
-        <AssignmentHistory 
-          resourceType="goal" 
-          resourceId={goalId} 
-        />
-      </div>
 
       {/* Form Modal */}
       <Modal
