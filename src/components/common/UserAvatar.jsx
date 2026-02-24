@@ -3,67 +3,87 @@ import { supabase } from '../../lib/supabase'
 
 export default function UserAvatar({ userId, size = 'md', showTooltip = true }) {
   const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!userId) {
+      setLoading(false)
+      return
+    }
     fetchProfile()
   }, [userId])
 
   const fetchProfile = async () => {
-    if (!userId) return
-    
-    const { data } = await supabase
-      .from('profiles')
-      .select('full_name, avatar_url, email')
-      .eq('id', userId)
-      .single()
-    
-    if (data) setProfile(data)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username, full_name, avatar_url')
+        .eq('id', userId)
+        .single()
+
+      if (error) throw error
+      setProfile(data)
+    } catch (err) {
+      console.error('Error fetching profile:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
+  // ✅ Size classes
   const sizeClasses = {
-    xs: 'w-5 h-5 text-[10px]',
-    sm: 'w-6 h-6 text-xs',
-    md: 'w-8 h-8 text-sm',
-    lg: 'w-10 h-10 text-base',
+    xs: 'w-6 h-6 text-[10px]',
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-12 h-12 text-base'
   }
 
-  // Generate color from userId
-  const getColorFromId = (id) => {
-    if (!id) return '#94a3b8'
-    const colors = [
-      '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
-      '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
-      '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
-      '#ec4899', '#f43f5e',
-    ]
-    const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-    return colors[hash % colors.length]
-  }
-
-  // Get initials from name or email
+  // ✅ Get initials from name
   const getInitials = () => {
     if (profile?.full_name) {
       return profile.full_name
         .split(' ')
         .map(n => n[0])
         .join('')
-        .substring(0, 2)
         .toUpperCase()
+        .slice(0, 2)
     }
-    if (profile?.email) {
-      return profile.email.substring(0, 2).toUpperCase()
+    if (profile?.username) {
+      return profile.username.slice(0, 2).toUpperCase()
     }
-    return '?'
+    return '??'
   }
 
-  const bgColor = getColorFromId(userId)
-  const initials = getInitials()
-  const displayName = profile?.full_name || profile?.email || 'Unknown User'
+  // ✅ Generate consistent color based on userId
+  const getBackgroundColor = () => {
+    const colors = [
+      'bg-blue-500',
+      'bg-green-500',
+      'bg-yellow-500',
+      'bg-red-500',
+      'bg-purple-500',
+      'bg-pink-500',
+      'bg-indigo-500',
+      'bg-teal-500'
+    ]
+    if (!userId) return 'bg-gray-400'
+    const index = userId.charCodeAt(0) % colors.length
+    return colors[index]
+  }
+
+  // ✅ Loading state
+  if (loading) {
+    return (
+      <div className={`${sizeClasses[size]} rounded-full bg-gray-200 animate-pulse border-2 border-white`} />
+    )
+  }
+
+  const displayName = profile?.full_name || profile?.username || 'User'
 
   return (
     <div
       className={`${sizeClasses[size]} rounded-full ${getBackgroundColor()} text-white font-bold flex items-center justify-center border-2 border-white shadow-sm cursor-pointer hover:scale-110 transition-transform`}
-      title={showTooltip ? displayName : ''} // ✅ Only show if prop is true
+      title={showTooltip ? displayName : ''} // ✅ Conditional tooltip
     >
       {profile?.avatar_url ? (
         <img
