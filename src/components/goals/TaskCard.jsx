@@ -1,3 +1,4 @@
+import UserAvatar from "../common/UserAvatar"
 export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onClick }) {
   const isCompleted = task.status === 'completed'
   const isInProgress = task.status === 'in_progress'
