@@ -23,7 +23,7 @@ export default function GoalDetails() {
   const [editingTask, setEditingTask] = useState(null)
   const [submittingTask, setSubmittingTask] = useState(false)
   const [submittingGoal, setSubmittingGoal] = useState(false)
-  const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'history'
+  const [activeTab, setActiveTab] = useState('tasks')
 
   const goal = goals.find(g => g.id === goalId)
 
@@ -107,22 +107,24 @@ export default function GoalDetails() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <button
-          onClick={() => navigate('/goals')}
-          className="text-gray-600 hover:text-gray-900 mb-4 flex items-center gap-2 transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Quay lại
-        </button>
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/goals')}
+        className="text-gray-600 hover:text-gray-900 mb-4 flex items-center gap-2 transition-colors"
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Quay lại
+      </button>
 
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
+      {/* ✅ ENHANCEMENT 1: Combined Header + Progress Card */}
+      <div className="card mb-6">
+        {/* Header Row */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-4 flex-1">
             <span className="text-5xl">{goal.icon}</span>
-            <div>
+            <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold text-gray-900">{goal.name}</h1>
                 {isCompleted && (
@@ -132,11 +134,11 @@ export default function GoalDetails() {
                 )}
               </div>
               {goal.description && (
-                <p className="text-gray-600">{goal.description}</p>
+                <p className="text-gray-600 mb-3">{goal.description}</p>
               )}
               
               {/* Goal Stats */}
-              <div className="flex items-center gap-4 mt-3 text-sm">
+              <div className="flex items-center gap-4 text-sm">
                 <span className="text-gray-600">
                   📋 {goal.completed_tasks || 0}/{goal.total_tasks || 0} tasks
                 </span>
@@ -154,7 +156,7 @@ export default function GoalDetails() {
 
           <button
             onClick={() => setShowGoalForm(true)}
-            className="btn btn-outline flex items-center gap-2"
+            className="btn btn-outline flex items-center gap-2 flex-shrink-0"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -162,177 +164,199 @@ export default function GoalDetails() {
             Sửa mục tiêu
           </button>
         </div>
+
+        {/* Progress Bar */}
+        <div className="pt-4 border-t border-gray-200">
+          <div className="flex justify-between text-sm mb-2">
+            <span className="text-gray-600 font-medium">Tiến độ tổng thể</span>
+            <span className="font-bold text-gray-900">{progress.toFixed(1)}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+            <div 
+              className={`h-full rounded-full transition-all duration-500 ${
+                progress >= 100 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                progress >= 75 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
+                progress >= 50 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+                'bg-gradient-to-r from-gray-400 to-gray-500'
+              }`}
+              style={{ width: `${Math.min(progress, 100)}%` }}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="card mb-6">
-        <div className="flex justify-between text-sm mb-2">
-          <span className="text-gray-600">Tiến độ tổng thể</span>
-          <span className="font-semibold text-gray-900">{progress.toFixed(1)}%</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-          <div 
-            className={`h-full rounded-full transition-all duration-500 ${
-              progress >= 100 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-              progress >= 75 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
-              progress >= 50 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-              'bg-gradient-to-r from-gray-400 to-gray-500'
-            }`}
-            style={{ width: `${Math.min(progress, 100)}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Tabs & Content Card */}
+      {/* ✅ ENHANCEMENT 3: Modern Centered Tabs */}
       <div className="card">
         {/* Tabs Navigation */}
-        <div className="flex gap-4 border-b border-gray-200 px-6">
-          <button
-            onClick={() => setActiveTab('tasks')}
-            className={`px-4 py-3 font-medium transition-colors relative ${
-              activeTab === 'tasks'
-                ? 'text-blue-600 border-b-2 border-blue-600 -mb-px'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            📋 Tasks ({tasks.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`px-4 py-3 font-medium transition-colors relative ${
-              activeTab === 'history'
-                ? 'text-blue-600 border-b-2 border-blue-600 -mb-px'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            📜 Lịch sử phân công
-          </button>
+        <div className="flex justify-center border-b border-gray-200">
+          <div className="flex gap-8">
+            <button
+              onClick={() => setActiveTab('tasks')}
+              className={`relative px-6 py-4 font-semibold text-base transition-all duration-200 ${
+                activeTab === 'tasks'
+                  ? 'text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                📋 Tasks ({tasks.length})
+              </span>
+              {activeTab === 'tasks' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+              )}
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`relative px-6 py-4 font-semibold text-base transition-all duration-200 ${
+                activeTab === 'history'
+                  ? 'text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                📜 Lịch sử phân công
+              </span>
+              {activeTab === 'history' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Tab Content */}
         <div className="p-6">
           {/* Tasks Tab */}
           {activeTab === 'tasks' && (
-            <div>
-              {/* Status Filters - Tag Style */}
-              <div className="mb-4">
-                <p className="text-xs font-medium text-gray-600 mb-2">Trạng thái:</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setFilters(prev => ({ ...prev, status: '' }))}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filters.status === '' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Tất cả
-                  </button>
-                  <button
-                    onClick={() => setFilters(prev => ({ ...prev, status: 'todo' }))}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filters.status === 'todo' 
-                        ? 'bg-gray-600 text-white' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    📝 Cần làm
-                  </button>
-                  <button
-                    onClick={() => setFilters(prev => ({ ...prev, status: 'in_progress' }))}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filters.status === 'in_progress' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    ⏳ Đang làm
-                  </button>
-                  <button
-                    onClick={() => setFilters(prev => ({ ...prev, status: 'completed' }))}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filters.status === 'completed' 
-                        ? 'bg-green-600 text-white' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    ✅ Hoàn thành
-                  </button>
-                  <button
-                    onClick={() => setFilters(prev => ({ ...prev, status: 'blocked' }))}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filters.status === 'blocked' 
-                        ? 'bg-red-600 text-white' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    🚫 Bị chặn
-                  </button>
+            <div className="space-y-6">
+              {/* ✅ ENHANCEMENT 2: Segmented Control Filters */}
+              <div className="space-y-4">
+                {/* Status Filter */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Trạng thái:
+                  </label>
+                  <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1 shadow-sm">
+                    <button
+                      onClick={() => setFilters(prev => ({ ...prev, status: '' }))}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        filters.status === ''
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      Tất cả
+                    </button>
+                    <button
+                      onClick={() => setFilters(prev => ({ ...prev, status: 'todo' }))}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        filters.status === 'todo'
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      📝 Cần làm
+                    </button>
+                    <button
+                      onClick={() => setFilters(prev => ({ ...prev, status: 'in_progress' }))}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        filters.status === 'in_progress'
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      ⏳ Đang làm
+                    </button>
+                    <button
+                      onClick={() => setFilters(prev => ({ ...prev, status: 'completed' }))}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        filters.status === 'completed'
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      ✅ Hoàn thành
+                    </button>
+                    <button
+                      onClick={() => setFilters(prev => ({ ...prev, status: 'blocked' }))}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        filters.status === 'blocked'
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      🚫 Bị chặn
+                    </button>
+                  </div>
+                </div>
+
+                {/* Priority Filter */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Độ ưu tiên:
+                  </label>
+                  <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1 shadow-sm">
+                    <button
+                      onClick={() => setFilters(prev => ({ ...prev, priority: '' }))}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        filters.priority === ''
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      Tất cả
+                    </button>
+                    <button
+                      onClick={() => setFilters(prev => ({ ...prev, priority: 'low' }))}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        filters.priority === 'low'
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      🔵 Thấp
+                    </button>
+                    <button
+                      onClick={() => setFilters(prev => ({ ...prev, priority: 'medium' }))}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        filters.priority === 'medium'
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      🟡 Trung bình
+                    </button>
+                    <button
+                      onClick={() => setFilters(prev => ({ ...prev, priority: 'high' }))}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        filters.priority === 'high'
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      🟠 Cao
+                    </button>
+                    <button
+                      onClick={() => setFilters(prev => ({ ...prev, priority: 'urgent' }))}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        filters.priority === 'urgent'
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      🔴 Khẩn cấp
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Priority Filters - Tag Style */}
-              <div className="mb-6">
-                <p className="text-xs font-medium text-gray-600 mb-2">Độ ưu tiên:</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setFilters(prev => ({ ...prev, priority: '' }))}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filters.priority === '' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Tất cả
-                  </button>
-                  <button
-                    onClick={() => setFilters(prev => ({ ...prev, priority: 'low' }))}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filters.priority === 'low' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    🔵 Thấp
-                  </button>
-                  <button
-                    onClick={() => setFilters(prev => ({ ...prev, priority: 'medium' }))}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filters.priority === 'medium' 
-                        ? 'bg-yellow-600 text-white' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    🟡 Trung bình
-                  </button>
-                  <button
-                    onClick={() => setFilters(prev => ({ ...prev, priority: 'high' }))}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filters.priority === 'high' 
-                        ? 'bg-orange-600 text-white' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    🟠 Cao
-                  </button>
-                  <button
-                    onClick={() => setFilters(prev => ({ ...prev, priority: 'urgent' }))}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filters.priority === 'urgent' 
-                        ? 'bg-red-600 text-white' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    🔴 Khẩn cấp
-                  </button>
-                </div>
-              </div>
-
-              {/* Add Task Button & Count */}
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-sm text-gray-600">
+              {/* Header Row */}
+              <div className="flex justify-between items-center py-3 border-y border-gray-200">
+                <div className="text-sm font-medium text-gray-700">
                   {tasks.length} task{tasks.length !== 1 ? 's' : ''}
-                  {(filters.status || filters.priority) && ' (đã lọc)'}
+                  {(filters.status || filters.priority) && (
+                    <span className="ml-2 text-blue-600">(đã lọc)</span>
+                  )}
                 </div>
                 <button onClick={handleCreateTask} className="btn btn-primary btn-sm">
                   + Thêm task
