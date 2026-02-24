@@ -73,28 +73,37 @@ const createGoal = async (goalData) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
-    console.log('📤 Creating goal with data:', goalData)  // ✅ Debug log
+    console.log('🔵 Creating goal with data:', goalData)
+    console.log('🔵 assigned_to:', goalData.assigned_to)
+
+    const insertPayload = {
+      user_id: user.id,
+      name: goalData.name,
+      description: goalData.description,
+      icon: goalData.icon,
+      color: goalData.color,
+      target_value: goalData.target_value,
+      current_value: goalData.current_value || 0,
+      unit: goalData.unit,
+      start_date: goalData.start_date || null, // ✅ NULL if empty
+      end_date: goalData.end_date || null, // ✅ Changed from target_date
+      target_date: goalData.target_date || null, // ✅ NULL if empty
+      category: goalData.category,
+      priority: goalData.priority || 'medium',
+      is_checkin_enabled: goalData.is_checkin_enabled,
+      checkin_frequency: goalData.checkin_frequency,
+      checkin_days_per_week: goalData.checkin_days_per_week,
+      checkin_target_days: goalData.checkin_target_days,
+      assigned_to: goalData.assigned_to || [], // ✅ CRITICAL
+    }
+
+    console.log('🔵 Insert payload:', insertPayload)
+    console.log('🔵 Payload assigned_to:', insertPayload.assigned_to)
 
     const { data, error: createError } = await supabase
       .from('goals')
-      .insert([{
-        user_id: user.id,
-        name: goalData.name,
-        description: goalData.description,
-        icon: goalData.icon || '🎯',
-        color: goalData.color || '#3B82F6',
-        category: goalData.category || 'personal',
-        priority: goalData.priority || 'medium',
-        start_date: goalData.start_date,
-        target_date: goalData.target_date,
-        status: 'active',
-        // ✅ ADD: Checkin settings
-        is_checkin_enabled: goalData.is_checkin_enabled || false,
-        checkin_frequency: goalData.checkin_frequency || 'daily',
-        checkin_days_per_week: goalData.checkin_days_per_week || 7,
-        checkin_target_days: goalData.checkin_target_days || null
-      }])
-      .select('*, assigned_to, created_by')
+      .insert([insertPayload])
+      .select('*, assigned_to, created_by') // ✅ Select back
       .single()
 
     if (createError) {
@@ -103,15 +112,15 @@ const createGoal = async (goalData) => {
     }
 
     console.log('✅ Goal created:', data)
+    console.log('✅ Returned assigned_to:', data.assigned_to)
+
     await fetchGoals()
     return { success: true, data }
   } catch (err) {
-    console.error('Error creating goal:', err)
+    console.error('❌ Error creating goal:', err)
     return { success: false, error: err.message }
   }
 }
-
-// REPLACE updateGoal function (lines ~97-119):
 
 const updateGoal = async (id, goalData) => {
   try {

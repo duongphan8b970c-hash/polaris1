@@ -91,34 +91,40 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
   const previewDays = calculateTargetDaysPreview()
 
   const handleSubmit = (e) => {
-    e.preventDefault()
-    
-    if (!formData.name.trim()) {
-      alert('Vui lòng nhập tên mục tiêu')
-      return
-    }
+  e.preventDefault()
+  
+  if (!formData.name.trim()) {
+    alert('Vui lòng nhập tên mục tiêu')
+    return
+  }
 
-    // ✅ FIX: Don't override user's custom input with calculated value
-    let submitData = { ...formData }
+  // ✅ FIX: Remove empty string dates before submitting
+  let submitData = { ...formData }
+  
+  // Convert empty strings to null for dates
+  if (submitData.start_date === '') {
+    submitData.start_date = new Date().toISOString().split('T')[0]
+  }
+  if (submitData.target_date === '') {
+    submitData.target_date = null // ✅ NULL instead of empty string
+  }
 
-    // Only calculate target_days if NOT custom or if custom but empty
-    if (formData.is_checkin_enabled) {
-      if (formData.checkin_frequency === 'custom') {
-        // Keep user's input for custom
-        submitData.checkin_target_days = parseInt(formData.checkin_target_days) || null
-      } else {
-        // For daily/weekdays/weekly, store frequency settings but not fixed target
-        // The CheckinCalendar will calculate dynamically each month
-        submitData.checkin_target_days = null
-      }
+  // Checkin logic
+  if (formData.is_checkin_enabled) {
+    if (formData.checkin_frequency === 'custom') {
+      submitData.checkin_target_days = parseInt(formData.checkin_target_days) || null
     } else {
       submitData.checkin_target_days = null
-      submitData.checkin_frequency = 'daily'
-      submitData.checkin_days_per_week = 7
     }
+  } else {
+    submitData.checkin_target_days = null
+    submitData.checkin_frequency = 'daily'
+    submitData.checkin_days_per_week = 7
+  }
 
-    console.log('📤 Submitting goal data:', submitData)
-    onSubmit(submitData)
+  console.log('📤 Submitting goal data:', submitData)
+  console.log('📤 assigned_to:', submitData.assigned_to)
+  onSubmit(submitData)
   }
 
   return (
