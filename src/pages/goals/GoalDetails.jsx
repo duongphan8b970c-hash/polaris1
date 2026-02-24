@@ -9,6 +9,7 @@ import AssignmentHistory from '../../components/goals/AssignmentHistory'
 import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
+import UserAvatar from '../../components/common/UserAvatar'
 
 export default function GoalDetails() {
   const { goalId } = useParams()
