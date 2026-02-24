@@ -61,26 +61,18 @@ export default function UserAvatar({ userId, size = 'md', showTooltip = true }) 
   const displayName = profile?.full_name || profile?.email || 'Unknown User'
 
   return (
-    <div className="relative group">
+    <div
+      className={`${sizeClasses[size]} rounded-full ${getBackgroundColor()} text-white font-bold flex items-center justify-center border-2 border-white shadow-sm cursor-pointer hover:scale-110 transition-transform`}
+      title={showTooltip ? displayName : ''} // ✅ Only show if prop is true
+    >
       {profile?.avatar_url ? (
         <img
           src={profile.avatar_url}
           alt={displayName}
-          className={`${sizeClasses[size]} rounded-full object-cover`}
+          className="w-full h-full rounded-full object-cover"
         />
       ) : (
-        <div
-          className={`${sizeClasses[size]} rounded-full flex items-center justify-center text-white font-semibold`}
-          style={{ backgroundColor: bgColor }}
-        >
-          {initials}
-        </div>
-      )}
-      
-      {showTooltip && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-          {displayName}
-        </div>
+        getInitials()
       )}
     </div>
   )

@@ -1,15 +1,13 @@
-import UserAvatar from "../common/UserAvatar"
 export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onClick }) {
   const isCompleted = task.status === 'completed'
   const isInProgress = task.status === 'in_progress'
   const isBlocked = task.status === 'blocked'
   
-  // ✅ Status color mapping
   const getStatusColor = () => {
-    if (isCompleted) return '#10b981' // green
-    if (isInProgress) return '#3b82f6' // blue
-    if (isBlocked) return '#ef4444' // red
-    return '#6b7280' // gray for todo
+    if (isCompleted) return '#10b981'
+    if (isInProgress) return '#3b82f6'
+    if (isBlocked) return '#ef4444'
+    return '#6b7280'
   }
 
   const statusColor = getStatusColor()
@@ -24,7 +22,7 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
         borderColor: `${statusColor}30`
       }}
     >
-      {/* ✅ Colored top accent bar */}
+      {/* Top accent bar */}
       <div 
         className="absolute top-0 left-0 right-0 h-1 transition-all group-hover:h-1.5"
         style={{ 
@@ -33,7 +31,7 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
       />
 
       <div className="p-5 pt-6">
-        {/* Header with colored checkbox */}
+        {/* Header with checkbox */}
         <div className="flex items-start gap-3 mb-3">
           <button
             onClick={(e) => {
@@ -122,14 +120,26 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
           )}
         </div>
 
-        {/* Assignees */}
+        {/* ✅ FIX: Assignees - Tooltip only on hover avatar, not card */}
         {task.assigned_to && task.assigned_to.length > 0 && (
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xs text-gray-600">👥</span>
             <div className="flex -space-x-2">
               {task.assigned_to.slice(0, 3).map((userId, index) => (
-                <div key={userId} style={{ zIndex: 10 - index }}>
-                  <UserAvatar userId={userId} size="sm" />
+                <div 
+                  key={userId} 
+                  style={{ zIndex: 10 - index }}
+                  className="group/avatar relative" // ✅ ADD: group for tooltip
+                >
+                  {/* Avatar */}
+                  <UserAvatar 
+                    userId={userId} 
+                    size="sm" 
+                    showTooltip={false} // ✅ DISABLE default tooltip
+                  />
+                  
+                  {/* ✅ ADD: Custom Tooltip on avatar hover only */}
+                  <UserTooltip userId={userId} />
                 </div>
               ))}
               {task.assigned_to.length > 3 && (
@@ -152,13 +162,38 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
         )}
       </div>
 
-      {/* ✅ Colored bottom accent */}
+      {/* Bottom accent */}
       <div 
         className="h-1 transition-all group-hover:h-1.5"
         style={{ 
           background: `linear-gradient(90deg, ${statusColor}40, ${statusColor}10)`
         }}
       />
+    </div>
+  )
+}
+
+// ✅ ADD: UserTooltip Component
+function UserTooltip({ userId }) {
+  const [profile, setProfile] = useState(null)
+  
+  useEffect(() => {
+    fetchProfile()
+  }, [userId])
+  
+  const fetchProfile = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('username, full_name')
+      .eq('id', userId)
+      .single()
+    setProfile(data)
+  }
+  
+  return (
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover/avatar:opacity-100 pointer-events-none transition-opacity z-50">
+      {profile?.full_name || profile?.username || 'Loading...'}
+      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
     </div>
   )
 }

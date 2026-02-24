@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import UserSelector from './UserSelector'
 import { PRIORITY_OPTIONS } from '../../constants'
 import SmartEndDateInput from './SmartEndDateInput'
+import EmojiPicker from '../common/EmojiPicker' 
 
 const CHECKIN_FREQUENCY_OPTIONS = [
   { value: 'daily', label: 'Mỗi ngày', description: 'Checkin tất cả các ngày trong tháng' },
@@ -166,21 +167,11 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
 
       {/* Icon & Color */}
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Icon
-          </label>
-          <input
-            type="text"
-            name="icon"
-            value={formData.icon}
-            onChange={handleChange}
-            className="input text-2xl text-center"
-            placeholder="🎯"
-            disabled={loading}
-          />
-        </div>
-
+        <EmojiPicker
+          value={formData.icon}
+          onChange={handleChange}
+          disabled={loading}
+        />
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Màu sắc
