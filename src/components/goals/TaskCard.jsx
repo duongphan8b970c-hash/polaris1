@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import UserAvatar from "../common/UserAvatar"
+import { supabase } from '../../lib/supabase'
+import UserAvatar from '../common/UserAvatar'
 
 export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onClick }) {
   const isCompleted = task.status === 'completed'
@@ -25,7 +26,6 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
         borderColor: `${statusColor}30`
       }}
     >
-      {/* Top accent bar */}
       <div 
         className="absolute top-0 left-0 right-0 h-1 transition-all group-hover:h-1.5"
         style={{ 
@@ -34,7 +34,6 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
       />
 
       <div className="p-5 pt-6">
-        {/* Header with checkbox */}
         <div className="flex items-start gap-3 mb-3">
           <button
             onClick={(e) => {
@@ -65,7 +64,6 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
             )}
           </div>
 
-          {/* Action buttons */}
           <div className="flex items-center gap-1">
             <button
               onClick={(e) => {
@@ -73,6 +71,7 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
                 onEdit(task)
               }}
               className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              title="Sửa"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -86,6 +85,7 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
                 }
               }}
               className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Xóa"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -94,7 +94,7 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
           </div>
         </div>
 
-        {/* Status badge with color */}
+        {/* Status badge */}
         <div className="flex items-center gap-2 mb-3">
           <span 
             className="px-2.5 py-1 rounded-lg text-xs font-medium"
@@ -123,7 +123,7 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
           )}
         </div>
 
-        {/* ✅ FIX: Assignees - Tooltip only on hover avatar, not card */}
+        {/* ✅ Assignees with tooltip - ALWAYS VISIBLE */}
         {task.assigned_to && task.assigned_to.length > 0 && (
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xs text-gray-600">👥</span>
@@ -132,16 +132,14 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
                 <div 
                   key={userId} 
                   style={{ zIndex: 10 - index }}
-                  className="group/avatar relative" // ✅ ADD: group for tooltip
+                  className="relative group/avatar"
                 >
-                  {/* Avatar */}
                   <UserAvatar 
                     userId={userId} 
                     size="sm" 
-                    showTooltip={false} // ✅ DISABLE default tooltip
+                    showTooltip={false}
                   />
-                  
-                  {/* ✅ ADD: Custom Tooltip on avatar hover only */}
+                  {/* ✅ Tooltip component */}
                   <UserTooltip userId={userId} />
                 </div>
               ))}
@@ -176,26 +174,45 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
   )
 }
 
-// ✅ ADD: UserTooltip Component
+// ✅ UserTooltip Component - Shows name on avatar hover
 function UserTooltip({ userId }) {
   const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
   
   useEffect(() => {
+    if (!userId) {
+      setLoading(false)
+      return
+    }
     fetchProfile()
   }, [userId])
   
   const fetchProfile = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('username, full_name')
-      .eq('id', userId)
-      .single()
-    setProfile(data)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', userId)
+        .single()
+      
+      if (error) throw error
+      setProfile(data)
+    } catch (err) {
+      console.error('Error fetching tooltip profile:', err)
+    } finally {
+      setLoading(false)
+    }
   }
   
+  // Don't show until loaded
+  if (loading || !profile) return null
+  
+  const displayName = profile.full_name || profile.email || 'User'
+  
   return (
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover/avatar:opacity-100 pointer-events-none transition-opacity z-50">
-      {profile?.full_name || profile?.username || 'Loading...'}
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover/avatar:opacity-100 pointer-events-none transition-opacity duration-200 z-50 shadow-lg">
+      {displayName}
+      {/* Arrow */}
       <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
     </div>
   )
