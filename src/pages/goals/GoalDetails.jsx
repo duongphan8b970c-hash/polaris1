@@ -203,7 +203,6 @@ export default function GoalDetails() {
             </button>
           ))}
         </div>
-
         {/* Add Task Button - nổi bật hơn */}
         <button 
           onClick={handleCreateTask} 

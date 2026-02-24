@@ -7,6 +7,7 @@ import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { useNavigate } from 'react-router-dom'
+import AssignmentHistory from '../../components/goals/AssignmentHistory'
 
 export default function GoalsDashboard() {
   const navigate = useNavigate()
@@ -165,6 +166,14 @@ export default function GoalsDashboard() {
         onComplete={handleComplete}
         onGoalClick={handleGoalClick}
       />
+      
+      {/* Assignment History Section */}
+      <div className="card mt-4">
+        <AssignmentHistory 
+          resourceType="goal" 
+          resourceId={goalId} 
+        />
+      </div>
 
       {/* Form Modal */}
       <Modal
