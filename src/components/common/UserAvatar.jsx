@@ -17,7 +17,7 @@ export default function UserAvatar({ userId, size = 'md', showTooltip = true }) 
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, full_name, avatar_url')
+        .select('email, full_name, avatar_url') // ✅ CHANGED: email instead of username
         .eq('id', userId)
         .single()
 
@@ -30,7 +30,6 @@ export default function UserAvatar({ userId, size = 'md', showTooltip = true }) 
     }
   }
 
-  // ✅ Size classes
   const sizeClasses = {
     xs: 'w-6 h-6 text-[10px]',
     sm: 'w-8 h-8 text-xs',
@@ -38,7 +37,6 @@ export default function UserAvatar({ userId, size = 'md', showTooltip = true }) 
     lg: 'w-12 h-12 text-base'
   }
 
-  // ✅ Get initials from name
   const getInitials = () => {
     if (profile?.full_name) {
       return profile.full_name
@@ -48,13 +46,12 @@ export default function UserAvatar({ userId, size = 'md', showTooltip = true }) 
         .toUpperCase()
         .slice(0, 2)
     }
-    if (profile?.username) {
-      return profile.username.slice(0, 2).toUpperCase()
+    if (profile?.email) { // ✅ CHANGED: email instead of username
+      return profile.email.slice(0, 2).toUpperCase()
     }
     return '??'
   }
 
-  // ✅ Generate consistent color based on userId
   const getBackgroundColor = () => {
     const colors = [
       'bg-blue-500',
@@ -71,19 +68,18 @@ export default function UserAvatar({ userId, size = 'md', showTooltip = true }) 
     return colors[index]
   }
 
-  // ✅ Loading state
   if (loading) {
     return (
       <div className={`${sizeClasses[size]} rounded-full bg-gray-200 animate-pulse border-2 border-white`} />
     )
   }
 
-  const displayName = profile?.full_name || profile?.username || 'User'
+  const displayName = profile?.full_name || profile?.email || 'User' // ✅ CHANGED
 
   return (
     <div
       className={`${sizeClasses[size]} rounded-full ${getBackgroundColor()} text-white font-bold flex items-center justify-center border-2 border-white shadow-sm cursor-pointer hover:scale-110 transition-transform`}
-      title={showTooltip ? displayName : ''} // ✅ Conditional tooltip
+      title={showTooltip ? displayName : ''}
     >
       {profile?.avatar_url ? (
         <img

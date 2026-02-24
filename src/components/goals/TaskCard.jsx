@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import UserAvatar from "../common/UserAvatar"
 
 export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onClick }) {
