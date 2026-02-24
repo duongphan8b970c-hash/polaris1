@@ -10,23 +10,6 @@ import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 
-// ✅ FIX: Define filters locally (không import từ constants)
-const TASK_STATUS_OPTIONS = [
-  { value: '', label: 'Tất cả trạng thái' },
-  { value: 'todo', label: '📝 Cần làm', icon: '📝' },
-  { value: 'in_progress', label: '⏳ Đang làm', icon: '⏳' },
-  { value: 'completed', label: '✅ Hoàn thành', icon: '✅' },
-  { value: 'blocked', label: '🚫 Bị chặn', icon: '🚫' },
-]
-
-const PRIORITY_OPTIONS = [
-  { value: '', label: 'Tất cả độ ưu tiên' },
-  { value: 'low', label: '🔵 Thấp', icon: '🔵' },
-  { value: 'medium', label: '🟡 Trung bình', icon: '🟡' },
-  { value: 'high', label: '🟠 Cao', icon: '🟠' },
-  { value: 'urgent', label: '🔴 Khẩn cấp', icon: '🔴' },
-]
-
 export default function GoalDetails() {
   const { goalId } = useParams()
   const navigate = useNavigate()
@@ -226,62 +209,54 @@ export default function GoalDetails() {
           </button>
         </div>
 
-        {/* Tab Content */}
+        {/* Tab Content - ADD proper padding */}
         <div className="p-6">
           {/* Tasks Tab */}
           {activeTab === 'tasks' && (
-            <div>
-              {/* Filters & Add Button */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex gap-3">
-                  {/* Status Filter */}
-                  <select
-                    value={filters.status}
-                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  >
-                    {TASK_STATUS_OPTIONS.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Priority Filter */}
-                  <select
-                    value={filters.priority}
-                    onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  >
-                    {PRIORITY_OPTIONS.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+            <div className="space-y-4"> {/* ✅ ADD: space-y-4 for vertical spacing */}
+              
+              {/* Filters Section with proper spacing */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-4"> {/* ✅ ADD: background & padding */}
+                
+                {/* Status Filters */}
+                <div>
+                  <p className="text-xs font-medium text-gray-700 mb-3">Trạng thái:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {/* Filter buttons... */}
+                  </div>
                 </div>
 
+                {/* Priority Filters */}
+                <div>
+                  <p className="text-xs font-medium text-gray-700 mb-3">Độ ưu tiên:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {/* Filter buttons... */}
+                  </div>
+                </div>
+              </div>
+
+              {/* Header Row */}
+              <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                <div className="text-sm font-medium text-gray-700">
+                  {tasks.length} task{tasks.length !== 1 ? 's' : ''}
+                  {(filters.status || filters.priority) && (
+                    <span className="ml-2 text-blue-600">(đã lọc)</span>
+                  )}
+                </div>
                 <button onClick={handleCreateTask} className="btn btn-primary btn-sm">
                   + Thêm task
                 </button>
               </div>
-
-              {/* Tasks List */}
-              {tasks.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-5xl mb-3">📝</div>
-                  <p className="text-gray-600 mb-4">
-                    {filters.status || filters.priority 
-                      ? 'Không có task nào phù hợp với bộ lọc'
-                      : 'Chưa có task nào'
-                    }
-                  </p>
-                  {!filters.status && !filters.priority && (
-                    <button onClick={handleCreateTask} className="btn btn-primary btn-sm">
-                      Tạo task đầu tiên
-                    </button>
-                  )}
-                </div>
+              {/* Tasks Grid */}
+      <div>
+        {tasks.length === 0 ? (
+          /* Empty state */
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Task cards */}
+          </div>
+        )}
+      </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {tasks.map(task => (

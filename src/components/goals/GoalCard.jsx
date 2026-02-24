@@ -1,30 +1,44 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import UserAvatar from '../common/UserAvatar'
 
 export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }) {
   const [showCompletePrompt, setShowCompletePrompt] = useState(false)
+  const hasPromptedRef = useRef(false) // ✅ Use ref to persist across renders
+  
   const isCompleted = goal.status === 'completed'
   const progress = parseFloat(goal.progress) || 0
 
-  // ✅ Check if should prompt for completion
+  // ✅ FIX: Better prompt logic
   useEffect(() => {
-    if (progress >= 100 && !isCompleted) {
-      setShowCompletePrompt(true)
-    } else {
+    // Don't show if:
+    // 1. Already completed
+    // 2. Progress not 100%
+    // 3. Already prompted this session
+    if (isCompleted || progress < 100 || hasPromptedRef.current) {
       setShowCompletePrompt(false)
+      return
     }
+
+    // Show prompt
+    setShowCompletePrompt(true)
   }, [progress, isCompleted])
 
-  const handleMarkComplete = (e) => {
-  e.stopPropagation()
-  const today = new Date().toISOString().split('T')[0]
-  onComplete(goal, today)
-  setShowCompletePrompt(false)
+  const handleMarkComplete = async (e) => {
+    e.stopPropagation()
+    const today = new Date().toISOString().split('T')[0]
+    
+    // ✅ Hide prompt and mark as prompted
+    setShowCompletePrompt(false)
+    hasPromptedRef.current = true
+    
+    // Call parent handler
+    await onComplete(goal, today)
   }
 
   const handleDismissPrompt = (e) => {
     e.stopPropagation()
     setShowCompletePrompt(false)
+    hasPromptedRef.current = true // ✅ Mark as prompted
   }
 
   const getTimeRemaining = () => {
@@ -57,7 +71,7 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
       {/* ✅ Completion Prompt */}
       {showCompletePrompt && (
         <div 
-          className="absolute top-2 right-2 bg-green-50 border-2 border-green-500 rounded-lg p-3 shadow-lg z-20 max-w-xs"
+          className="absolute top-2 right-2 bg-green-50 border-2 border-green-500 rounded-lg p-3 shadow-xl z-20 max-w-xs"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-start gap-2 mb-2">
@@ -129,7 +143,7 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
             onClick={(e) => {
               e.stopPropagation()
               if (confirm(`Xóa goal "${goal.name}"?`)) {
-                onDelete(goal.id)
+                onDelete(goal)
               }
             }}
             className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -142,10 +156,10 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
         </div>
       </div>
 
-      {/* ✅ Assignees Section */}
+      {/* Assignees */}
       {goal.assigned_to && goal.assigned_to.length > 0 && (
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs text-gray-600">👥 Assigned to:</span>
+          <span className="text-xs text-gray-600">👥</span>
           <div className="flex -space-x-2">
             {goal.assigned_to.slice(0, 5).map((userId, index) => (
               <div key={userId} style={{ zIndex: 10 - index }}>
@@ -210,7 +224,7 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
       </div>
 
       {/* Time Remaining */}
-      {timeRemaining && (
+      {timeRemaining && !isCompleted && (
         <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${
           timeRemaining.type === 'overdue' ? 'bg-red-50 text-red-700 border border-red-200' :
           timeRemaining.type === 'today' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
