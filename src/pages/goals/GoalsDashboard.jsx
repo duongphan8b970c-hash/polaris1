@@ -46,15 +46,22 @@ export default function GoalsDashboard() {
     }
   }
 
-  const handleComplete = async (goal) => {
-    if (!confirm(`Đánh dấu "${goal.name}" là đã hoàn thành?`)) return
-    
-    const result = await completeGoal(goal.id)
-    if (result.success) {
-      alert('🎉 Chúc mừng! Bạn đã hoàn thành mục tiêu!')
-    } else {
-      alert('Lỗi: ' + result.error)
-    }
+  const handleComplete = async (goal, endDate) => {
+  // ✅ FIX: Use goal.name properly
+  if (!confirm(`Đánh dấu "${goal?.name || 'goal này'}" là đã hoàn thành?`)) return
+  
+  // ✅ FIX: Pass end_date to update
+  const result = await updateGoal(goal.id, {
+    status: 'completed',
+    end_date: endDate || new Date().toISOString().split('T')[0],
+    progress: 100
+  })
+  
+  if (result.success) {
+    alert('🎉 Chúc mừng! Bạn đã hoàn thành mục tiêu!')
+  } else {
+    alert('Lỗi: ' + result.error)
+  }
   }
 
   const handleCloseForm = () => {

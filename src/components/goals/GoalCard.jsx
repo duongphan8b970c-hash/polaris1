@@ -16,10 +16,10 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
   }, [progress, isCompleted])
 
   const handleMarkComplete = (e) => {
-    e.stopPropagation() // Prevent card click
-    const today = new Date().toISOString().split('T')[0]
-    onComplete(goal.id, today)
-    setShowCompletePrompt(false)
+  e.stopPropagation()
+  const today = new Date().toISOString().split('T')[0]
+  onComplete(goal, today)
+  setShowCompletePrompt(false)
   }
 
   const handleDismissPrompt = (e) => {
