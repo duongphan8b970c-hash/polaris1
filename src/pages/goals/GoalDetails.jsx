@@ -209,54 +209,152 @@ export default function GoalDetails() {
           </button>
         </div>
 
-        {/* Tab Content - ADD proper padding */}
+        {/* Tab Content */}
         <div className="p-6">
           {/* Tasks Tab */}
           {activeTab === 'tasks' && (
-            <div className="space-y-4"> {/* ✅ ADD: space-y-4 for vertical spacing */}
-              
-              {/* Filters Section with proper spacing */}
-              <div className="bg-gray-50 rounded-lg p-4 space-y-4"> {/* ✅ ADD: background & padding */}
-                
-                {/* Status Filters */}
-                <div>
-                  <p className="text-xs font-medium text-gray-700 mb-3">Trạng thái:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {/* Filter buttons... */}
-                  </div>
-                </div>
-
-                {/* Priority Filters */}
-                <div>
-                  <p className="text-xs font-medium text-gray-700 mb-3">Độ ưu tiên:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {/* Filter buttons... */}
-                  </div>
+            <div>
+              {/* Status Filters - Tag Style */}
+              <div className="mb-4">
+                <p className="text-xs font-medium text-gray-600 mb-2">Trạng thái:</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setFilters(prev => ({ ...prev, status: '' }))}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      filters.status === '' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Tất cả
+                  </button>
+                  <button
+                    onClick={() => setFilters(prev => ({ ...prev, status: 'todo' }))}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      filters.status === 'todo' 
+                        ? 'bg-gray-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    📝 Cần làm
+                  </button>
+                  <button
+                    onClick={() => setFilters(prev => ({ ...prev, status: 'in_progress' }))}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      filters.status === 'in_progress' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    ⏳ Đang làm
+                  </button>
+                  <button
+                    onClick={() => setFilters(prev => ({ ...prev, status: 'completed' }))}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      filters.status === 'completed' 
+                        ? 'bg-green-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    ✅ Hoàn thành
+                  </button>
+                  <button
+                    onClick={() => setFilters(prev => ({ ...prev, status: 'blocked' }))}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      filters.status === 'blocked' 
+                        ? 'bg-red-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    🚫 Bị chặn
+                  </button>
                 </div>
               </div>
 
-              {/* Header Row */}
-              <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                <div className="text-sm font-medium text-gray-700">
+              {/* Priority Filters - Tag Style */}
+              <div className="mb-6">
+                <p className="text-xs font-medium text-gray-600 mb-2">Độ ưu tiên:</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setFilters(prev => ({ ...prev, priority: '' }))}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      filters.priority === '' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Tất cả
+                  </button>
+                  <button
+                    onClick={() => setFilters(prev => ({ ...prev, priority: 'low' }))}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      filters.priority === 'low' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    🔵 Thấp
+                  </button>
+                  <button
+                    onClick={() => setFilters(prev => ({ ...prev, priority: 'medium' }))}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      filters.priority === 'medium' 
+                        ? 'bg-yellow-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    🟡 Trung bình
+                  </button>
+                  <button
+                    onClick={() => setFilters(prev => ({ ...prev, priority: 'high' }))}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      filters.priority === 'high' 
+                        ? 'bg-orange-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    🟠 Cao
+                  </button>
+                  <button
+                    onClick={() => setFilters(prev => ({ ...prev, priority: 'urgent' }))}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      filters.priority === 'urgent' 
+                        ? 'bg-red-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    🔴 Khẩn cấp
+                  </button>
+                </div>
+              </div>
+
+              {/* Add Task Button & Count */}
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-sm text-gray-600">
                   {tasks.length} task{tasks.length !== 1 ? 's' : ''}
-                  {(filters.status || filters.priority) && (
-                    <span className="ml-2 text-blue-600">(đã lọc)</span>
-                  )}
+                  {(filters.status || filters.priority) && ' (đã lọc)'}
                 </div>
                 <button onClick={handleCreateTask} className="btn btn-primary btn-sm">
                   + Thêm task
                 </button>
               </div>
-              {/* Tasks Grid */}
-      <div>
-        {tasks.length === 0 ? (
-          /* Empty state */
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Task cards */}
-          </div>
-        )}
-      </div>
+
+              {/* Tasks List */}
+              {tasks.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-5xl mb-3">📝</div>
+                  <p className="text-gray-600 mb-4">
+                    {filters.status || filters.priority 
+                      ? 'Không có task nào phù hợp với bộ lọc'
+                      : 'Chưa có task nào'
+                    }
+                  </p>
+                  {!filters.status && !filters.priority && (
+                    <button onClick={handleCreateTask} className="btn btn-primary btn-sm">
+                      Tạo task đầu tiên
+                    </button>
+                  )}
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {tasks.map(task => (
