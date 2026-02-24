@@ -28,6 +28,12 @@ export default function UserSelector({
     const newSelection = selectedUserIds.includes(userId)
       ? selectedUserIds.filter(id => id !== userId)
       : [...selectedUserIds, userId]
+
+    console.log('🟢 UserSelector - toggleUser called')
+    console.log('  Current selection:', selectedUserIds)
+    console.log('  Clicked userId:', userId)
+    console.log('  New selection:', newSelection)
+    console.log('  Type check:', Array.isArray(newSelection), typeof newSelection)
     onChange(newSelection)
   }
 

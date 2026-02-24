@@ -103,9 +103,10 @@ export function useTasks(goalId = null, filters = {}) {
           priority: taskData.priority || 'medium',
           status: 'todo',
           tags: taskData.tags || [],
-          estimated_hours: taskData.estimated_hours ? parseFloat(taskData.estimated_hours) : null
+          estimated_hours: taskData.estimated_hours ? parseFloat(taskData.estimated_hours) : null,
+          assigned_to: taskData.assigned_to || []
         }])
-        .select()
+        .select('*, assigned_to, created_by')
         .single()
 
       if (createError) throw createError
@@ -126,7 +127,8 @@ export function useTasks(goalId = null, filters = {}) {
         due_date: taskData.due_date || null,
         priority: taskData.priority,
         status: taskData.status,
-        tags: taskData.tags
+        tags: taskData.tags,
+        assigned_to: taskData.assigned_to || [],
       }
 
       if (taskData.status === 'completed' && !taskData.completed_date) {
@@ -137,7 +139,7 @@ export function useTasks(goalId = null, filters = {}) {
         .from('tasks')
         .update(updateData)
         .eq('id', id)
-        .select()
+        .select('*, assigned_to, created_by')
         .single()
 
       if (updateError) throw updateError
