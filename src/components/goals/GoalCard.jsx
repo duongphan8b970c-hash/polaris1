@@ -91,8 +91,7 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
         </div>
       )}
 
-      {/* ✅ REDUCED PADDING: p-6 → p-4 */}
-      <div className="p-4">
+      <div className="p-5">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -229,7 +228,7 @@ export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }
             </span>
             {timeRemaining.days > 0 && (
               <span className="font-semibold text-[10px]">
-                {timeRemaining.days}d
+                {timeRemaining.days} ngày
               </span>
             )}
           </div>

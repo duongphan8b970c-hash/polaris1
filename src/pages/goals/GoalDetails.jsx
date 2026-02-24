@@ -118,71 +118,136 @@ export default function GoalDetails() {
         Quay lại
       </button>
 
-      {/* Combined Header Card */}
-      <div className="card mb-6 p-6"> {/* ✅ Consistent padding */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-4 flex-1">
-            <span className="text-5xl">{goal.icon}</span>
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-gray-900">{goal.name}</h1> {/* ✅ Reduced from 3xl */}
-                {isCompleted && (
-                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    ✓ Hoàn thành
-                  </span>
-                )}
+      {/* ✅ COLORFUL Header Card with Gradient Background */}
+      <div 
+        className="card mb-6 p-6 relative overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${goal.color}15 0%, ${goal.color}05 100%)`,
+          borderTop: `3px solid ${goal.color}`
+        }}
+      >
+        {/* Decorative gradient overlay */}
+        <div 
+          className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-20"
+          style={{ background: goal.color }}
+        />
+        
+        <div className="relative z-10">
+          {/* Header Row */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-4 flex-1">
+              {/* ✅ Icon with colored background */}
+              <div 
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shadow-lg"
+                style={{ 
+                  background: `linear-gradient(135deg, ${goal.color}20, ${goal.color}40)`,
+                  border: `2px solid ${goal.color}30`
+                }}
+              >
+                {goal.icon}
               </div>
-              {goal.description && (
-                <p className="text-sm text-gray-600 mb-3">{goal.description}</p>
-              )}
               
-              {/* Goal Stats */}
-              <div className="flex items-center gap-4 text-sm">
-                <span className="text-gray-600">
-                  📋 {goal.completed_tasks || 0}/{goal.total_tasks || 0} tasks
-                </span>
-                <span className="text-gray-600">
-                  📊 {progress.toFixed(1)}%
-                </span>
-                {goal.category && (
-                  <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700">
-                    {goal.category}
-                  </span>
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-2xl font-bold text-gray-900">{goal.name}</h1>
+                  {isCompleted && (
+                    <span 
+                      className="px-3 py-1 rounded-full text-sm font-medium shadow-sm"
+                      style={{ 
+                        backgroundColor: `${goal.color}20`,
+                        color: goal.color,
+                        border: `1px solid ${goal.color}40`
+                      }}
+                    >
+                      ✓ Hoàn thành
+                    </span>
+                  )}
+                </div>
+                {goal.description && (
+                  <p className="text-sm text-gray-700 mb-3 font-medium">{goal.description}</p>
                 )}
+                
+                {/* ✅ Colorful Stats Pills */}
+                <div className="flex items-center gap-3 text-sm">
+                  <span 
+                    className="px-3 py-1.5 rounded-lg font-semibold shadow-sm"
+                    style={{ 
+                      backgroundColor: `${goal.color}15`,
+                      color: goal.color
+                    }}
+                  >
+                    📋 {goal.completed_tasks || 0}/{goal.total_tasks || 0} tasks
+                  </span>
+                  <span 
+                    className="px-3 py-1.5 rounded-lg font-semibold shadow-sm"
+                    style={{ 
+                      backgroundColor: `${goal.color}15`,
+                      color: goal.color
+                    }}
+                  >
+                    📊 {progress.toFixed(1)}%
+                  </span>
+                  {goal.category && (
+                    <span className="px-3 py-1.5 rounded-lg text-xs bg-white/60 backdrop-blur-sm text-gray-700 font-medium shadow-sm border border-gray-200">
+                      {goal.category}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowGoalForm(true)}
+              className="btn btn-outline flex items-center gap-2 flex-shrink-0 text-sm hover:scale-105 transition-transform"
+              style={{ 
+                borderColor: goal.color,
+                color: goal.color
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Sửa
+            </button>
+          </div>
+
+          {/* ✅ Colorful Progress Bar */}
+          <div className="pt-4 border-t border-white/40">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gray-700 font-semibold">Tiến độ</span>
+              <span className="font-bold" style={{ color: goal.color }}>{progress.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-white/60 backdrop-blur-sm rounded-full h-3 overflow-hidden shadow-inner">
+              <div 
+                className="h-full rounded-full transition-all duration-500 shadow-lg relative overflow-hidden"
+                style={{ 
+                  width: `${Math.min(progress, 100)}%`,
+                  background: progress >= 100 
+                    ? `linear-gradient(90deg, ${goal.color}, ${goal.color}dd)` 
+                    : `linear-gradient(90deg, ${goal.color}cc, ${goal.color})`
+                }}
+              >
+                {/* Shimmer effect */}
+                <div 
+                  className="absolute inset-0 opacity-30"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
+                    animation: progress < 100 ? 'shimmer 2s infinite' : 'none'
+                  }}
+                />
               </div>
             </div>
           </div>
-
-          <button
-            onClick={() => setShowGoalForm(true)}
-            className="btn btn-outline flex items-center gap-2 flex-shrink-0 text-sm"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            Sửa
-          </button>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="pt-4 border-t border-gray-200">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-600 font-medium">Tiến độ</span>
-            <span className="font-semibold text-gray-900">{progress.toFixed(1)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden"> {/* ✅ Reduced from h-4 */}
-            <div 
-              className={`h-full rounded-full transition-all duration-500 ${
-                progress >= 100 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                progress >= 75 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
-                progress >= 50 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                'bg-gradient-to-r from-gray-400 to-gray-500'
-              }`}
-              style={{ width: `${Math.min(progress, 100)}%` }}
-            />
-          </div>
         </div>
       </div>
+
+      {/* Add shimmer animation to your CSS */}
+      <style jsx>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
 
       {/* Tabs Card */}
       <div className="card">
