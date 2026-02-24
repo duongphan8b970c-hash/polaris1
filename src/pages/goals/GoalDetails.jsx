@@ -313,7 +313,7 @@ export default function GoalDetails() {
                           : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      🟡 TB
+                      🟡 Trung bình
                     </button>
                     <button
                       onClick={() => setFilters(prev => ({ ...prev, priority: 'high' }))}
@@ -324,16 +324,6 @@ export default function GoalDetails() {
                       }`}
                     >
                       🟠 Cao
-                    </button>
-                    <button
-                      onClick={() => setFilters(prev => ({ ...prev, priority: 'urgent' }))}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
-                        filters.priority === 'urgent'
-                          ? 'bg-gray-900 text-white shadow-sm'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      🔴 KCấp
                     </button>
                   </div>
                 </div>
