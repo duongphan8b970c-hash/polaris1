@@ -4,40 +4,29 @@ import { useGoals } from '../../hooks/goals/useGoals'
 import { useTasks } from '../../hooks/goals/useTasks'
 import TaskCard from '../../components/goals/TaskCard'
 import TaskForm from '../../components/goals/TaskForm'
+import GoalForm from '../../components/goals/GoalForm'
+import AssignmentHistory from '../../components/goals/AssignmentHistory'
 import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
-import { TASK_STATUS_FILTERS } from '../../constants'
-import { formatDate } from '../../utils'
-import AssignmentHistory from '../../components/goals/AssignmentHistory' 
+import { TASK_STATUS_FILTERS, PRIORITY_OPTIONS } from '../../constants'
 
 export default function GoalDetails() {
   const { goalId } = useParams()
   const navigate = useNavigate()
+  
   const { goals, loading: goalsLoading, updateGoal } = useGoals()
-  const { tasks, loading: tasksLoading, createTask, updateTask, deleteTask } = useTasks(goalId)
-
+  const [filters, setFilters] = useState({ status: '', priority: '' })
+  const { tasks, loading: tasksLoading, createTask, updateTask, deleteTask, toggleTaskStatus } = useTasks(goalId, filters)
+  
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [showGoalForm, setShowGoalForm] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
-  const [activeTab, setActiveTab] = useState('tasks') // ✅ ADD: 'tasks' | 'history'
+  const [submittingTask, setSubmittingTask] = useState(false)
+  const [submittingGoal, setSubmittingGoal] = useState(false)
+  const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'history'
 
   const goal = goals.find(g => g.id === goalId)
-
-  if (goalsLoading || tasksLoading) {
-    return <Loading message="Loading goal details..." />
-  }
-
-  if (!goal) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-600">Goal not found</p>
-        <button onClick={() => navigate('/goals')} className="btn btn-primary mt-4">
-          ← Back to Goals
-        </button>
-      </div>
-    )
-  }
 
   const handleCreateTask = () => {
     setEditingTask(null)
@@ -49,61 +38,154 @@ export default function GoalDetails() {
     setShowTaskForm(true)
   }
 
-  const handleSubmitTask = async (taskData) => {
-    const result = editingTask
-      ? await updateTask(editingTask.id, taskData)
-      : await createTask({ ...taskData, goal_id: goalId })
+  const handleDeleteTask = async (task) => {
+    if (!confirm(`Xóa công việc "${task.title}"?`)) return
     
-    if (result.success) {
-      setShowTaskForm(false)
-      setEditingTask(null)
-    } else {
-      alert('Error: ' + result.error)
+    const result = await deleteTask(task.id)
+    if (!result.success) {
+      alert('Lỗi: ' + result.error)
     }
   }
 
+  const handleToggleTask = async (task) => {
+    await toggleTaskStatus(task.id, task.status)
+  }
+
+  const handleCloseTaskForm = () => {
+    setShowTaskForm(false)
+    setEditingTask(null)
+  }
+
+  const handleSubmitTask = async (formData) => {
+    setSubmittingTask(true)
+    
+    const result = editingTask
+      ? await updateTask(editingTask.id, formData)
+      : await createTask({ ...formData, goal_id: goalId })
+    
+    if (result.success) {
+      handleCloseTaskForm()
+    } else {
+      alert('Lỗi: ' + result.error)
+    }
+    
+    setSubmittingTask(false)
+  }
+
   const handleUpdateGoal = async (goalData) => {
+    setSubmittingGoal(true)
+    
     const result = await updateGoal(goalId, goalData)
+    
     if (result.success) {
       setShowGoalForm(false)
     } else {
-      alert('Error: ' + result.error)
+      alert('Lỗi: ' + result.error)
     }
+    
+    setSubmittingGoal(false)
   }
+
+  if (goalsLoading || tasksLoading) {
+    return <Loading message="Đang tải chi tiết mục tiêu..." />
+  }
+
+  if (!goal) {
+    return (
+      <ErrorMessage 
+        message="Không tìm thấy mục tiêu" 
+        action={
+          <button onClick={() => navigate('/goals')} className="btn btn-primary mt-4">
+            ← Quay lại danh sách
+          </button>
+        }
+      />
+    )
+  }
+
+  const progress = parseFloat(goal.progress) || 0
+  const isCompleted = goal.status === 'completed'
 
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/goals')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <span className="text-4xl">{goal.icon}</span>
-              {goal.name}
-            </h1>
-            {goal.description && (
-              <p className="text-gray-600 mt-1">{goal.description}</p>
-            )}
-          </div>
-        </div>
+      <div className="mb-6">
         <button
-          onClick={() => setShowGoalForm(true)}
-          className="btn btn-outline"
+          onClick={() => navigate('/goals')}
+          className="text-gray-600 hover:text-gray-900 mb-4 flex items-center gap-2 transition-colors"
         >
-          Edit Goal
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Quay lại
         </button>
+
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <span className="text-5xl">{goal.icon}</span>
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900">{goal.name}</h1>
+                {isCompleted && (
+                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    ✓ Hoàn thành
+                  </span>
+                )}
+              </div>
+              {goal.description && (
+                <p className="text-gray-600">{goal.description}</p>
+              )}
+              
+              {/* Goal Stats */}
+              <div className="flex items-center gap-4 mt-3 text-sm">
+                <span className="text-gray-600">
+                  📋 {goal.completed_tasks || 0}/{goal.total_tasks || 0} tasks
+                </span>
+                <span className="text-gray-600">
+                  📊 {progress.toFixed(1)}% hoàn thành
+                </span>
+                {goal.category && (
+                  <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                    {goal.category}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowGoalForm(true)}
+            className="btn btn-outline flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Sửa mục tiêu
+          </button>
+        </div>
       </div>
 
-      {/* ✅ ADD: Tabs */}
+      {/* Progress Bar */}
       <div className="card mb-6">
+        <div className="flex justify-between text-sm mb-2">
+          <span className="text-gray-600">Tiến độ tổng thể</span>
+          <span className="font-semibold text-gray-900">{progress.toFixed(1)}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+          <div 
+            className={`h-full rounded-full transition-all duration-500 ${
+              progress >= 100 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+              progress >= 75 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
+              progress >= 50 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+              'bg-gradient-to-r from-gray-400 to-gray-500'
+            }`}
+            style={{ width: `${Math.min(progress, 100)}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="card">
         <div className="flex gap-4 border-b border-gray-200">
           <button
             onClick={() => setActiveTab('tasks')}
@@ -123,28 +205,77 @@ export default function GoalDetails() {
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            📜 Assignment History
+            📜 Lịch sử phân công
           </button>
         </div>
 
-        {/* ✅ ADD: Tab Content */}
+        {/* Tab Content */}
         <div className="p-6">
+          {/* Tasks Tab */}
           {activeTab === 'tasks' && (
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">Tasks</h2>
+              {/* Filters */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex gap-3">
+                  <select
+                    value={filters.status}
+                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                    className="input-sm"
+                  >
+                    <option value="">Tất cả trạng thái</option>
+                    {TASK_STATUS_FILTERS.map(status => (
+                      <option key={status.value} value={status.value}>
+                        {status.icon} {status.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={filters.priority}
+                    onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
+                    className="input-sm"
+                  >
+                    <option value="">Tất cả độ ưu tiên</option>
+                    {PRIORITY_OPTIONS.map(priority => (
+                      <option key={priority.value} value={priority.value}>
+                        {priority.icon} {priority.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <button onClick={handleCreateTask} className="btn btn-primary btn-sm">
-                  + Add Task
+                  + Thêm task
                 </button>
               </div>
-              <TaskList
-                tasks={tasks}
-                onEdit={handleEditTask}
-                onDelete={deleteTask}
-              />
+
+              {/* Tasks List */}
+              {tasks.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-5xl mb-3">📝</div>
+                  <p className="text-gray-600 mb-4">Chưa có task nào</p>
+                  <button onClick={handleCreateTask} className="btn btn-primary btn-sm">
+                    Tạo task đầu tiên
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {tasks.map(task => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onEdit={handleEditTask}
+                      onDelete={() => handleDeleteTask(task)}
+                      onToggleStatus={() => handleToggleTask(task)}
+                      onClick={() => navigate(`/goals/${goalId}/tasks/${task.id}`)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
+          {/* Assignment History Tab */}
           {activeTab === 'history' && (
             <AssignmentHistory 
               resourceType="goal" 
@@ -157,20 +288,15 @@ export default function GoalDetails() {
       {/* Task Form Modal */}
       <Modal
         isOpen={showTaskForm}
-        onClose={() => {
-          setShowTaskForm(false)
-          setEditingTask(null)
-        }}
-        title={editingTask ? 'Edit Task' : 'Create Task'}
+        onClose={handleCloseTaskForm}
+        title={editingTask ? 'Sửa công việc' : 'Tạo công việc mới'}
       >
         <TaskForm
           task={editingTask}
           goalId={goalId}
           onSubmit={handleSubmitTask}
-          onCancel={() => {
-            setShowTaskForm(false)
-            setEditingTask(null)
-          }}
+          onCancel={handleCloseTaskForm}
+          loading={submittingTask}
         />
       </Modal>
 
@@ -178,12 +304,13 @@ export default function GoalDetails() {
       <Modal
         isOpen={showGoalForm}
         onClose={() => setShowGoalForm(false)}
-        title="Edit Goal"
+        title="Sửa mục tiêu"
       >
         <GoalForm
           goal={goal}
           onSubmit={handleUpdateGoal}
           onCancel={() => setShowGoalForm(false)}
+          loading={submittingGoal}
         />
       </Modal>
     </div>
