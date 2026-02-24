@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import UserSelector from './UserSelector'
 import { PRIORITY_OPTIONS } from '../../constants'
+import SmartEndDateInput from './SmartEndDateInput'
 
 const CHECKIN_FREQUENCY_OPTIONS = [
   { value: 'daily', label: 'Mỗi ngày', description: 'Checkin tất cả các ngày trong tháng' },
@@ -269,6 +270,13 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
           />
         </div>
       </div>
+      {/* ✅ ADD: Smart End Date Input */}
+      <SmartEndDateInput
+        goal={goal}
+        value={formData.end_date}
+        onChange={(date) => setFormData(prev => ({ ...prev, end_date: date }))}
+        disabled={loading}
+      />
       <UserSelector
         selectedUserIds={formData.assigned_to}
         onChange={(userIds) => setFormData(prev => ({ ...prev, assigned_to: userIds }))}
