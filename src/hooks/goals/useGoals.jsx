@@ -14,153 +14,138 @@ export function useGoals() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      // ✅ Get goals
-      const { data: goalsData, error: goalsError } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('goals')
-        .select('*')
+        .select(`
+          *,
+          assigned_to,
+          created_by
+        `)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
 
-      if (goalsError) throw goalsError
+      if (fetchError) throw fetchError
 
-      // ✅ Calculate metrics for each goal using TASKS (not projects)
-      const goalsWithMetrics = await Promise.all(
-        (goalsData || []).map(async (goal) => {
-          // Get all tasks for this goal DIRECTLY
-          const { data: tasksData, error: tasksError } = await supabase
-            .from('tasks')
-            .select('id, status')
-            .eq('goal_id', goal.id)  // ✅ Direct link to goal
-            .is('deleted_at', null)
-
-          if (tasksError) {
-            console.error('Error fetching tasks for goal:', goal.id, tasksError)
-            return {
-              ...goal,
-              total_tasks: 0,
-              completed_tasks: 0,
-              progress: 0
-            }
-          }
-
-          const totalTasks = tasksData?.length || 0
-          const completedTasks = tasksData?.filter(t => t.status === 'completed').length || 0
-          const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
-
-          return {
-            ...goal,
-            total_tasks: totalTasks,
-            completed_tasks: completedTasks,
-            progress: progress.toFixed(2)
-          }
-        })
-      )
-
-      setGoals(goalsWithMetrics)
+      setGoals(data || [])
     } catch (err) {
       console.error('Error fetching goals:', err)
       setError(err.message)
-      setGoals([])  // ✅ Set empty array on error
     } finally {
       setLoading(false)
     }
   }
 
-  // REPLACE createGoal function (lines ~68-95):
+  const createGoal = async (goalData) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
 
-const createGoal = async (goalData) => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('User not authenticated')
+      console.log('🔵 useGoals - createGoal called')
+      console.log('🔵 Raw goalData:', goalData)
+      console.log('🔵 goalData.assigned_to:', goalData.assigned_to)
+      console.log('🔵 Type:', Array.isArray(goalData.assigned_to))
+      console.log('🔵 Length:', goalData.assigned_to?.length)
 
-    console.log('🔵 Creating goal with data:', goalData)
-    console.log('🔵 assigned_to:', goalData.assigned_to)
-
-    const insertPayload = {
-      user_id: user.id,
-      name: goalData.name,
-      description: goalData.description,
-      icon: goalData.icon,
-      color: goalData.color,
-      target_value: goalData.target_value,
-      current_value: goalData.current_value || 0,
-      unit: goalData.unit,
-      start_date: goalData.start_date || null, // ✅ NULL if empty
-      end_date: goalData.end_date || null, // ✅ Changed from target_date
-      target_date: goalData.target_date || null, // ✅ NULL if empty
-      category: goalData.category,
-      priority: goalData.priority || 'medium',
-      is_checkin_enabled: goalData.is_checkin_enabled,
-      checkin_frequency: goalData.checkin_frequency,
-      checkin_days_per_week: goalData.checkin_days_per_week,
-      checkin_target_days: goalData.checkin_target_days,
-      assigned_to: goalData.assigned_to || [], // ✅ CRITICAL
-    }
-
-    console.log('🔵 Insert payload:', insertPayload)
-    console.log('🔵 Payload assigned_to:', insertPayload.assigned_to)
-
-    const { data, error: createError } = await supabase
-      .from('goals')
-      .insert([insertPayload])
-      .select('*, assigned_to, created_by') // ✅ Select back
-      .single()
-
-    if (createError) {
-      console.error('❌ Create error:', createError)
-      throw createError
-    }
-
-    console.log('✅ Goal created:', data)
-    console.log('✅ Returned assigned_to:', data.assigned_to)
-
-    await fetchGoals()
-    return { success: true, data }
-  } catch (err) {
-    console.error('❌ Error creating goal:', err)
-    return { success: false, error: err.message }
-  }
-}
-
-const updateGoal = async (id, goalData) => {
-  try {
-    console.log('📤 Updating goal with data:', goalData)  // ✅ Debug log
-
-    const { data, error: updateError } = await supabase
-      .from('goals')
-      .update({
+      // ✅ CRITICAL: Ensure assigned_to is proper array
+      const insertPayload = {
+        user_id: user.id,
         name: goalData.name,
-        description: goalData.description,
+        description: goalData.description || null,
+        icon: goalData.icon,
+        color: goalData.color,
+        category: goalData.category,
+        priority: goalData.priority || 'medium',
+        start_date: goalData.start_date || null,
+        target_date: goalData.target_date || null,
+        end_date: goalData.end_date || null,
+        target_value: goalData.target_value || null,
+        current_value: goalData.current_value || 0,
+        unit: goalData.unit || null,
+        is_checkin_enabled: goalData.is_checkin_enabled || false,
+        checkin_frequency: goalData.checkin_frequency || 'daily',
+        checkin_days_per_week: goalData.checkin_days_per_week || 7,
+        checkin_target_days: goalData.checkin_target_days || null,
+        assigned_to: goalData.assigned_to || [], // ✅ CRITICAL
+      }
+
+      console.log('🔵 Insert payload:', insertPayload)
+      console.log('🔵 Payload.assigned_to:', insertPayload.assigned_to)
+      console.log('🔵 Payload.assigned_to type:', Array.isArray(insertPayload.assigned_to))
+      console.log('🔵 Payload.assigned_to length:', insertPayload.assigned_to?.length)
+
+      const { data, error: createError } = await supabase
+        .from('goals')
+        .insert([insertPayload])
+        .select('*, assigned_to, created_by') // ✅ CRITICAL: Select back
+        .single()
+
+      if (createError) {
+        console.error('❌ Create error:', createError)
+        throw createError
+      }
+
+      console.log('✅ Goal created successfully!')
+      console.log('✅ Returned data:', data)
+      console.log('✅ data.assigned_to:', data.assigned_to)
+      console.log('✅ data.assigned_to length:', data.assigned_to?.length)
+
+      await fetchGoals()
+      return { success: true, data }
+    } catch (err) {
+      console.error('❌ Error creating goal:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
+  const updateGoal = async (id, goalData) => {
+    try {
+      console.log('🔵 useGoals - updateGoal called')
+      console.log('🔵 Goal ID:', id)
+      console.log('🔵 goalData:', goalData)
+
+      const updatePayload = {
+        name: goalData.name,
+        description: goalData.description || null,
         icon: goalData.icon,
         color: goalData.color,
         category: goalData.category,
         priority: goalData.priority,
-        start_date: goalData.start_date,  // ✅ ADD
-        target_date: goalData.target_date,
-        status: goalData.status,
-        // ✅ ADD: Checkin settings
+        start_date: goalData.start_date || null,
+        target_date: goalData.target_date || null,
+        end_date: goalData.end_date || null,
+        target_value: goalData.target_value || null,
+        current_value: goalData.current_value,
+        unit: goalData.unit || null,
         is_checkin_enabled: goalData.is_checkin_enabled || false,
         checkin_frequency: goalData.checkin_frequency || 'daily',
         checkin_days_per_week: goalData.checkin_days_per_week || 7,
-        checkin_target_days: goalData.checkin_target_days || null
-      })
-      .eq('id', id)
-      .select()
-      .single()
+        checkin_target_days: goalData.checkin_target_days || null,
+        assigned_to: goalData.assigned_to || [], // ✅ CRITICAL
+      }
 
-    if (updateError) {
-      console.error('❌ Update error:', updateError)
-      throw updateError
+      console.log('🔵 Update payload:', updatePayload)
+
+      const { data, error: updateError } = await supabase
+        .from('goals')
+        .update(updatePayload)
+        .eq('id', id)
+        .select('*, assigned_to, created_by')
+        .single()
+
+      if (updateError) {
+        console.error('❌ Update error:', updateError)
+        throw updateError
+      }
+
+      console.log('✅ Goal updated:', data)
+
+      await fetchGoals()
+      return { success: true, data }
+    } catch (err) {
+      console.error('❌ Error updating goal:', err)
+      return { success: false, error: err.message }
     }
-
-    console.log('✅ Goal updated:', data)
-    await fetchGoals()
-    return { success: true, data }
-  } catch (err) {
-    console.error('Error updating goal:', err)
-    return { success: false, error: err.message }
   }
-}
 
   const deleteGoal = async (id) => {
     try {
@@ -179,24 +164,19 @@ const updateGoal = async (id, goalData) => {
     }
   }
 
-  const completeGoal = async (id) => {
+  const updateGoalProgress = async (id, currentValue) => {
     try {
-      const { data, error: updateError } = await supabase
+      const { error: updateError } = await supabase
         .from('goals')
-        .update({
-          status: 'completed',
-          completed_date: new Date().toISOString().split('T')[0]
-        })
+        .update({ current_value: currentValue })
         .eq('id', id)
-        .select()
-        .single()
 
       if (updateError) throw updateError
 
       await fetchGoals()
-      return { success: true, data }
+      return { success: true }
     } catch (err) {
-      console.error('Error completing goal:', err)
+      console.error('Error updating progress:', err)
       return { success: false, error: err.message }
     }
   }
@@ -212,7 +192,7 @@ const updateGoal = async (id, goalData) => {
     createGoal,
     updateGoal,
     deleteGoal,
-    completeGoal,
-    refetch: fetchGoals
+    updateGoalProgress,
+    refetch: fetchGoals,
   }
 }
