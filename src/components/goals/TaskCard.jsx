@@ -66,16 +66,16 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
 
       {/* Status & Priority */}
       <div className="flex items-center gap-2 mb-3 flex-wrap ml-7">
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-${statusInfo.color}-100 text-${statusInfo.color}-700`}>
+        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-medium bg-${statusInfo.color}-100 text-${statusInfo.color}-700`}>
           <span>{statusInfo.icon}</span>
           <span>{statusInfo.label}</span>
         </span>
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm font-medium">
           <span>{priorityInfo.icon}</span>
           <span>{priorityInfo.label}</span>
         </span>
         {task.is_overdue && (
-          <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium">
+          <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded text-sm font-medium">
             ⚠️ Quá hạn
           </span>
         )}
@@ -84,7 +84,7 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
       {/* Progress (Subtasks) */}
       {task.total_subtasks > 0 && (
         <div className="mb-3 ml-7">
-          <div className="flex justify-between text-xs mb-1">
+          <div className="flex justify-between text-sm mb-1">
             <span className="text-gray-600">Subtasks</span>
             <span className="font-semibold text-gray-900">
               {task.completed_subtasks} / {task.total_subtasks}
@@ -101,7 +101,7 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
       {/* ✅ ADD THIS: Assignees - After progress, before tags */}
       {task.assigned_to && task.assigned_to.length > 0 && (
         <div className="flex items-center gap-2 mb-3 ml-7">
-          <span className="text-xs text-gray-500">👥</span>
+          <span className="text-sm text-gray-500">👥</span>
           <div className="flex -space-x-2">
             {task.assigned_to.slice(0, 3).map((userId, index) => (
               <div key={userId} style={{ zIndex: 10 - index }}>
@@ -120,12 +120,12 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
       {task.tags && task.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3 ml-7">
           {task.tags.slice(0, 3).map((tag, index) => (
-            <span key={index} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
+            <span key={index} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-sm">
               #{tag}
             </span>
           ))}
           {task.tags.length > 3 && (
-            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-sm">
               +{task.tags.length - 3}
             </span>
           )}
@@ -134,7 +134,7 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
 
       {/* Due Date */}
       {task.due_date && (
-        <div className="text-xs text-gray-500 mb-3 ml-7">
+        <div className="text-sm text-gray-500 mb-3 ml-7">
           <div className="flex items-center gap-1">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -151,7 +151,7 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
             e.stopPropagation() // Prevent card click
             onEdit(task)
           }}
-          className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+          className="p-4 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
           title="Sửa"
         >
           {/* Edit icon */}
@@ -161,7 +161,7 @@ export default function TaskCard({ task, onEdit, onDelete, onToggleStatus, onCli
             e.stopPropagation() // Prevent card click
             onDelete(task)
           }}
-          className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+          className="p-4 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
           title="Xóa"
         >
           {/* Delete icon */}

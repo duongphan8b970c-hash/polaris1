@@ -106,35 +106,34 @@ export default function GoalDetails() {
   const isCompleted = goal.status === 'completed'
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-7xl mx-auto"> {/* ✅ Increased max-width */}
       {/* Back Button */}
       <button
         onClick={() => navigate('/goals')}
-        className="text-gray-600 hover:text-gray-900 mb-4 flex items-center gap-2 transition-colors"
+        className="text-gray-600 hover:text-gray-900 mb-4 flex items-center gap-2 transition-colors text-sm"
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
         Quay lại
       </button>
 
-      {/* ✅ ENHANCEMENT 1: Combined Header + Progress Card */}
-      <div className="card mb-6">
-        {/* Header Row */}
+      {/* Combined Header Card */}
+      <div className="card mb-6 p-6"> {/* ✅ Consistent padding */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-4 flex-1">
             <span className="text-5xl">{goal.icon}</span>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">{goal.name}</h1>
+                <h1 className="text-2xl font-bold text-gray-900">{goal.name}</h1> {/* ✅ Reduced from 3xl */}
                 {isCompleted && (
-                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     ✓ Hoàn thành
                   </span>
                 )}
               </div>
               {goal.description && (
-                <p className="text-gray-600 mb-3">{goal.description}</p>
+                <p className="text-sm text-gray-600 mb-3">{goal.description}</p>
               )}
               
               {/* Goal Stats */}
@@ -143,10 +142,10 @@ export default function GoalDetails() {
                   📋 {goal.completed_tasks || 0}/{goal.total_tasks || 0} tasks
                 </span>
                 <span className="text-gray-600">
-                  📊 {progress.toFixed(1)}% hoàn thành
+                  📊 {progress.toFixed(1)}%
                 </span>
                 {goal.category && (
-                  <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700">
                     {goal.category}
                   </span>
                 )}
@@ -156,22 +155,22 @@ export default function GoalDetails() {
 
           <button
             onClick={() => setShowGoalForm(true)}
-            className="btn btn-outline flex items-center gap-2 flex-shrink-0"
+            className="btn btn-outline flex items-center gap-2 flex-shrink-0 text-sm"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
-            Sửa mục tiêu
+            Sửa
           </button>
         </div>
 
         {/* Progress Bar */}
         <div className="pt-4 border-t border-gray-200">
           <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-600 font-medium">Tiến độ tổng thể</span>
-            <span className="font-bold text-gray-900">{progress.toFixed(1)}%</span>
+            <span className="text-gray-600 font-medium">Tiến độ</span>
+            <span className="font-semibold text-gray-900">{progress.toFixed(1)}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden"> {/* ✅ Reduced from h-4 */}
             <div 
               className={`h-full rounded-full transition-all duration-500 ${
                 progress >= 100 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
@@ -185,14 +184,14 @@ export default function GoalDetails() {
         </div>
       </div>
 
-      {/* ✅ ENHANCEMENT 3: Modern Centered Tabs */}
+      {/* Tabs Card */}
       <div className="card">
         {/* Tabs Navigation */}
         <div className="flex justify-center border-b border-gray-200">
           <div className="flex gap-8">
             <button
               onClick={() => setActiveTab('tasks')}
-              className={`relative px-6 py-4 font-semibold text-base transition-all duration-200 ${
+              className={`relative px-6 py-3 font-semibold text-sm transition-all duration-200 ${
                 activeTab === 'tasks'
                   ? 'text-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -208,14 +207,14 @@ export default function GoalDetails() {
             
             <button
               onClick={() => setActiveTab('history')}
-              className={`relative px-6 py-4 font-semibold text-base transition-all duration-200 ${
+              className={`relative px-6 py-3 font-semibold text-sm transition-all duration-200 ${
                 activeTab === 'history'
                   ? 'text-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               <span className="flex items-center gap-2">
-                📜 Lịch sử phân công
+                📜 Lịch sử
               </span>
               {activeTab === 'history' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
@@ -228,18 +227,18 @@ export default function GoalDetails() {
         <div className="p-6">
           {/* Tasks Tab */}
           {activeTab === 'tasks' && (
-            <div className="space-y-6">
-              {/* ✅ ENHANCEMENT 2: Segmented Control Filters */}
-              <div className="space-y-4">
+            <div className="space-y-4">
+              {/* ✅ ENHANCED: Filters in Single Row, Smaller Size */}
+              <div className="flex items-center justify-between gap-6">
                 {/* Status Filter */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                <div className="flex items-center gap-3">
+                  <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
                     Trạng thái:
                   </label>
-                  <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1 shadow-sm">
+                  <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5 shadow-sm">
                     <button
                       onClick={() => setFilters(prev => ({ ...prev, status: '' }))}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                         filters.status === ''
                           ? 'bg-gray-900 text-white shadow-sm'
                           : 'text-gray-700 hover:bg-gray-50'
@@ -249,7 +248,7 @@ export default function GoalDetails() {
                     </button>
                     <button
                       onClick={() => setFilters(prev => ({ ...prev, status: 'todo' }))}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                         filters.status === 'todo'
                           ? 'bg-gray-900 text-white shadow-sm'
                           : 'text-gray-700 hover:bg-gray-50'
@@ -259,7 +258,7 @@ export default function GoalDetails() {
                     </button>
                     <button
                       onClick={() => setFilters(prev => ({ ...prev, status: 'in_progress' }))}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                         filters.status === 'in_progress'
                           ? 'bg-gray-900 text-white shadow-sm'
                           : 'text-gray-700 hover:bg-gray-50'
@@ -269,7 +268,7 @@ export default function GoalDetails() {
                     </button>
                     <button
                       onClick={() => setFilters(prev => ({ ...prev, status: 'completed' }))}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                         filters.status === 'completed'
                           ? 'bg-gray-900 text-white shadow-sm'
                           : 'text-gray-700 hover:bg-gray-50'
@@ -277,28 +276,18 @@ export default function GoalDetails() {
                     >
                       ✅ Hoàn thành
                     </button>
-                    <button
-                      onClick={() => setFilters(prev => ({ ...prev, status: 'blocked' }))}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                        filters.status === 'blocked'
-                          ? 'bg-gray-900 text-white shadow-sm'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      🚫 Bị chặn
-                    </button>
                   </div>
                 </div>
 
                 {/* Priority Filter */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                <div className="flex items-center gap-3">
+                  <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
                     Độ ưu tiên:
                   </label>
-                  <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1 shadow-sm">
+                  <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5 shadow-sm">
                     <button
                       onClick={() => setFilters(prev => ({ ...prev, priority: '' }))}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                         filters.priority === ''
                           ? 'bg-gray-900 text-white shadow-sm'
                           : 'text-gray-700 hover:bg-gray-50'
@@ -308,7 +297,7 @@ export default function GoalDetails() {
                     </button>
                     <button
                       onClick={() => setFilters(prev => ({ ...prev, priority: 'low' }))}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                         filters.priority === 'low'
                           ? 'bg-gray-900 text-white shadow-sm'
                           : 'text-gray-700 hover:bg-gray-50'
@@ -318,17 +307,17 @@ export default function GoalDetails() {
                     </button>
                     <button
                       onClick={() => setFilters(prev => ({ ...prev, priority: 'medium' }))}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                         filters.priority === 'medium'
                           ? 'bg-gray-900 text-white shadow-sm'
                           : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      🟡 Trung bình
+                      🟡 TB
                     </button>
                     <button
                       onClick={() => setFilters(prev => ({ ...prev, priority: 'high' }))}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                         filters.priority === 'high'
                           ? 'bg-gray-900 text-white shadow-sm'
                           : 'text-gray-700 hover:bg-gray-50'
@@ -338,38 +327,38 @@ export default function GoalDetails() {
                     </button>
                     <button
                       onClick={() => setFilters(prev => ({ ...prev, priority: 'urgent' }))}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                         filters.priority === 'urgent'
                           ? 'bg-gray-900 text-white shadow-sm'
                           : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      🔴 Khẩn cấp
+                      🔴 KCấp
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Header Row */}
-              <div className="flex justify-between items-center py-3 border-y border-gray-200">
-                <div className="text-sm font-medium text-gray-700">
+              <div className="flex justify-between items-center py-2 border-y border-gray-200">
+                <div className="text-xs font-medium text-gray-700">
                   {tasks.length} task{tasks.length !== 1 ? 's' : ''}
                   {(filters.status || filters.priority) && (
                     <span className="ml-2 text-blue-600">(đã lọc)</span>
                   )}
                 </div>
-                <button onClick={handleCreateTask} className="btn btn-primary btn-sm">
+                <button onClick={handleCreateTask} className="btn btn-primary btn-sm text-sm">
                   + Thêm task
                 </button>
               </div>
 
-              {/* Tasks List */}
+              {/* ✅ ENHANCED: Larger Task Cards */}
               {tasks.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-5xl mb-3">📝</div>
-                  <p className="text-gray-600 mb-4">
+                <div className="text-center py-16">
+                  <div className="text-6xl mb-4">📝</div>
+                  <p className="text-base text-gray-600 mb-4">
                     {filters.status || filters.priority 
-                      ? 'Không có task nào phù hợp với bộ lọc'
+                      ? 'Không có task nào phù hợp'
                       : 'Chưa có task nào'
                     }
                   </p>
@@ -380,16 +369,17 @@ export default function GoalDetails() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"> {/* ✅ Increased gap */}
                   {tasks.map(task => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onEdit={handleEditTask}
-                      onDelete={() => handleDeleteTask(task)}
-                      onToggleStatus={() => handleToggleTask(task)}
-                      onClick={() => navigate(`/goals/${goalId}/tasks/${task.id}`)}
-                    />
+                    <div key={task.id} className="transform transition-transform hover:scale-[1.02]">
+                      <TaskCard
+                        task={task}
+                        onEdit={handleEditTask}
+                        onDelete={() => handleDeleteTask(task)}
+                        onToggleStatus={() => handleToggleTask(task)}
+                        onClick={() => navigate(`/goals/${goalId}/tasks/${task.id}`)}
+                      />
+                    </div>
                   ))}
                 </div>
               )}
@@ -406,7 +396,7 @@ export default function GoalDetails() {
         </div>
       </div>
 
-      {/* Task Form Modal */}
+      {/* Modals */}
       <Modal
         isOpen={showTaskForm}
         onClose={handleCloseTaskForm}
@@ -421,7 +411,6 @@ export default function GoalDetails() {
         />
       </Modal>
 
-      {/* Goal Form Modal */}
       <Modal
         isOpen={showGoalForm}
         onClose={() => setShowGoalForm(false)}
