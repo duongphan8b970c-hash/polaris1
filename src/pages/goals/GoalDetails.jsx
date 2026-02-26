@@ -109,13 +109,13 @@ export default function GoalDetails() {
   const isCompleted = goal.status === 'completed'
 
   return (
-    <Breadcrumb
-      items={[
-        { label: 'Goals', href: '/goals/list' },
-        { label: goal.name }
-      ]}
-    />
     <div className="max-w-7xl mx-auto"> {/* ✅ Increased max-width */}
+      <Breadcrumb
+        items={[
+          { label: 'Mục tiêu', href: '/goals/list' },
+          { label: goal.name }
+        ]}
+      />
       {/* Back Button */}
       <button
         onClick={() => navigate('/goals/list')}
