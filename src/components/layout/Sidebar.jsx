@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 
-export default function Sidebar({ isOpen, onClose }) {
+export default function Sidebar({ isOpen, onClose, onToggle }) {
   const location = useLocation()
   const [expandedMenu, setExpandedMenu] = useState('financial')
   const prevPathname = useRef(location.pathname)
