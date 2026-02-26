@@ -1,3 +1,7 @@
+import getDateStats from '../../utils/getDateStats'
+import getDateColor from '../../utils/getDateColor'
+import { isToday } from 'date-fns'
+
 export default function CalendarDay({ day, items, isSelected, onClick }) {
   const stats = getDateStats(items, day.date)
   const color = getDateColor(stats)
