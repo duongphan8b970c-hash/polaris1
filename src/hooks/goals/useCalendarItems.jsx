@@ -1,13 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react' // ✅ ADD useCallback
 import { supabase } from '../../lib/supabase'
 import { generateOccurrences, isRecurring } from '../../utils/recurrence'
 
-/**
- * Hook to fetch calendar items (tasks + subtasks) with recurring support
- * @param {Date} startDate - Start of date range
- * @param {Date} endDate - End of date range
- * @param {Object} options - { userId: null, includeTeam: true }
- */
 export function useCalendarItems(startDate, endDate, options = {}) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -15,7 +9,11 @@ export function useCalendarItems(startDate, endDate, options = {}) {
 
   const { userId = null, includeTeam = true } = options
 
-  const fetchCalendarItems = async () => {
+  // ✅ WRAP with useCallback to stabilize function reference
+  const fetchCalendarItems = useCallback(async () => {
+    // ✅ ADD AbortController to cancel previous requests
+    const controller = new AbortController()
+
     try {
       setLoading(true)
       setError(null)
@@ -41,6 +39,7 @@ export function useCalendarItems(startDate, endDate, options = {}) {
         `)
         .eq('is_calendar_visible', true)
         .is('deleted_at', null)
+        .abortSignal(controller.signal) // ✅ ADD abort signal
 
       // Filter by user if specified
       if (userId) {
@@ -75,6 +74,7 @@ export function useCalendarItems(startDate, endDate, options = {}) {
         `)
         .eq('is_calendar_visible', true)
         .is('deleted_at', null)
+        .abortSignal(controller.signal) // ✅ ADD abort signal
 
       // Filter by user if specified
       if (userId) {
@@ -91,9 +91,8 @@ export function useCalendarItems(startDate, endDate, options = {}) {
       const calendarItems = []
 
       // Process tasks
-      tasks.forEach(task => {
+      (tasks || []).forEach(task => {
         if (isRecurring(task)) {
-          // Generate occurrences for date range
           const occurrences = generateOccurrences(
             task.recurrence_rule,
             new Date(task.scheduled_date || startDate),
@@ -113,7 +112,6 @@ export function useCalendarItems(startDate, endDate, options = {}) {
             }
           })
         } else if (task.scheduled_date) {
-          // Single occurrence
           const taskDate = new Date(task.scheduled_date)
           if (taskDate >= startDate && taskDate <= endDate) {
             calendarItems.push({
@@ -128,9 +126,8 @@ export function useCalendarItems(startDate, endDate, options = {}) {
       })
 
       // Process subtasks
-      subtasks.forEach(subtask => {
+      (subtasks || []).forEach(subtask => {
         if (isRecurring(subtask)) {
-          // Generate occurrences
           const occurrences = generateOccurrences(
             subtask.recurrence_rule,
             new Date(subtask.scheduled_date || startDate),
@@ -151,7 +148,6 @@ export function useCalendarItems(startDate, endDate, options = {}) {
             }
           })
         } else if (subtask.scheduled_date) {
-          // Single occurrence
           const subtaskDate = new Date(subtask.scheduled_date)
           if (subtaskDate >= startDate && subtaskDate <= endDate) {
             calendarItems.push({
@@ -173,18 +169,27 @@ export function useCalendarItems(startDate, endDate, options = {}) {
 
       setItems(calendarItems)
     } catch (err) {
+      // ✅ Ignore abort errors
+      if (err.name === 'AbortError') {
+        console.log('Request cancelled')
+        return
+      }
       console.error('Error fetching calendar items:', err)
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }
+
+    // ✅ Cleanup function
+    return () => controller.abort()
+  }, [startDate, endDate, userId, includeTeam]) // ✅ ADD all dependencies
 
   useEffect(() => {
     if (startDate && endDate) {
-      fetchCalendarItems()
+      const cleanup = fetchCalendarItems()
+      return cleanup // ✅ Return cleanup function
     }
-  }, [startDate, endDate, userId, includeTeam])
+  }, [fetchCalendarItems, startDate, endDate])
 
   return {
     items,
@@ -194,9 +199,7 @@ export function useCalendarItems(startDate, endDate, options = {}) {
   }
 }
 
-/**
- * Hook to get items for a specific date
- */
+// Keep other exports unchanged...
 export function useCalendarItemsByDate(date, options = {}) {
   const startOfDay = new Date(date)
   startOfDay.setHours(0, 0, 0, 0)
@@ -207,9 +210,6 @@ export function useCalendarItemsByDate(date, options = {}) {
   return useCalendarItems(startOfDay, endOfDay, options)
 }
 
-/**
- * Hook to get items for current month
- */
 export function useCalendarItemsForMonth(year, month, options = {}) {
   const startDate = new Date(year, month, 1)
   const endDate = new Date(year, month + 1, 0)
