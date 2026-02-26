@@ -154,38 +154,103 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         } w-64`}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center justify-between px-4 py-5 border-b border-gray-200">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">P</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">Polaris</span>
-            </Link>
-            
-            {/* Collapse Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                if (onToggle) {
-                  onToggle()
-                } else {
-                  onClose()
-                }
-              }}
-              className="text-gray-500 hover:text-gray-700 transition-colors p-1.5 rounded-md hover:bg-gray-100"
-              title="Đóng sidebar"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+          {/* Logo section - around line 160 */}
+        <div className="flex items-center justify-between px-4 py-5 border-b border-gray-200">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-xl">P</span>
+            </div>
+            <span className="text-xl font-bold text-gray-900">Polaris</span>
+          </Link>
+          
+          {/* ✅ Close Button with better icon */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (onToggle) {
+                onToggle()
+              }
+            }}
+            className="text-gray-500 hover:text-gray-700 transition-colors p-1.5 rounded-md hover:bg-gray-100"
+            title="Đóng menu"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-3 py-4">
-            {/* ... rest of navigation stays same ... */}
-          </nav>
+        {/* ✅ Make sure Navigation section exists */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <ul className="space-y-1">
+            {menuSections.map((section) => (
+              <li key={section.id}>
+                {section.submenu ? (
+                  <>
+                    {/* Parent with submenu */}
+                    <button
+                      onClick={() => toggleMenu(section.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                        expandedMenu === section.id || location.pathname.startsWith(section.path || '')
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {section.icon}
+                        <span className="font-medium">{section.name}</span>
+                      </div>
+                      <svg
+                        className={`w-4 h-4 transition-transform ${
+                          expandedMenu === section.id ? 'rotate-180' : ''
+                        }`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {/* Submenu */}
+                    {expandedMenu === section.id && (
+                      <ul className="mt-1 ml-4 space-y-1">
+                        {section.submenu.map((item) => (
+                          <li key={item.path}>
+                            <Link
+                              to={item.path}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
+                                isActiveRoute(item.path)
+                                  ? 'bg-blue-50 text-blue-700 font-medium'
+                                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                              }`}
+                            >
+                              {item.icon}
+                              <span>{item.name}</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                ) : (
+                  /* Simple link without submenu */
+                  <Link
+                    to={section.path}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                      isActiveRoute(section.path)
+                        ? 'bg-blue-50 text-blue-700 font-medium'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {section.icon}
+                    <span className="font-medium">{section.name}</span>
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </nav>
         </div>
       </aside>
     </>

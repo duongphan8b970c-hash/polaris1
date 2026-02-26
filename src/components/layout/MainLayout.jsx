@@ -1,34 +1,29 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import Header from './Header'
 
 export default function MainLayout() {
-  // ✅ Initialize based on screen size
+  const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // ✅ Load saved preference on mount
+  // ✅ Initialize sidebar state on mount
   useEffect(() => {
     const saved = localStorage.getItem('sidebarOpen')
     if (saved !== null) {
       setSidebarOpen(JSON.parse(saved))
     } else {
-      // Default: open on desktop, closed on mobile
+      // Default: open on desktop
       setSidebarOpen(window.innerWidth >= 1024)
     }
   }, [])
 
-  // ✅ Handle window resize
+  // ✅ Auto-close on mobile when route changes
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 1024) {
-        setSidebarOpen(false)
-      }
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false)
     }
-
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  }, [location.pathname])
 
   const handleCloseSidebar = () => {
     setSidebarOpen(false)
