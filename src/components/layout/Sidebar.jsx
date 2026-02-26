@@ -15,7 +15,7 @@ export default function Sidebar({ isOpen, onClose }) {
     }
   }, [location.pathname, onClose, isOpen])
 
-  /// Prevent body scroll when sidebar is open on mobile
+  // Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
     if (isOpen && window.innerWidth < 1024) {
       document.body.style.overflow = 'hidden'
@@ -86,164 +86,165 @@ export default function Sidebar({ isOpen, onClose }) {
         }
       ]
     },
+    // ✅ UPDATED: Goals section with submenu
     {
       id: 'goals',
       name: 'Mục tiêu',
-      path: '/goals',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
         </svg>
       ),
-      submenu: null
+      submenu: [
+        {
+          name: 'Calendar',
+          path: '/goals/calendar',
+          icon: (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          )
+        },
+        {
+          name: 'All Goals',
+          path: '/goals/list',
+          icon: (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          )
+        }
+      ]
     },
     {
-    id: 'profile',
-    name: 'Profile',
-    path: '/profile',
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-      </svg>
-    ),
-    submenu: null
-    },
+      id: 'profile',
+      name: 'Profile',
+      path: '/profile',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+      submenu: null
+    }
   ]
+
+  const isActiveRoute = (path) => {
+    return location.pathname === path || location.pathname.startsWith(path + '/')
+  }
 
   const toggleMenu = (menuId) => {
     setExpandedMenu(expandedMenu === menuId ? null : menuId)
   }
 
-  const isMenuActive = (section) => {
-    if (section.path) {
-      return location.pathname.startsWith(section.path)
-    }
-    if (section.submenu) {
-      return section.submenu.some(item => location.pathname.startsWith(item.path))
-    }
-    return false
-  }
   return (
     <>
+      {/* Mobile Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={onClose}
         />
       )}
-      {/* ✅ Sidebar với proper z-index và transform */}
-      <div 
-        className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl 
-          transform transition-transform duration-300 ease-in-out
-          lg:translate-x-0 lg:static lg:inset-0
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed top-0 left-0 z-50 h-screen bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        } w-64`}
       >
-        {/* Logo */}
-        <div className="h-20 flex items-center justify-between px-4 border-b-2 border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center justify-between px-4 py-5 border-b border-gray-200">
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xl">P</span>
+              </div>
+              <span className="text-xl font-bold text-gray-900">Polaris</span>
+            </Link>
+            <button
+              onClick={onClose}
+              className="lg:hidden text-gray-500 hover:text-gray-700"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </div>
-            <span className="text-xl font-bold text-gray-900">Polaris</span>
+            </button>
           </div>
 
-          {/* ✅ Close button - visible on mobile only */}
-          <button
-            onClick={(e) => {
-            e.stopPropagation()
-            onClose()
-            }}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            aria-label="Close sidebar"
-          >
-            <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        
-        {/* Navigation */}
-        <nav className="p-4 overflow-y-auto h-[calc(100vh-80px)]">
-          <div className="space-y-1">
-            {menuSections.map((section) => {
-              const isActive = isMenuActive(section)
-              const hasSubmenu = section.submenu && section.submenu.length > 0
-              const isExpanded = expandedMenu === section.id
-
-              return (
-                <div key={section.id}>
-                  {!hasSubmenu ? (
-                    <Link
-                      to={section.path}
-                      className={`flex items-center justify-between space-x-3 px-4 py-3.5 rounded-xl transition-all font-semibold ${
-                        isActive
-                          ? 'bg-primary-50 text-primary-600 shadow-sm'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        {section.icon}
-                        <span>{section.name}</span>
-                      </div>
-                    </Link>
-                  ) : (
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto px-3 py-4">
+            <ul className="space-y-1">
+              {menuSections.map((section) => (
+                <li key={section.id}>
+                  {section.submenu ? (
                     <>
+                      {/* Parent with submenu */}
                       <button
                         onClick={() => toggleMenu(section.id)}
-                        className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all font-semibold ${
-                          isActive
-                            ? 'bg-primary-50 text-primary-600 shadow-sm'
-                            : 'text-gray-700 hover:bg-gray-50'
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                          expandedMenu === section.id || location.pathname.startsWith(section.path)
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-gray-700 hover:bg-gray-100'
                         }`}
                       >
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center gap-3">
                           {section.icon}
-                          <span>{section.name}</span>
+                          <span className="font-medium">{section.name}</span>
                         </div>
-                        <svg 
-                          className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
-                          fill="none" 
-                          viewBox="0 0 24 24" 
+                        <svg
+                          className={`w-4 h-4 transition-transform ${
+                            expandedMenu === section.id ? 'rotate-180' : ''
+                          }`}
+                          fill="none"
+                          viewBox="0 0 24 24"
                           stroke="currentColor"
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </button>
 
-                      {isExpanded && (
-                        <div className="mt-1 ml-4 space-y-1">
-                          {section.submenu.map((item) => {
-                            const isSubmenuActive = location.pathname.startsWith(item.path)
-                            
-                            return (
+                      {/* Submenu */}
+                      {expandedMenu === section.id && (
+                        <ul className="mt-1 ml-4 space-y-1">
+                          {section.submenu.map((item) => (
+                            <li key={item.path}>
                               <Link
-                                key={item.path}
                                 to={item.path}
-                                className={`flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all text-sm font-medium ${
-                                  isSubmenuActive
-                                    ? 'bg-primary-100 text-primary-700'
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
+                                  isActiveRoute(item.path)
+                                    ? 'bg-blue-50 text-blue-700 font-medium'
+                                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                 }`}
                               >
                                 {item.icon}
                                 <span>{item.name}</span>
                               </Link>
-                            )
-                          })}
-                        </div>
+                            </li>
+                          ))}
+                        </ul>
                       )}
                     </>
+                  ) : (
+                    /* Simple link without submenu */
+                    <Link
+                      to={section.path}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                        isActiveRoute(section.path)
+                          ? 'bg-blue-50 text-blue-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {section.icon}
+                      <span className="font-medium">{section.name}</span>
+                    </Link>
                   )}
-                </div>
-              )
-            })}
-          </div>
-        </nav>
-      </div>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      </aside>
     </>
   )
 }

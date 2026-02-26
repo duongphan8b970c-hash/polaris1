@@ -17,9 +17,10 @@ export function useSubtasks(taskId) {
         return
       }
 
+      // ✅ ADD: Select new fields
       const { data, error: fetchError } = await supabase
         .from('subtasks')
-        .select('*')
+        .select('*, scheduled_date, recurrence_rule, is_calendar_visible, assigned_to')
         .eq('task_id', taskId)
         .is('deleted_at', null)
         .order('display_order', { ascending: true })
@@ -35,13 +36,11 @@ export function useSubtasks(taskId) {
     }
   }
 
-  // ✅ FIXED: createSubtask
   const createSubtask = async (subtaskData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      // Get current max display_order
       const { data: existingSubtasks, error: fetchError } = await supabase
         .from('subtasks')
         .select('display_order')
@@ -55,6 +54,7 @@ export function useSubtasks(taskId) {
         nextOrder = existingSubtasks[0].display_order + 1
       }
 
+      // ✅ ADD: Include new fields
       const { data, error: createError } = await supabase
         .from('subtasks')
         .insert([{
@@ -62,7 +62,11 @@ export function useSubtasks(taskId) {
           task_id: taskId,
           title: subtaskData.title,
           description: subtaskData.description || null,
-          display_order: nextOrder
+          display_order: nextOrder,
+          scheduled_date: subtaskData.scheduled_date || null,
+          recurrence_rule: subtaskData.recurrence_rule || null,
+          is_calendar_visible: subtaskData.is_calendar_visible || false,
+          assigned_to: subtaskData.assigned_to || []
         }])
         .select()
         .single()
@@ -82,13 +86,30 @@ export function useSubtasks(taskId) {
 
   const updateSubtask = async (id, subtaskData) => {
     try {
+      // ✅ ADD: Build update object with new fields
+      const updateData = {
+        title: subtaskData.title,
+        description: subtaskData.description,
+        is_completed: subtaskData.is_completed
+      }
+
+      // Only include if provided
+      if (subtaskData.hasOwnProperty('scheduled_date')) {
+        updateData.scheduled_date = subtaskData.scheduled_date
+      }
+      if (subtaskData.hasOwnProperty('recurrence_rule')) {
+        updateData.recurrence_rule = subtaskData.recurrence_rule
+      }
+      if (subtaskData.hasOwnProperty('is_calendar_visible')) {
+        updateData.is_calendar_visible = subtaskData.is_calendar_visible
+      }
+      if (subtaskData.hasOwnProperty('assigned_to')) {
+        updateData.assigned_to = subtaskData.assigned_to
+      }
+
       const { data, error: updateError } = await supabase
         .from('subtasks')
-        .update({
-          title: subtaskData.title,
-          description: subtaskData.description,
-          is_completed: subtaskData.is_completed
-        })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single()
@@ -103,7 +124,6 @@ export function useSubtasks(taskId) {
     }
   }
 
-  // ✅ FIXED: toggleSubtask
   const toggleSubtask = async (id, currentStatus) => {
     try {
       const newStatus = currentStatus === true ? false : true
@@ -118,8 +138,6 @@ export function useSubtasks(taskId) {
         updateData.completed_date = null
       }
 
-      console.log('🔄 Toggling subtask:', { id, currentStatus, newStatus })
-
       const { data, error: updateError } = await supabase
         .from('subtasks')
         .update(updateData)
@@ -132,7 +150,6 @@ export function useSubtasks(taskId) {
         throw updateError
       }
 
-      console.log('✅ Subtask toggled successfully')
       await fetchSubtasks()
       return { success: true, data }
     } catch (err) {
@@ -176,6 +193,26 @@ export function useSubtasks(taskId) {
     }
   }
 
+  // ✅ NEW: Toggle calendar visibility
+  const toggleCalendarVisibility = async (id, currentValue) => {
+    try {
+      const { data, error } = await supabase
+        .from('subtasks')
+        .update({ is_calendar_visible: !currentValue })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      await fetchSubtasks()
+      return { success: true, data }
+    } catch (err) {
+      console.error('Error toggling calendar visibility:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
   useEffect(() => {
     fetchSubtasks()
   }, [taskId])
@@ -189,6 +226,7 @@ export function useSubtasks(taskId) {
     toggleSubtask,
     deleteSubtask,
     reorderSubtasks,
+    toggleCalendarVisibility, // ✅ NEW
     refetch: fetchSubtasks
   }
 }

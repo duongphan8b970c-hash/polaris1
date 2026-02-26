@@ -8,7 +8,7 @@ import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
 import { WEEKDAYS, MONTHS } from '../../constants'
 
-export default function CheckinCalendar() {
+export default function GoalCheckinTracker() {
   const { goalId } = useParams()
   const navigate = useNavigate()
   
@@ -238,7 +238,7 @@ export default function CheckinCalendar() {
     return (
       <div className="text-center py-8">
         <p className="text-gray-600">Không tìm thấy mục tiêu</p>
-        <button onClick={() => navigate('/goals')} className="btn btn-primary mt-4">
+        <button onClick={() => navigate('/goals/list')} className="btn btn-primary mt-4">
           ← Quay lại
         </button>
       </div>

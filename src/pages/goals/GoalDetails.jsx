@@ -10,6 +10,8 @@ import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import UserAvatar from '../../components/common/UserAvatar'
+import Breadcrumb from '../../components/common/Breadcrumb'
+
 
 export default function GoalDetails() {
   const { goalId } = useParams()
@@ -107,10 +109,16 @@ export default function GoalDetails() {
   const isCompleted = goal.status === 'completed'
 
   return (
+    <Breadcrumb
+      items={[
+        { label: 'Goals', href: '/goals/list' },
+        { label: goal.name }
+      ]}
+    />
     <div className="max-w-7xl mx-auto"> {/* ✅ Increased max-width */}
       {/* Back Button */}
       <button
-        onClick={() => navigate('/goals')}
+        onClick={() => navigate('/goals/list')}
         className="text-gray-600 hover:text-gray-900 mb-4 flex items-center gap-2 transition-colors text-sm"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -196,7 +204,14 @@ export default function GoalDetails() {
                 </div>
               </div>
             </div>
-
+            {goal.is_checkin_enabled && (
+            <button
+              onClick={() => navigate(`/goals/${goalId}/tracker`)}
+              className="px-4 py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+            📊 Check-in Tracker
+            </button>
+            )}        
             <button
               onClick={() => setShowGoalForm(true)}
               className="btn btn-outline flex items-center gap-2 flex-shrink-0 text-sm hover:scale-105 transition-transform"

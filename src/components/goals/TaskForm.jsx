@@ -26,6 +26,8 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
     tags: [],
     estimated_hours: '',
     assigned_to: [],
+    scheduled_date: '',
+    is_calendar_visible: false,
   })
 
   const [tagInput, setTagInput] = useState('')
@@ -42,6 +44,8 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
         tags: task.tags || [],
         estimated_hours: task.estimated_hours || '',
         assigned_to: task.assigned_to || [],
+        scheduled_date: task.scheduled_date || '',
+        is_calendar_visible: task.is_calendar_visible || false,
       })
     }
   }, [task])
@@ -202,7 +206,45 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
           />
         </div>
       </div>
-       <UserSelector
+      {/* ✅ ADD: Calendar Scheduling */}
+      <div className="border-t pt-4">
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-sm font-medium text-gray-700">
+            📅 Hiển thị trên Calendar
+          </label>
+          <input
+            type="checkbox"
+            name="is_calendar_visible"
+            checked={formData.is_calendar_visible || false}
+            onChange={(e) => setFormData(prev => ({ 
+              ...prev, 
+              is_calendar_visible: e.target.checked 
+            }))}
+            className="w-4 h-4 text-blue-600 rounded"
+            disabled={loading}
+          />
+        </div>
+
+        {formData.is_calendar_visible && (
+          <div className="bg-blue-50 p-3 rounded-lg space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Ngày lên calendar:
+              </label>
+              <input
+                type="date"
+                name="scheduled_date"
+                value={formData.scheduled_date || ''}
+                onChange={handleChange}
+                className="input text-sm"
+                disabled={loading}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <UserSelector
         selectedUserIds={formData.assigned_to}
         onChange={(userIds) => setFormData(prev => ({ ...prev, assigned_to: userIds }))}
         label="Assign to users"

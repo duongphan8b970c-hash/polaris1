@@ -74,6 +74,7 @@ export default function TaskDetails() {
     if (!result.success) {
       alert('Lỗi: ' + result.error)
     }
+    return result // ✅ ADD: Return result for modal to check
   }
 
   const handleDeleteSubtask = async (subtaskId) => {
@@ -206,22 +207,23 @@ export default function TaskDetails() {
       </div>
 
       {/* Subtasks Section */}
-    <div className="card">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xl">📝</span>
-        <h2 className="text-xl font-bold">Subtasks</h2>
-      </div>
-      
-      <p className="text-gray-600 mb-3">Subtasks ({completedSubtasks} / {subtasks.length})</p>
-      
-      <SubtaskList
-        subtasks={subtasks}
-        onToggle={handleToggleSubtask}
-        onUpdate={handleUpdateSubtask}
-        onDelete={handleDeleteSubtask}
-        onAdd={handleAddSubtask}
-        loading={subtasksLoading}
-      />
+      <div className="card">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xl">📝</span>
+          <h2 className="text-xl font-bold">Subtasks</h2>
+          <span className="text-sm text-gray-500">
+            ({completedSubtasks}/{subtasks.length})
+          </span>
+        </div>
+
+        <SubtaskList
+          subtasks={subtasks}
+          onAdd={handleAddSubtask}
+          onToggle={handleToggleSubtask}
+          onEdit={handleUpdateSubtask}
+          onDelete={handleDeleteSubtask}
+          loading={subtasksLoading}
+        />
       </div>
       {/* Edit Task Modal */}
       <Modal
