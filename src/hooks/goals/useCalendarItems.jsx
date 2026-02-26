@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 import { generateOccurrences, isRecurring } from '../../utils/recurrence'
 
@@ -10,7 +10,18 @@ export function useCalendarItems(startDate, endDate, options = {}) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // ✅ Memoize options to prevent re-render
   const { userId = null, includeTeam = true } = options
+  const optionsKey = useMemo(() => 
+    JSON.stringify({ userId, includeTeam }), 
+    [userId, includeTeam]
+  )
+
+  // ✅ Memoize date keys
+  const dateKey = useMemo(() => 
+    `${startDate?.getTime()}-${endDate?.getTime()}`,
+    [startDate, endDate]
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -22,7 +33,7 @@ export function useCalendarItems(startDate, endDate, options = {}) {
         setError(null)
 
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) throw new Error('User not authenticated')
+        if (!user || cancelled) return
 
         // Fetch tasks
         let tasksQuery = supabase
@@ -51,7 +62,10 @@ export function useCalendarItems(startDate, endDate, options = {}) {
         }
 
         const { data: tasks, error: tasksError } = await tasksQuery
-        if (tasksError) throw tasksError
+        if (tasksError || cancelled) {
+          if (tasksError) throw tasksError
+          return
+        }
 
         // Fetch subtasks
         let subtasksQuery = supabase
@@ -84,9 +98,10 @@ export function useCalendarItems(startDate, endDate, options = {}) {
         }
 
         const { data: subtasks, error: subtasksError } = await subtasksQuery
-        if (subtasksError) throw subtasksError
-
-        if (cancelled) return
+        if (subtasksError || cancelled) {
+          if (subtasksError) throw subtasksError
+          return
+        }
 
         // Process items
         const calendarItems = []
@@ -170,18 +185,15 @@ export function useCalendarItems(startDate, endDate, options = {}) {
 
         if (!cancelled) {
           setItems(calendarItems)
+          setLoading(false)
         }
       } catch (err) {
         if (err.name === 'AbortError') {
-          console.log('Request cancelled')
           return
         }
         if (!cancelled) {
           console.error('Error fetching calendar items:', err)
           setError(err.message)
-        }
-      } finally {
-        if (!cancelled) {
           setLoading(false)
         }
       }
@@ -195,7 +207,7 @@ export function useCalendarItems(startDate, endDate, options = {}) {
       cancelled = true
       controller.abort()
     }
-  }, [startDate, endDate, userId, includeTeam])
+  }, [dateKey, optionsKey]) // ✅ Use memoized keys instead of objects
 
   return {
     items,

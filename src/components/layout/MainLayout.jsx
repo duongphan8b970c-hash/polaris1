@@ -4,20 +4,30 @@ import Sidebar from './Sidebar'
 import Header from './Header'
 
 export default function MainLayout() {
-  // ✅ Default to true on desktop, false on mobile
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth >= 1024
-    }
-    return true
-  })
+  // ✅ Initialize based on screen size
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // ✅ Persist sidebar state to localStorage
+  // ✅ Load saved preference on mount
   useEffect(() => {
     const saved = localStorage.getItem('sidebarOpen')
     if (saved !== null) {
       setSidebarOpen(JSON.parse(saved))
+    } else {
+      // Default: open on desktop, closed on mobile
+      setSidebarOpen(window.innerWidth >= 1024)
     }
+  }, [])
+
+  // ✅ Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setSidebarOpen(false)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   const handleCloseSidebar = () => {
@@ -26,8 +36,9 @@ export default function MainLayout() {
   }
 
   const handleToggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen)
-    localStorage.setItem('sidebarOpen', (!sidebarOpen).toString())
+    const newState = !sidebarOpen
+    setSidebarOpen(newState)
+    localStorage.setItem('sidebarOpen', JSON.stringify(newState))
   }
 
   return (
@@ -37,7 +48,7 @@ export default function MainLayout() {
         <Sidebar 
           isOpen={sidebarOpen} 
           onClose={handleCloseSidebar}
-          onToggle={handleToggleSidebar} // ✅ Pass toggle function
+          onToggle={handleToggleSidebar}
         />
 
         {/* Main Content */}
