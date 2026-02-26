@@ -3,8 +3,27 @@ import { useState, useEffect, useRef } from 'react'
 
 export default function Sidebar({ isOpen, onClose, onToggle }) {
   const location = useLocation()
-  const [expandedMenu, setExpandedMenu] = useState('financial')
+  
+  // ✅ FIX: Default to null (all collapsed)
+  const [expandedMenu, setExpandedMenu] = useState(null) // ❌ WAS: 'financial'
   const prevPathname = useRef(location.pathname)
+
+  // ✅ FIX: Auto-expand based on current route
+  useEffect(() => {
+    // Check which section current route belongs to
+    if (location.pathname.startsWith('/goals')) {
+      setExpandedMenu('goals')
+    } else if (
+      location.pathname.startsWith('/wallets') ||
+      location.pathname.startsWith('/transactions') ||
+      location.pathname.startsWith('/trades') ||
+      location.pathname.startsWith('/payback')
+    ) {
+      setExpandedMenu('financial')
+    } else if (location.pathname === '/dashboard') {
+      setExpandedMenu(null) // Collapse all when on dashboard
+    }
+  }, []) // ✅ Only run on mount
 
   useEffect(() => {
     if (prevPathname.current !== location.pathname) {
@@ -86,7 +105,6 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         }
       ]
     },
-    // ✅ UPDATED: Goals section with submenu
     {
       id: 'goals',
       name: 'Mục tiêu',
@@ -130,7 +148,13 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
   ]
 
   const isActiveRoute = (path) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/')
+    return location.pathname === path
+  }
+
+  // ✅ FIX: Check if ANY child route is active
+  const hasActiveChild = (section) => {
+    if (!section.submenu) return false
+    return section.submenu.some(item => location.pathname.startsWith(item.path))
   }
 
   const toggleMenu = (menuId) => {
@@ -154,104 +178,104 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         } w-64`}
       >
         <div className="flex flex-col h-full">
-          {/* Logo section */}
+          {/* Logo */}
           <div className="flex items-center justify-between px-4 py-5 border-b border-gray-200">
             <Link to="/" className="flex items-center gap-2">
-              {/* ✅ Use emoji/icon instead of letter */}
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                 <span className="text-white text-xl">⭐</span>
               </div>
               <span className="text-xl font-bold text-gray-900">Polaris</span>
             </Link>
-          
-          {/* ✅ Close Button with better icon */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              if (onToggle) {
-                onToggle()
-              }
-            }}
-            className="text-gray-500 hover:text-gray-700 transition-colors p-1.5 rounded-md hover:bg-gray-100"
-            title="Đóng menu"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+            
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (onToggle) {
+                  onToggle()
+                }
+              }}
+              className="text-gray-500 hover:text-gray-700 transition-colors p-1.5 rounded-md hover:bg-gray-100"
+              title="Đóng menu"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
-        {/* ✅ Make sure Navigation section exists */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <ul className="space-y-1">
-            {menuSections.map((section) => (
-              <li key={section.id}>
-                {section.submenu ? (
-                  <>
-                    {/* Parent with submenu */}
-                    <button
-                      onClick={() => toggleMenu(section.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
-                        expandedMenu === section.id || location.pathname.startsWith(section.path || '')
-                          ? 'bg-blue-50 text-blue-700'
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto px-3 py-4">
+            <ul className="space-y-1">
+              {menuSections.map((section) => (
+                <li key={section.id}>
+                  {section.submenu ? (
+                    <>
+                      {/* Parent with submenu */}
+                      <button
+                        onClick={() => toggleMenu(section.id)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                          expandedMenu === section.id
+                            ? 'bg-blue-50 text-blue-700'
+                            : hasActiveChild(section)
+                            ? 'bg-blue-50 text-blue-700' // ✅ Show active if child is active
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          {section.icon}
+                          <span className="font-medium">{section.name}</span>
+                        </div>
+                        <svg
+                          className={`w-4 h-4 transition-transform ${
+                            expandedMenu === section.id ? 'rotate-180' : ''
+                          }`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {/* Submenu */}
+                      {expandedMenu === section.id && (
+                        <ul className="mt-1 ml-4 space-y-1">
+                          {section.submenu.map((item) => (
+                            <li key={item.path}>
+                              <Link
+                                to={item.path}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
+                                  isActiveRoute(item.path)
+                                    ? 'bg-blue-50 text-blue-700 font-medium'
+                                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                }`}
+                              >
+                                {item.icon}
+                                <span>{item.name}</span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  ) : (
+                    /* Simple link without submenu */
+                    <Link
+                      to={section.path}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                        isActiveRoute(section.path)
+                          ? 'bg-blue-50 text-blue-700 font-medium'
                           : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        {section.icon}
-                        <span className="font-medium">{section.name}</span>
-                      </div>
-                      <svg
-                        className={`w-4 h-4 transition-transform ${
-                          expandedMenu === section.id ? 'rotate-180' : ''
-                        }`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-
-                    {/* Submenu */}
-                    {expandedMenu === section.id && (
-                      <ul className="mt-1 ml-4 space-y-1">
-                        {section.submenu.map((item) => (
-                          <li key={item.path}>
-                            <Link
-                              to={item.path}
-                              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                                isActiveRoute(item.path)
-                                  ? 'bg-blue-50 text-blue-700 font-medium'
-                                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                              }`}
-                            >
-                              {item.icon}
-                              <span>{item.name}</span>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </>
-                ) : (
-                  /* Simple link without submenu */
-                  <Link
-                    to={section.path}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                      isActiveRoute(section.path)
-                        ? 'bg-blue-50 text-blue-700 font-medium'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    {section.icon}
-                    <span className="font-medium">{section.name}</span>
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ul>
-        </nav>
+                      {section.icon}
+                      <span className="font-medium">{section.name}</span>
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
       </aside>
     </>
