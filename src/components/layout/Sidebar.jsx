@@ -154,14 +154,15 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         } w-64`}
       >
         <div className="flex flex-col h-full">
-          {/* Logo section - around line 160 */}
-        <div className="flex items-center justify-between px-4 py-5 border-b border-gray-200">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">P</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">Polaris</span>
-          </Link>
+          {/* Logo section */}
+          <div className="flex items-center justify-between px-4 py-5 border-b border-gray-200">
+            <Link to="/" className="flex items-center gap-2">
+              {/* ✅ Use emoji/icon instead of letter */}
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white text-xl">⭐</span>
+              </div>
+              <span className="text-xl font-bold text-gray-900">Polaris</span>
+            </Link>
           
           {/* ✅ Close Button with better icon */}
           <button

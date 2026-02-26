@@ -129,14 +129,24 @@ export function useCalendarItems(startDate, endDate, options = {}) {
             })
           } else if (task.scheduled_date) {
             const taskDate = new Date(task.scheduled_date)
-            if (taskDate >= startDate && taskDate <= endDate) {
+          const duration = task.duration_days || 1
+          
+          // ✅ Generate entries for each day in duration
+          for (let i = 0; i < duration; i++) {
+            const currentDate = new Date(taskDate)
+            currentDate.setDate(currentDate.getDate() + i)
+            
+            if (currentDate >= startDate && currentDate <= endDate) {
               calendarItems.push({
                 ...task,
                 type: 'task',
                 original_id: task.id,
-                instance_date: task.scheduled_date,
-                is_recurring: false
+                instance_date: currentDate.toISOString().split('T')[0],
+                is_recurring: false,
+                duration_day: i + 1, // ✅ Which day of duration (1, 2, 3...)
+                total_duration: duration
               })
+              }
             }
           }
         })

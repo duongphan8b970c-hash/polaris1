@@ -12,41 +12,47 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
   const [updating, setUpdating] = useState(false)
 
   const handleCheckIn = async (item) => {
-    try {
-      setUpdating(true)
+  try {
+    setUpdating(true)
 
-      if (item.type === 'task') {
-        // Update task status
-        const newStatus = item.status === 'completed' ? 'todo' : 'completed'
-        const { error } = await supabase
-          .from('tasks')
-          .update({ status: newStatus })
-          .eq('id', item.original_id)
+    if (item.type === 'task') {
+      // ✅ Update task status
+      const newStatus = item.status === 'completed' ? 'in_progress' : 'completed'
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', item.original_id)
 
-        if (error) throw error
-      } else {
-        // Update subtask
-        const newCompleted = !item.is_completed
-        const { error } = await supabase
-          .from('subtasks')
-          .update({ 
-            is_completed: newCompleted,
-            completed_date: newCompleted ? new Date().toISOString() : null
-          })
-          .eq('id', item.original_id)
+          if (error) throw error
+        } else if (item.type === 'subtask') {
+          // ✅ Update subtask
+          const newCompleted = !item.is_completed
+          const { error } = await supabase
+            .from('subtasks')
+            .update({ 
+              is_completed: newCompleted,
+              completed_date: newCompleted ? new Date().toISOString() : null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', item.original_id)
 
-        if (error) throw error
+          if (error) throw error
+        }
+
+        // ✅ Trigger refetch
+        if (onRefresh) {
+          await onRefresh()
+        }
+      } catch (err) {
+        console.error('Error checking in:', err)
+        alert('Lỗi: ' + err.message)
+      } finally {
+        setUpdating(false)
       }
-
-      await onRefresh()
-    } catch (err) {
-      console.error('Error checking in:', err)
-      alert('Lỗi: ' + err.message)
-    } finally {
-      setUpdating(false)
     }
-  }
-
   // Filter items based on view
   const filteredItems = items // TODO: Add user filter when view === 'my'
 

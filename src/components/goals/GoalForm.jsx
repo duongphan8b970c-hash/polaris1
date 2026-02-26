@@ -39,10 +39,6 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
         start_date: goal.start_date || new Date().toISOString().split('T')[0],  // ✅ ADD
         target_date: goal.target_date || '',
         priority: goal.priority || 'medium',
-        is_checkin_enabled: goal.is_checkin_enabled || false,
-        checkin_frequency: goal.checkin_frequency || 'daily',
-        checkin_days_per_week: goal.checkin_days_per_week || 7,
-        checkin_target_days: goal.checkin_target_days || null,
         assigned_to: goal.assigned_to || [],
       })
     }
@@ -275,110 +271,6 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
         placeholder="Select users to assign..."
         disabled={loading}
       />
-      {/* ✅ CHECKIN SETTINGS */}
-      <div className="border-t pt-6">
-        <div className="flex items-center gap-3 mb-4">
-          <input
-            type="checkbox"
-            name="is_checkin_enabled"
-            checked={formData.is_checkin_enabled}
-            onChange={handleChange}
-            className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-            disabled={loading}
-          />
-          <label className="text-sm font-medium text-gray-900">
-            📅 Bật tính năng Checkin hàng ngày
-          </label>
-        </div>
-
-        {formData.is_checkin_enabled && (
-          <div className="ml-8 space-y-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-            <p className="text-sm text-gray-600 mb-3">
-              Thiết lập tần suất checkin để theo dõi tiến độ
-            </p>
-
-            {/* Frequency Options */}
-            <div className="space-y-2">
-              {CHECKIN_FREQUENCY_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                    formData.checkin_frequency === option.value
-                      ? 'border-blue-500 bg-white shadow-sm'
-                      : 'border-gray-200 bg-white hover:border-blue-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="checkin_frequency"
-                    value={option.value}
-                    checked={formData.checkin_frequency === option.value}
-                    onChange={handleChange}
-                    className="mt-1 w-4 h-4 text-blue-600"
-                    disabled={loading}
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">{option.label}</div>
-                    <div className="text-xs text-gray-600 mt-0.5">{option.description}</div>
-                  </div>
-                </label>
-              ))}
-            </div>
-
-            {/* Days per Week Input */}
-            {formData.checkin_frequency === 'weekly' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Số ngày checkin mỗi tuần
-                </label>
-                <input
-                  type="number"
-                  name="checkin_days_per_week"
-                  value={formData.checkin_days_per_week}
-                  onChange={handleChange}
-                  min="1"
-                  max="7"
-                  className="input"
-                  disabled={loading}
-                />
-              </div>
-            )}
-
-            {/* Custom Days Input */}
-            {formData.checkin_frequency === 'custom' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tổng số ngày checkin trong tháng
-                </label>
-                <input
-                  type="number"
-                  name="checkin_target_days"
-                  value={formData.checkin_target_days || ''}
-                  onChange={handleChange}
-                  min="1"
-                  max="31"
-                  placeholder="Ví dụ: 20"
-                  className="input"
-                  disabled={loading}
-                />
-              </div>
-            )}
-
-            {/* Preview */}
-            <div className="bg-blue-100 border border-blue-300 rounded-lg p-3">
-              <p className="text-sm text-blue-900">
-                <strong>Tháng này:</strong> Cần checkin <strong>{previewDays} ngày</strong>
-              </p>
-              {formData.checkin_frequency !== 'custom' && (
-                <p className="text-xs text-gray-600 mt-1">
-                  💡 Số ngày sẽ tự động tính lại mỗi tháng
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Action Buttons */}
       <div className="flex gap-3 pt-4">
         <button

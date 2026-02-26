@@ -21,6 +21,7 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
     description: '',
     start_date: '',
     due_date: '',
+    duration_days: 1,
     priority: 'medium',
     status: 'todo',
     tags: [],
@@ -190,7 +191,22 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
             disabled={loading}
           />
         </div>
-
+        {/* ✅ ADD: Duration */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Thời gian (ngày)
+          </label>
+          <input
+            type="number"
+            name="duration_days"
+            min="1"
+            value={formData.duration_days || 1}
+            onChange={handleChange}
+            className="input"
+            disabled={loading}
+            placeholder="Số ngày"
+          />
+        </div>      
         {/* Due Date */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">

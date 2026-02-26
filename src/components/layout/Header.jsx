@@ -35,7 +35,7 @@ export default function Header({ onMenuClick }) {
 
         {/* Page Title (optional) */}
         <h1 className="hidden md:block text-lg font-semibold text-gray-900">
-          Polaris Finance
+          Polaris 
         </h1>
       </div>
 

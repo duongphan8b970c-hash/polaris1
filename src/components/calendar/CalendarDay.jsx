@@ -1,23 +1,12 @@
-import { isToday, getDateStats, getDateColor } from '../../utils/calendar'
-
 export default function CalendarDay({ day, items, isSelected, onClick }) {
   const stats = getDateStats(items, day.date)
   const color = getDateColor(stats)
   const today = isToday(day.date)
 
-  const colorClasses = {
-    gray: 'bg-gray-50 border-gray-200',
-    green: 'bg-green-50 border-green-300',
-    yellow: 'bg-yellow-50 border-yellow-300',
-    red: 'bg-red-50 border-red-300'
-  }
-
-  const dotColors = {
-    gray: 'bg-gray-400',
-    green: 'bg-green-500',
-    yellow: 'bg-yellow-500',
-    red: 'bg-red-500'
-  }
+  // ✅ Check if any multi-day task
+  const hasMultiDay = items.some(item => 
+    item.type === 'task' && item.total_duration > 1
+  )
 
   return (
     <button
@@ -27,6 +16,7 @@ export default function CalendarDay({ day, items, isSelected, onClick }) {
         ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-100'}
         ${isSelected ? 'ring-2 ring-blue-500 border-blue-500' : colorClasses[color]}
         ${today ? 'ring-2 ring-blue-400' : ''}
+        ${hasMultiDay ? 'border-l-4 border-l-purple-500' : ''} // ✅ Visual indicator
       `}
     >
       {/* Date Number */}

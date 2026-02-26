@@ -99,7 +99,6 @@ function App() {
           <Route path="goals/calendar" element={<GoalsCalendarDashboard />} /> {/* ✅ NEW: Main calendar */}
           <Route path="goals/list" element={<GoalsDashboard />} /> {/* ✅ Goals list */}
           <Route path="goals/:goalId" element={<GoalDetails />} />
-          <Route path="goals/:goalId/tracker" element={<GoalCheckinTracker />} /> {/* ✅ RENAMED */}
           <Route path="goals/:goalId/tasks/:taskId" element={<TaskDetails />} />
           <Route path="profile" element={<UserProfile />} />
         </Route>
