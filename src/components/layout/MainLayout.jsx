@@ -1,10 +1,11 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Sidebar from './Sidebar'
 import Header from './Header'
 
 export default function MainLayout() {
   const location = useLocation()
+  const mainContentRef = useRef(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // ✅ Initialize sidebar state on mount
