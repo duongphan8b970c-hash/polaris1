@@ -12,14 +12,14 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
   const [updating, setUpdating] = useState({}) 
 
   const handleCheckIn = async (item) => {
-  const itemKey = `${item.type}-${item.original_id}`
-  try {
-      setUpdating(prev => ({ ...prev, [itemKey]: true })) // ✅ Set loading for this item
+    const itemKey = `${item.type}-${item.original_id}`
+    
+    try {
+      setUpdating(prev => ({ ...prev, [itemKey]: true }))
+
+      console.log('Updating item:', item.type, item.original_id, item)
 
       if (item.type === 'task') {
-        // ✅ Log để debug
-        console.log('Updating task:', item.original_id, item)
-        
         const newStatus = item.status === 'completed' ? 'in_progress' : 'completed'
         const { data, error } = await supabase
           .from('tasks')
@@ -27,7 +27,7 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
             status: newStatus,
             updated_at: new Date().toISOString()
           })
-          .eq('id', item.original_id) // ✅ CRITICAL: Đảm bảo item.original_id = item.id
+          .eq('id', item.original_id)
           .select()
 
         if (error) {
@@ -38,9 +38,6 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
         console.log('Task updated:', data)
         
       } else if (item.type === 'subtask') {
-        // ✅ Log để debug
-        console.log('Updating subtask:', item.original_id, item)
-        
         const newCompleted = !item.is_completed
         const { data, error } = await supabase
           .from('subtasks')
@@ -49,7 +46,7 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
             completed_date: newCompleted ? new Date().toISOString() : null,
             updated_at: new Date().toISOString()
           })
-          .eq('id', item.original_id) // ✅ CRITICAL: Đảm bảo item.original_id = item.id
+          .eq('id', item.original_id)
           .select()
 
         if (error) {
@@ -60,7 +57,7 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
         console.log('Subtask updated:', data)
       }
 
-      // ✅ Trigger refetch with timeout to prevent hang
+      // Trigger refetch with timeout to prevent hang
       if (onRefresh) {
         await Promise.race([
           onRefresh(),
@@ -74,7 +71,7 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
       console.error('Error checking in:', err)
       alert('Lỗi: ' + err.message)
     } finally {
-      // ✅ ALWAYS clear loading state
+      // ALWAYS clear loading state
       setUpdating(prev => {
         const newState = { ...prev }
         delete newState[itemKey]
@@ -84,7 +81,7 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
   }
 
   // Filter items based on view
-  const filteredItems = items // TODO: Add user filter when view === 'my'
+  const filteredItems = items
 
   const dateStr = date.toLocaleDateString('vi-VN', {
     weekday: 'long',
@@ -124,7 +121,7 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
         </div>
       </div>
 
-       {/* Items List */}
+      {/* Items List */}
       <div className="space-y-2">
         {filteredItems.length > 0 ? (
           filteredItems.map((item, index) => {
@@ -134,7 +131,7 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
                 key={`${item.type}-${item.original_id}-${index}`}
                 item={item}
                 onCheckIn={handleCheckIn}
-                isUpdating={updating[itemKey] || false}
+                isUpdating={updating[itemKey] || false} // ✅ Pass correct prop
               />
             )
           })

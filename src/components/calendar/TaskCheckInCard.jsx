@@ -2,7 +2,7 @@ import { useState } from 'react'
 import UserAvatar from '../common/UserAvatar'
 import { useNavigate } from 'react-router-dom'
 
-export default function TaskCheckInCard({ item, onCheckIn, isUpdateting = false}) {
+export default function TaskCheckInCard({ item, onCheckIn, isUpdating = false }) { // ✅ FIXED: isUpdating (not isUpdateting)
   const [isChecking, setIsChecking] = useState(false)
   const navigate = useNavigate()
 
@@ -13,8 +13,13 @@ export default function TaskCheckInCard({ item, onCheckIn, isUpdateting = false}
   const handleCheckIn = async (e) => {
     e.stopPropagation()
     setIsChecking(true)
-    await onCheckIn(item)
-    setIsChecking(false)
+    try {
+      await onCheckIn(item)
+    } catch (error) {
+      console.error('Check-in error:', error)
+    } finally {
+      setIsChecking(false) // ✅ Always clear
+    }
   }
 
   const handleNavigate = () => {
@@ -40,14 +45,14 @@ export default function TaskCheckInCard({ item, onCheckIn, isUpdateting = false}
       {/* Checkbox */}
       <button
         onClick={handleCheckIn}
-        disabled={isChecking || isUpdating}
+        disabled={isChecking || isUpdating} // ✅ Now this matches the prop name
         className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
           isCompleted
             ? 'bg-green-500 border-green-500'
             : 'border-gray-300 hover:border-green-400'
         }`}
       >
-        {(isChecking || isUpdating) ? ( 
+        {(isChecking || isUpdating) ? ( // ✅ Show spinner
           <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
         ) : isCompleted ? (
           <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -91,37 +96,64 @@ export default function TaskCheckInCard({ item, onCheckIn, isUpdateting = false}
               ? 'bg-blue-100 text-blue-700' 
               : 'bg-green-100 text-green-700'
           }`}>
-            {item.type === 'task' ? '📋 Task' : '✓ Subtask'}
+            {item.type === 'task' ? 'Task' : 'Subtask'}
           </span>
+
+          {/* Status badge for tasks */}
+          {item.type === 'task' && (
+            <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
+              item.status === 'completed' ? 'bg-green-100 text-green-700' :
+              item.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+              item.status === 'blocked' ? 'bg-red-100 text-red-700' :
+              'bg-gray-100 text-gray-700'
+            }`}>
+              {item.status === 'completed' ? '✓ Hoàn thành' :
+               item.status === 'in_progress' ? '⟳ Đang làm' :
+               item.status === 'blocked' ? '⊘ Bị chặn' :
+               '○ Chưa bắt đầu'}
+            </span>
+          )}
 
           {/* Priority for tasks */}
           {item.type === 'task' && item.priority && (
-            <span className={`px-2 py-0.5 rounded ${
+            <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
               item.priority === 'high' ? 'bg-red-100 text-red-700' :
               item.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
               'bg-gray-100 text-gray-700'
             }`}>
-              {item.priority === 'high' ? '🔴' : item.priority === 'medium' ? '🟡' : '🔵'}
+              {item.priority === 'high' ? '🔥 Cao' :
+               item.priority === 'medium' ? '⚡ Trung bình' :
+               '📌 Thấp'}
             </span>
+          )}
+
+          {/* Assigned users */}
+          {item.assigned_users && item.assigned_users.length > 0 && (
+            <div className="flex -space-x-1">
+              {item.assigned_users.slice(0, 3).map((user, index) => (
+                <UserAvatar
+                  key={user.id || index}
+                  user={user}
+                  size="xs"
+                  className="ring-2 ring-white"
+                />
+              ))}
+              {item.assigned_users.length > 3 && (
+                <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 text-[10px] flex items-center justify-center ring-2 ring-white">
+                  +{item.assigned_users.length - 3}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>
 
-      {/* Assignees */}
-      {item.assigned_to && item.assigned_to.length > 0 && (
-        <div className="flex -space-x-2">
-          {item.assigned_to.slice(0, 3).map((userId, index) => (
-            <div key={userId} style={{ zIndex: 10 - index }}>
-              <UserAvatar userId={userId} size="sm" showTooltip={true} />
-            </div>
-          ))}
-          {item.assigned_to.length > 3 && (
-            <div className="w-7 h-7 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-gray-600">
-              +{item.assigned_to.length - 3}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Navigate Arrow */}
+      <div className="flex-shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
     </div>
   )
 }
