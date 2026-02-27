@@ -223,7 +223,7 @@ export default function RecurrenceModal({ isOpen, onClose, onSave, initialData, 
                   {/* Interval */}
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
-                      M��i:
+                      Mỗi:
                     </label>
                     <input
                       type="number"

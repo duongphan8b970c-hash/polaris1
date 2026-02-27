@@ -59,12 +59,7 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
 
       // Trigger refetch with timeout to prevent hang
       if (onRefresh) {
-        await Promise.race([
-          onRefresh(),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Refresh timeout')), 5000)
-          )
-        ])
+        onRefresh().catch(err => console.error('Background refresh failed:', err))
       }
       
     } catch (err) {
@@ -73,9 +68,9 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
     } finally {
       // ALWAYS clear loading state
       setUpdating(prev => {
-        const newState = { ...prev }
-        delete newState[itemKey]
-        return newState
+      const newState = { ...prev }
+      delete newState[itemKey]
+      return newState
       })
     }
   }
