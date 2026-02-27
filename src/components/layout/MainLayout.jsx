@@ -25,6 +25,28 @@ export default function MainLayout() {
     }
   }, [location.pathname])
 
+  useEffect(() => {
+    const mainContent = mainContentRef.current
+    if (!mainContent) return
+
+    const handleScroll = () => {
+      // Chỉ đóng sidebar khi:
+      // 1. Đang ở desktop (>= 1024px)
+      // 2. Sidebar đang mở
+      if (window.innerWidth >= 1024 && sidebarOpen) {
+        handleCloseSidebar()
+      }
+    }
+
+    // Thêm scroll listener
+    mainContent.addEventListener('scroll', handleScroll)
+
+    // Cleanup
+    return () => {
+      mainContent.removeEventListener('scroll', handleScroll)
+    }
+  }, [sidebarOpen])
+
   const handleCloseSidebar = () => {
     setSidebarOpen(false)
     localStorage.setItem('sidebarOpen', 'false')
@@ -50,7 +72,10 @@ export default function MainLayout() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header onMenuClick={handleToggleSidebar} />
           
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+          <main 
+            ref={mainContentRef}
+            className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8"
+          >
             <Outlet />
           </main>
         </div>
