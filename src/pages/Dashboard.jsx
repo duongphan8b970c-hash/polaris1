@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useWallets } from '../hooks/finance/useWallets'
 import { supabase } from '../lib/supabase'
+import FinanceTab from '../components/dashboard/FinanceTab'
 import Loading from '../components/common/Loading'
 import { formatDateTime, getRelativeTime } from '../utils'
 
