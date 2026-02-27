@@ -1,27 +1,23 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
-import { generateOccurrences, isRecurring } from '../../utils/recurrence'
+import { isRecurring, generateOccurrences } from '../../utils/recurrence'
 
-/**
- * Hook to fetch calendar items (tasks + subtasks) with recurring support
- */
 export function useCalendarItems(startDate, endDate, options = {}) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0) // ✅ ADD: Refresh trigger
 
-  // ✅ Memoize options to prevent re-render
-  const { userId = null, includeTeam = true } = options
-  const optionsKey = useMemo(() => 
-    JSON.stringify({ userId, includeTeam }), 
-    [userId, includeTeam]
-  )
+  // Memoize date key
+  const dateKey = useMemo(() => {
+    if (!startDate || !endDate) return ''
+    return `${startDate.toISOString()}-${endDate.toISOString()}`
+  }, [startDate, endDate])
 
-  // ✅ Memoize date keys
-  const dateKey = useMemo(() => 
-    `${startDate?.getTime()}-${endDate?.getTime()}`,
-    [startDate, endDate]
-  )
+  // Memoize options key
+  const optionsKey = useMemo(() => {
+    return JSON.stringify(options)
+  }, [options])
 
   useEffect(() => {
     let cancelled = false
@@ -32,82 +28,80 @@ export function useCalendarItems(startDate, endDate, options = {}) {
         setLoading(true)
         setError(null)
 
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user || cancelled) return
-
-        // Fetch tasks
+        // Build query
         let tasksQuery = supabase
           .from('tasks')
           .select(`
-            id,
-            title,
-            description,
-            status,
-            priority,
-            scheduled_date,
-            recurrence_rule,
-            is_calendar_visible,
-            assigned_to,
-            goal_id,
-            goal:goals(id, name, icon, color)
-          `)
-          .eq('is_calendar_visible', true)
-          .is('deleted_at', null)
-          .abortSignal(controller.signal)
-
-        if (userId) {
-          tasksQuery = tasksQuery.contains('assigned_to', [userId])
-        } else if (!includeTeam) {
-          tasksQuery = tasksQuery.contains('assigned_to', [user.id])
-        }
-
-        const { data: tasks, error: tasksError } = await tasksQuery
-        if (tasksError || cancelled) {
-          if (tasksError) throw tasksError
-          return
-        }
-
-        // Fetch subtasks
-        let subtasksQuery = supabase
-          .from('subtasks')
-          .select(`
-            id,
-            title,
-            description,
-            is_completed,
-            scheduled_date,
-            recurrence_rule,
-            is_calendar_visible,
-            assigned_to,
-            task_id,
-            task:tasks(
+            *,
+            goal:goals (
               id,
-              title,
-              goal_id,
-              goal:goals(id, name, icon, color)
+              name,
+              icon,
+              color
+            ),
+            assigned_users:task_assignments (
+              user:users (
+                id,
+                display_name,
+                email,
+                avatar_url
+              )
             )
           `)
           .eq('is_calendar_visible', true)
           .is('deleted_at', null)
-          .abortSignal(controller.signal)
 
-        if (userId) {
-          subtasksQuery = subtasksQuery.contains('assigned_to', [userId])
-        } else if (!includeTeam) {
-          subtasksQuery = subtasksQuery.contains('assigned_to', [user.id])
+        let subtasksQuery = supabase
+          .from('subtasks')
+          .select(`
+            *,
+            task:tasks!inner (
+              id,
+              title,
+              goal:goals (
+                id,
+                name,
+                icon,
+                color
+              )
+            ),
+            assigned_users:subtask_assignments (
+              user:users (
+                id,
+                display_name,
+                email,
+                avatar_url
+              )
+            )
+          `)
+          .eq('is_calendar_visible', true)
+          .is('deleted_at', null)
+
+        // Apply team filter if needed
+        if (!options.includeTeam) {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            tasksQuery = tasksQuery.contains('assigned_to', [user.id])
+            subtasksQuery = subtasksQuery.contains('assigned_to', [user.id])
+          }
         }
 
-        const { data: subtasks, error: subtasksError } = await subtasksQuery
-        if (subtasksError || cancelled) {
-          if (subtasksError) throw subtasksError
-          return
-        }
+        const [tasksResult, subtasksResult] = await Promise.all([
+          tasksQuery,
+          subtasksQuery
+        ])
 
-        // Process items
+        if (tasksResult.error) throw tasksResult.error
+        if (subtasksResult.error) throw subtasksResult.error
+
+        const tasks = tasksResult.data || []
+        const subtasks = subtasksResult.data || []
+
+        // Generate calendar items
         const calendarItems = []
 
         // Process tasks
-        ;(tasks || []).forEach(task => {
+        tasks.forEach(task => {
           if (isRecurring(task)) {
             const occurrences = generateOccurrences(
               task.recurrence_rule,
@@ -129,30 +123,29 @@ export function useCalendarItems(startDate, endDate, options = {}) {
             })
           } else if (task.scheduled_date) {
             const taskDate = new Date(task.scheduled_date)
-          const duration = task.duration_days || 1
-          
-          // ✅ Generate entries for each day in duration
-          for (let i = 0; i < duration; i++) {
-            const currentDate = new Date(taskDate)
-            currentDate.setDate(currentDate.getDate() + i)
+            const duration = task.duration_days || 1
             
-            if (currentDate >= startDate && currentDate <= endDate) {
-              calendarItems.push({
-                ...task,
-                type: 'task',
-                original_id: task.id,
-                instance_date: currentDate.toISOString().split('T')[0],
-                is_recurring: false,
-                duration_day: i + 1, // ✅ Which day of duration (1, 2, 3...)
-                total_duration: duration
-              })
+            for (let i = 0; i < duration; i++) {
+              const currentDate = new Date(taskDate)
+              currentDate.setDate(currentDate.getDate() + i)
+              
+              if (currentDate >= startDate && currentDate <= endDate) {
+                calendarItems.push({
+                  ...task,
+                  type: 'task',
+                  original_id: task.id,
+                  instance_date: currentDate.toISOString().split('T')[0],
+                  is_recurring: false,
+                  duration_day: i + 1,
+                  total_duration: duration
+                })
               }
             }
           }
         })
 
         // Process subtasks
-        ;(subtasks || []).forEach(subtask => {
+        subtasks.forEach(subtask => {
           if (isRecurring(subtask)) {
             const occurrences = generateOccurrences(
               subtask.recurrence_rule,
@@ -217,15 +210,15 @@ export function useCalendarItems(startDate, endDate, options = {}) {
       cancelled = true
       controller.abort()
     }
-  }, [dateKey, optionsKey]) // ✅ Use memoized keys instead of objects
+  }, [dateKey, optionsKey, refreshTrigger]) // ✅ ADD: refreshTrigger dependency
 
   return {
     items,
     loading,
     error,
     refetch: () => {
-      setLoading(true)
-      setError(null)
+      console.log('🔄 Refetch triggered')
+      setRefreshTrigger(prev => prev + 1) // ✅ FIX: Increment trigger to re-run useEffect
     }
   }
 }
