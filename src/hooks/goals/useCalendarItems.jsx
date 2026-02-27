@@ -39,7 +39,7 @@ export function useCalendarItems(startDate, endDate, options = {}) {
               icon,
               color
             ),
-            assigned_users:task_assignments (
+            assigned_users:task_completions (
               user:users (
                 id,
                 display_name,
@@ -65,7 +65,7 @@ export function useCalendarItems(startDate, endDate, options = {}) {
                 color
               )
             ),
-            assigned_users:subtask_assignments (
+            assigned_users:subtask_completions (
               user:users (
                 id,
                 display_name,
