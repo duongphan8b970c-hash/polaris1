@@ -9,50 +9,80 @@ const VIEW_OPTIONS = [
 
 export default function TodayTasksPanel({ date, items, onRefresh }) {
   const [view, setView] = useState('all')
-  const [updating, setUpdating] = useState(false)
+  const [updating, setUpdating] = useState({}) 
 
   const handleCheckIn = async (item) => {
+  const itemKey = `${item.type}-${item.original_id}`
   try {
-    setUpdating(true)
+      setUpdating(prev => ({ ...prev, [itemKey]: true })) // ✅ Set loading for this item
 
-    if (item.type === 'task') {
-      // ✅ Update task status
-      const newStatus = item.status === 'completed' ? 'in_progress' : 'completed'
-      const { error } = await supabase
-        .from('tasks')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', item.original_id)
+      if (item.type === 'task') {
+        // ✅ Log để debug
+        console.log('Updating task:', item.original_id, item)
+        
+        const newStatus = item.status === 'completed' ? 'in_progress' : 'completed'
+        const { data, error } = await supabase
+          .from('tasks')
+          .update({ 
+            status: newStatus,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', item.original_id) // ✅ CRITICAL: Đảm bảo item.original_id = item.id
+          .select()
 
-          if (error) throw error
-        } else if (item.type === 'subtask') {
-          // ✅ Update subtask
-          const newCompleted = !item.is_completed
-          const { error } = await supabase
-            .from('subtasks')
-            .update({ 
-              is_completed: newCompleted,
-              completed_date: newCompleted ? new Date().toISOString() : null,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', item.original_id)
-
-          if (error) throw error
+        if (error) {
+          console.error('Supabase error:', error)
+          throw error
         }
+        
+        console.log('Task updated:', data)
+        
+      } else if (item.type === 'subtask') {
+        // ✅ Log để debug
+        console.log('Updating subtask:', item.original_id, item)
+        
+        const newCompleted = !item.is_completed
+        const { data, error } = await supabase
+          .from('subtasks')
+          .update({ 
+            is_completed: newCompleted,
+            completed_date: newCompleted ? new Date().toISOString() : null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', item.original_id) // ✅ CRITICAL: Đảm bảo item.original_id = item.id
+          .select()
 
-        // ✅ Trigger refetch
-        if (onRefresh) {
-          await onRefresh()
+        if (error) {
+          console.error('Supabase error:', error)
+          throw error
         }
-      } catch (err) {
-        console.error('Error checking in:', err)
-        alert('Lỗi: ' + err.message)
-      } finally {
-        setUpdating(false)
+        
+        console.log('Subtask updated:', data)
       }
+
+      // ✅ Trigger refetch with timeout to prevent hang
+      if (onRefresh) {
+        await Promise.race([
+          onRefresh(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Refresh timeout')), 5000)
+          )
+        ])
+      }
+      
+    } catch (err) {
+      console.error('Error checking in:', err)
+      alert('Lỗi: ' + err.message)
+    } finally {
+      // ✅ ALWAYS clear loading state
+      setUpdating(prev => {
+        const newState = { ...prev }
+        delete newState[itemKey]
+        return newState
+      })
     }
+  }
+
   // Filter items based on view
   const filteredItems = items // TODO: Add user filter when view === 'my'
 
@@ -97,22 +127,20 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
       {/* Items List */}
       <div className="space-y-2">
         {filteredItems.length > 0 ? (
-          filteredItems.map((item, index) => (
-            <TaskCheckInCard
-              key={`${item.type}-${item.original_id}-${index}`}
-              item={item}
-              onCheckIn={handleCheckIn}
-            />
-          ))
+          filteredItems.map((item, index) => {
+            const itemKey = `${item.type}-${item.original_id}` // ✅ Generate key
+            return (
+              <TaskCheckInCard
+                key={`${item.type}-${item.original_id}-${index}`}
+                item={item}
+                onCheckIn={handleCheckIn}
+                isUpdating={updating[itemKey] || false} 
+              />
+            )
+          })
         ) : (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">🎉</div>
-            <p className="text-gray-600 font-medium">
-              Không có công việc nào trong ngày này
-            </p>
-            <p className="text-sm text-gray-500 mt-1">
-              Hãy tận hưởng ngày nghỉ!
-            </p>
+            {/* ... */}
           </div>
         )}
       </div>
