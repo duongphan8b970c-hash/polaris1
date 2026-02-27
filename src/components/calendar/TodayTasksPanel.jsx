@@ -9,7 +9,7 @@ const VIEW_OPTIONS = [
 
 export default function TodayTasksPanel({ date, items, onRefresh }) {
   const [view, setView] = useState('all')
-  const [updating, setUpdating] = useState({}) 
+  const [updating, setUpdating] = useState({})
 
   const handleCheckIn = async (item) => {
     const itemKey = `${item.type}-${item.original_id}`
@@ -17,7 +17,7 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
     try {
       setUpdating(prev => ({ ...prev, [itemKey]: true }))
 
-      console.log('Updating item:', item.type, item.original_id, item)
+      console.log('🔄 Updating item:', item.type, item.original_id)
 
       if (item.type === 'task') {
         const newStatus = item.status === 'completed' ? 'in_progress' : 'completed'
@@ -31,11 +31,11 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
           .select()
 
         if (error) {
-          console.error('Supabase error:', error)
+          console.error('❌ Supabase error:', error)
           throw error
         }
         
-        console.log('Task updated:', data)
+        console.log('✅ Task updated:', data)
         
       } else if (item.type === 'subtask') {
         const newCompleted = !item.is_completed
@@ -50,27 +50,33 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
           .select()
 
         if (error) {
-          console.error('Supabase error:', error)
+          console.error('❌ Supabase error:', error)
           throw error
         }
         
-        console.log('Subtask updated:', data)
+        console.log('✅ Subtask updated:', data)
       }
 
-      // Trigger refetch with timeout to prevent hang
-      if (onRefresh) {
-        onRefresh().catch(err => console.error('Background refresh failed:', err))
+      // ✅ SAFE: Call onRefresh in background with defensive checks
+      if (onRefresh && typeof onRefresh === 'function') {
+        console.log('🔄 Triggering background refresh...')
+        
+        // Wrap in try-catch to prevent unhandled rejections
+        Promise.resolve(onRefresh())
+          .then(() => console.log('✅ Background refresh completed'))
+          .catch(err => console.warn('⚠️ Background refresh failed (safe to ignore):', err))
       }
       
     } catch (err) {
-      console.error('Error checking in:', err)
+      console.error('❌ Error checking in:', err)
       alert('Lỗi: ' + err.message)
     } finally {
-      // ALWAYS clear loading state
+      // ✅ ALWAYS clear loading state immediately
+      console.log('🧹 Clearing loading state for:', itemKey)
       setUpdating(prev => {
-      const newState = { ...prev }
-      delete newState[itemKey]
-      return newState
+        const newState = { ...prev }
+        delete newState[itemKey]
+        return newState
       })
     }
   }
@@ -126,7 +132,7 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
                 key={`${item.type}-${item.original_id}-${index}`}
                 item={item}
                 onCheckIn={handleCheckIn}
-                isUpdating={updating[itemKey] || false} // ✅ Pass correct prop
+                isUpdating={updating[itemKey] || false}
               />
             )
           })
