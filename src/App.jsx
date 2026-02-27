@@ -95,7 +95,6 @@ function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="payback" element={<PaybackTracking />} />
           <Route path="payback/priorities" element={<PaybackPriorityConfig />} />
-          <Route path="analytics" element={<AnalyticsDashboard />} />
           <Route path="goals" element={<Navigate to="/goals/calendar" />} /> {/* ✅ Redirect to calendar */}
           <Route path="goals/calendar" element={<GoalsCalendarDashboard />} /> {/* ✅ NEW: Main calendar */}
           <Route path="goals/list" element={<GoalsDashboard />} /> {/* ✅ Goals list */}

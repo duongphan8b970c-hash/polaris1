@@ -147,17 +147,19 @@ export function getTasksByStatus(tasks) {
  */
 export function getAverageCompletionTime(tasks) {
   const completedTasks = tasks.filter(t => 
-    t.status === 'completed' && t.created_at && t.completed_date
-  )
+    t.status === 'completed' && 
+    t.completed_date &&
+    (t.start_date || t.scheduled_date)
+  ) 
   
   if (completedTasks.length === 0) return 0
   
   const totalDays = completedTasks.reduce((sum, task) => {
-    const created = new Date(task.created_at)
-    const completed = new Date(task.completed_date)
-    const days = Math.floor((completed - created) / (1000 * 60 * 60 * 24))
+    const startDate = new Date(task.start_date || task.scheduled_date)
+    const completedDate = new Date(task.completed_date)
+    const days = Math.max(0, Math.floor((completedDate - startDate) / (1000 * 60 * 60 * 24)))
     return sum + days
   }, 0)
   
-  return Math.round(totalDays / completedTasks.length)
+  return completedTasks.length > 0 ? Math.round(totalDays / completedTasks.length) : 0
 }
