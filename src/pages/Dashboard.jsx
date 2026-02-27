@@ -1,229 +1,233 @@
 import { useState, useEffect } from 'react'
-import { useWallets } from '../hooks/finance/useWallets'
 import { supabase } from '../lib/supabase'
-import FinanceTab from '../components/dashboard/FinanceTab'
-import GoalsTab from '../components/dashboard/GoalsTab'
-import PerformanceTab from '../components/dashboard/PerformanceTab'
+import { formatCurrency } from '../utils'
 import Loading from '../components/common/Loading'
-import { formatDateTime, getRelativeTime } from '../utils'
 
 export default function Dashboard() {
-  // ✅ State cho active tab
-  const [activeTab, setActiveTab] = useState('finance')
-  
-  const { wallets, loading: walletsLoading } = useWallets()
-  
-  const [transactions, setTransactions] = useState([])
-  const [trades, setTrades] = useState([])
   const [loading, setLoading] = useState(true)
-  const [updatingRates, setUpdatingRates] = useState(false)
-  const [updateResult, setUpdateResult] = useState(null)
-  const [lastUpdated, setLastUpdated] = useState(null)
-  const [tradePLConverted, setTradePLConverted] = useState(0)
+  const [stats, setStats] = useState({
+    totalAssets: 0,
+    monthlyIncome: 0,
+    monthlyExpense: 0,
+    savingsRate: 0,
+    transactionCount: 0,
+    tradeCount: 0
+  })
 
   useEffect(() => {
-    fetchData()
+    fetchDashboardData()
   }, [])
 
-  const fetchData = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const { data: txnData } = await supabase
-        .from('financial_transactions')
-        .select(`
-          *,
-          categories (
-            id,
-            name,
-            icon,
-            type
-          )
-        `)
-        .order('date', { ascending: false })
+      setLoading(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-      setTransactions(txnData || [])
+      // Get current month range
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
-      const { data: tradeData } = await supabase
+      // Fetch wallets total
+      const { data: wallets } = await supabase
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', user.id)
+
+      const totalAssets = wallets?.reduce((sum, w) => sum + (w.balance || 0), 0) || 0
+
+      // Fetch transactions this month
+      const { data: transactions } = await supabase
+        .from('transactions')
+        .select('amount, type')
+        .eq('user_id', user.id)
+        .gte('date', startOfMonth.toISOString().split('T')[0])
+        .lte('date', endOfMonth.toISOString().split('T')[0])
+
+      const monthlyIncome = transactions
+        ?.filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0) || 0
+
+      const monthlyExpense = transactions
+        ?.filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0
+
+      const savingsRate = monthlyIncome > 0 
+        ? ((monthlyIncome - monthlyExpense) / monthlyIncome * 100).toFixed(1)
+        : 0
+
+      // Fetch trades
+      const { data: trades } = await supabase
         .from('trades')
-        .select('*')
-        .order('updated_at', { ascending: false })
+        .select('id')
+        .eq('user_id', user.id)
+        .gte('date', startOfMonth.toISOString().split('T')[0])
+        .lte('date', endOfMonth.toISOString().split('T')[0])
 
-      setTrades(tradeData || [])
-
-      const { data: rateData } = await supabase
-        .from('exchange_rates')
-        .select('updated_at')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      if (rateData) {
-        setLastUpdated(rateData.updated_at)
-      } else {
-              setLastUpdated(null)  // Table rỗng, chưa có data
-            }
-
+      setStats({
+        totalAssets,
+        monthlyIncome,
+        monthlyExpense,
+        savingsRate: parseFloat(savingsRate),
+        transactionCount: transactions?.length || 0,
+        tradeCount: trades?.length || 0
+      })
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('Error fetching dashboard data:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const formatLastUpdated = () => {
-  if (!lastUpdated) return 'Chưa cập nhật'
-  return getRelativeTime(lastUpdated)
-  } 
-    const handleManualUpdate = async () => {
-    if (!window.confirm('Cập nhật tỷ giá ngay bây giờ?')) return
-    
-    setUpdatingRates(true)
-    setUpdateResult(null)
-    
-    try {
-      // ✅ Call Supabase function directly
-      const response = await fetch('/api/update-rates', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_CRON_SECRET}`
-      }
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update rates')
-      }
-
-      const data = await response.json()
-      
-      setUpdateResult({
-        success: true,
-        message: `✅ Đã cập nhật ${data.updated_currencies} tỷ giá!`
-      })
-      
-      await fetchData()
-      
-      setTimeout(() => {
-        setUpdateResult(null)
-      }, 3000)
-      
-    } catch (error) {
-      console.error('Error updating exchange rates:', error)
-      setUpdateResult({
-        success: false,
-        message: `❌ ${error.message}`
-      })
-    } finally {
-      setUpdatingRates(false)
-    }
-  }
-  // Convert trade P&L to VND
-useEffect(() => {
-  const convertTradePL = async () => {
-    const now = new Date()
-    const currentMonth = now.getMonth()
-    const currentYear = now.getFullYear()
-
-    const monthlyClosedTrades = trades.filter(trade => {
-      if (trade.status !== 'closed' || !trade.updated_at) return false
-      const tradeDate = new Date(trade.updated_at)
-      return tradeDate.getMonth() === currentMonth && tradeDate.getFullYear() === currentYear
-    })
-
-    if (monthlyClosedTrades.length === 0) {
-      setTradePLConverted(0)
-      return
-    }
-
-    // ✅ FIX: Query tất cả rates một lần duy nhất
-    const { data: allRates } = await supabase
-      .from('exchange_rates')
-      .select('from_currency, to_currency, rate')
-      .eq('to_currency', 'VND')
-
-    // Tạo Map để lookup nhanh
-    const ratesMap = new Map()
-    allRates?.forEach(r => {
-      ratesMap.set(r.from_currency, parseFloat(r.rate))
-    })
-
-    // Tính tổng với cached rates
-    let totalVND = 0
-
-    for (const trade of monthlyClosedTrades) {
-      const pl = trade.profit_loss || 0
-      const currency = (trade.exit_currency || 'USDT').toUpperCase()
-
-      if (currency === 'VND') {
-        totalVND += pl
-        continue
-      }
-
-      // Lấy rate từ Map (nhanh hơn nhiều)
-      const rate = ratesMap.get(currency) || (currency === 'USD' || currency === 'USDT' ? 24000 : 1)
-      totalVND += pl * rate
-    }
-
-    setTradePLConverted(totalVND)
-  }
-
-    convertTradePL()
-  }, [trades])
-
-  if (loading || walletsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loading message="Đang tải dữ liệu..." />
-      </div>
-    )
+  if (loading) {
+    return <Loading message="Đang tải dashboard..." />
   }
 
   return (
     <div className="space-y-6">
-      {/* ✅ HEADER với Tab Navigation */}
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-1">Dashboard</h1>
-        <p className="text-gray-600 mb-6">Tổng quan về tài chính, mục tiêu và hiệu suất</p>
-        
-        {/* ✅ Tab Navigation */}
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            {/* Tab 1: Finance */}
-            <button
-              onClick={() => setActiveTab('finance')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
-                activeTab === 'finance'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Tài Chính
-            </button>
-          </nav>
+        <h1 className="text-3xl font-bold text-gray-900">
+          💰 Finance Dashboard
+        </h1>
+        <p className="text-gray-600 mt-1">
+          Tổng quan tài chính và hiệu suất
+        </p>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Total Assets */}
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center">
+              <span className="text-2xl">💎</span>
+            </div>
+          </div>
+          <p className="text-sm font-medium text-blue-900 opacity-80 mb-1">
+            Tổng tài sản
+          </p>
+          <p className="text-3xl font-bold text-blue-900">
+            {formatCurrency(stats.totalAssets)}
+          </p>
+          <p className="text-xs text-blue-700 opacity-70 mt-1">
+            Từ tất cả các ví
+          </p>
+        </div>
+
+        {/* Monthly Income */}
+        <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center">
+              <span className="text-2xl">📈</span>
+            </div>
+          </div>
+          <p className="text-sm font-medium text-green-900 opacity-80 mb-1">
+            Thu nhập tháng này
+          </p>
+          <p className="text-3xl font-bold text-green-900">
+            {formatCurrency(stats.monthlyIncome)}
+          </p>
+          <p className="text-xs text-green-700 opacity-70 mt-1">
+            {stats.transactionCount} giao dịch + {stats.tradeCount} trades
+          </p>
+        </div>
+
+        {/* Monthly Expense */}
+        <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-12 h-12 bg-red-200 rounded-full flex items-center justify-center">
+              <span className="text-2xl">📉</span>
+            </div>
+          </div>
+          <p className="text-sm font-medium text-red-900 opacity-80 mb-1">
+            Chi tiêu tháng này
+          </p>
+          <p className="text-3xl font-bold text-red-900">
+            {formatCurrency(stats.monthlyExpense)}
+          </p>
+          <p className="text-xs text-red-700 opacity-70 mt-1">
+            Các khoản chi
+          </p>
+        </div>
+
+        {/* Transactions Count */}
+        <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-2 border-cyan-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-12 h-12 bg-cyan-200 rounded-full flex items-center justify-center">
+              <span className="text-2xl">📋</span>
+            </div>
+          </div>
+          <p className="text-sm font-medium text-cyan-900 opacity-80 mb-1">
+            Giao dịch tháng này
+          </p>
+          <p className="text-3xl font-bold text-cyan-900">
+            {stats.transactionCount}
+          </p>
+          <p className="text-xs text-cyan-700 opacity-70 mt-1">
+            Tổng số giao dịch
+          </p>
+        </div>
+
+        {/* Trades Count */}
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-12 h-12 bg-purple-200 rounded-full flex items-center justify-center">
+              <span className="text-2xl">💹</span>
+            </div>
+          </div>
+          <p className="text-sm font-medium text-purple-900 opacity-80 mb-1">
+            Trades P&L
+          </p>
+          <p className="text-3xl font-bold text-purple-900">
+            {stats.tradeCount}
+          </p>
+          <p className="text-xs text-purple-700 opacity-70 mt-1">
+            Trades tháng này
+          </p>
+        </div>
+
+        {/* Savings Rate */}
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-12 h-12 bg-orange-200 rounded-full flex items-center justify-center">
+              <span className="text-2xl">🎯</span>
+            </div>
+          </div>
+          <p className="text-sm font-medium text-orange-900 opacity-80 mb-1">
+            Tỷ lệ tiết kiệm
+          </p>
+          <p className="text-3xl font-bold text-orange-900">
+            {stats.savingsRate}%
+          </p>
+          <p className="text-xs text-orange-700 opacity-70 mt-1">
+            Savings rate
+          </p>
         </div>
       </div>
 
-      {/* ✅ TAB CONTENT */}
-      <div className="mt-6">
-        {activeTab === 'finance' && (
-          <FinanceTab
-            wallets={wallets}
-            transactions={transactions}
-            trades={trades}
-            tradePLConverted={tradePLConverted}
-            updatingRates={updatingRates}
-            updateResult={updateResult}
-            lastUpdated={lastUpdated}
-            formatLastUpdated={formatLastUpdated}
-            handleManualUpdate={handleManualUpdate}
-          />
-        )}
+      {/* Recent Activity Section - Optional */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Giao dịch gần đây */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
+            💵 Giao dịch gần đây
+          </h3>
+          <div className="text-center py-8 text-gray-500">
+            <p className="text-sm">Xem chi tiết tại trang Giao dịch</p>
+          </div>
+        </div>
 
-        {activeTab === 'goals' && <GoalsTab />}
-
-        {activeTab === 'performance' && <PerformanceTab />}
+        {/* Trades gần đây */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
+            📈 Trades gần đây
+          </h3>
+          <div className="text-center py-8 text-gray-500">
+            <p className="text-sm">Xem chi tiết tại trang Trades</p>
+          </div>
+        </div>
       </div>
     </div>
   )
