@@ -124,23 +124,29 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
         </div>
       </div>
 
-      {/* Items List */}
+       {/* Items List */}
       <div className="space-y-2">
         {filteredItems.length > 0 ? (
           filteredItems.map((item, index) => {
-            const itemKey = `${item.type}-${item.original_id}` // ✅ Generate key
+            const itemKey = `${item.type}-${item.original_id}`
             return (
               <TaskCheckInCard
                 key={`${item.type}-${item.original_id}-${index}`}
                 item={item}
                 onCheckIn={handleCheckIn}
-                isUpdating={updating[itemKey] || false} 
+                isUpdating={updating[itemKey] || false}
               />
             )
           })
         ) : (
           <div className="text-center py-12">
-            {/* ... */}
+            <div className="text-6xl mb-4">🎉</div>
+            <p className="text-gray-600 font-medium">
+              Không có công việc nào trong ngày này
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              Hãy tận hưởng ngày nghỉ!
+            </p>
           </div>
         )}
       </div>

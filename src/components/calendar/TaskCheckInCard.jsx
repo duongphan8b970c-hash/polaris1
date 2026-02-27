@@ -2,7 +2,7 @@ import { useState } from 'react'
 import UserAvatar from '../common/UserAvatar'
 import { useNavigate } from 'react-router-dom'
 
-export default function TaskCheckInCard({ item, onCheckIn, isUpdateting }) {
+export default function TaskCheckInCard({ item, onCheckIn, isUpdateting = false}) {
   const [isChecking, setIsChecking] = useState(false)
   const navigate = useNavigate()
 
