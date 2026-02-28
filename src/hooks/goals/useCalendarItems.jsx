@@ -1,29 +1,42 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
-import { isRecurring, generateOccurrences } from '../../utils/recurrence'
+import { generateOccurrences, isRecurring } from '../../utils/recurrence'
 
 /**
- * Hook to fetch calendar items (tasks & subtasks) for a date range
- * @param {Date} startDate - Start of date range
- * @param {Date} endDate - End of date range
- * @param {Object} options - { includeTeam: boolean }
+ * Normalize date to midnight in local timezone
+ */
+function normalizeDate(dateInput) {
+  const date = new Date(dateInput)
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
+/**
+ * Convert YYYY-MM-DD string to local midnight date
+ */
+function dateStringToLocal(dateStr) {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+/**
+ * Hook to fetch calendar items (tasks + subtasks) with recurring support
  */
 export function useCalendarItems(startDate, endDate, options = {}) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  // Memoize date key to prevent unnecessary re-fetches
-  const dateKey = useMemo(() => {
-    if (!startDate || !endDate) return ''
-    return `${startDate.toISOString()}-${endDate.toISOString()}`
-  }, [startDate, endDate])
+  const { userId = null, includeTeam = true } = options
+  const optionsKey = useMemo(() => 
+    JSON.stringify({ userId, includeTeam }), 
+    [userId, includeTeam]
+  )
 
-  // Memoize options key
-  const optionsKey = useMemo(() => {
-    return JSON.stringify(options)
-  }, [options])
+  const dateKey = useMemo(() => 
+    `${startDate?.getTime()}-${endDate?.getTime()}`,
+    [startDate, endDate]
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -34,118 +47,126 @@ export function useCalendarItems(startDate, endDate, options = {}) {
         setLoading(true)
         setError(null)
 
-        // ✅ FIXED: Use task_completions (not task_assignments)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user || cancelled) return
+
+        // ✅ Normalize date range to local midnight
+        const normalizedStart = normalizeDate(startDate)
+        const normalizedEnd = normalizeDate(endDate)
+        normalizedEnd.setHours(23, 59, 59, 999) // Include full end day
+
+        // Fetch tasks
         let tasksQuery = supabase
           .from('tasks')
           .select(`
-            *,
-            goal:goals (
-              id,
-              name,
-              icon,
-              color
-            ),
-            completions:task_completions (
-              id,
-              completed_by,
-              completed_date,
-              notes
-            )
+            id,
+            title,
+            description,
+            status,
+            priority,
+            scheduled_date,
+            recurrence_rule,
+            is_calendar_visible,
+            assigned_to,
+            goal_id,
+            duration_days,
+            goal:goals(id, name, icon, color)
           `)
           .eq('is_calendar_visible', true)
           .is('deleted_at', null)
+          .abortSignal(controller.signal)
 
-        // ✅ FIXED: Use subtask_completions (not subtask_assignments)
+        if (userId) {
+          tasksQuery = tasksQuery.contains('assigned_to', [userId])
+        } else if (!includeTeam) {
+          tasksQuery = tasksQuery.contains('assigned_to', [user.id])
+        }
+
+        const { data: tasks, error: tasksError } = await tasksQuery
+        if (tasksError || cancelled) {
+          if (tasksError) throw tasksError
+          return
+        }
+
+        // Fetch subtasks
         let subtasksQuery = supabase
           .from('subtasks')
           .select(`
-            *,
-            task:tasks!inner (
+            id,
+            title,
+            description,
+            is_completed,
+            scheduled_date,
+            recurrence_rule,
+            is_calendar_visible,
+            assigned_to,
+            task_id,
+            task:tasks(
               id,
               title,
-              goal:goals (
-                id,
-                name,
-                icon,
-                color
-              )
-            ),
-            completions:subtask_completions (
-              id,
-              completed_by,
-              completed_date,
-              notes
+              goal_id,
+              goal:goals(id, name, icon, color)
             )
           `)
           .eq('is_calendar_visible', true)
           .is('deleted_at', null)
+          .abortSignal(controller.signal)
 
-        // Apply team filter if needed
-        if (!options.includeTeam) {
-          const { data: { user } } = await supabase.auth.getUser()
-          if (user) {
-            tasksQuery = tasksQuery.contains('assigned_to', [user.id])
-            subtasksQuery = subtasksQuery.contains('assigned_to', [user.id])
-          }
+        if (userId) {
+          subtasksQuery = subtasksQuery.contains('assigned_to', [userId])
+        } else if (!includeTeam) {
+          subtasksQuery = subtasksQuery.contains('assigned_to', [user.id])
         }
 
-        const [tasksResult, subtasksResult] = await Promise.all([
-          tasksQuery,
-          subtasksQuery
-        ])
+        const { data: subtasks, error: subtasksError } = await subtasksQuery
+        if (subtasksError || cancelled) {
+          if (subtasksError) throw subtasksError
+          return
+        }
 
-        if (tasksResult.error) throw tasksResult.error
-        if (subtasksResult.error) throw subtasksResult.error
-
-        const tasks = tasksResult.data || []
-        const subtasks = subtasksResult.data || []
-
-        console.log('✅ Tasks fetched:', tasks.length)
-        console.log('✅ Subtasks fetched:', subtasks.length)
-
-        // Generate calendar items
+        // Process items
         const calendarItems = []
 
-        // Process tasks
-        tasks.forEach(task => {
+        // ✅ Process tasks with timezone fix
+        ;(tasks || []).forEach(task => {
           if (isRecurring(task)) {
-            // Handle recurring tasks
             const occurrences = generateOccurrences(
               task.recurrence_rule,
-              new Date(task.scheduled_date || startDate),
-              endDate,
-              365 // Max occurrences
+              dateStringToLocal(task.scheduled_date || normalizedStart),
+              normalizedEnd,
+              365
             )
 
             occurrences.forEach(date => {
-              if (date >= startDate && date <= endDate) {
+              const normalizedOccurrence = normalizeDate(date)
+              if (normalizedOccurrence >= normalizedStart && normalizedOccurrence <= normalizedEnd) {
                 calendarItems.push({
                   ...task,
                   type: 'task',
                   original_id: task.id,
-                  instance_date: date.toISOString().split('T')[0],
+                  instance_date: normalizedOccurrence.toISOString().split('T')[0],
                   is_recurring: true
                 })
               }
             })
           } else if (task.scheduled_date) {
-            // Handle one-time or multi-day tasks
-            const taskDate = new Date(task.scheduled_date)
+            // ✅ FIX: Parse date string correctly
+            const taskDate = dateStringToLocal(task.scheduled_date)
             const duration = task.duration_days || 1
             
-            // Generate entries for each day in duration
             for (let i = 0; i < duration; i++) {
               const currentDate = new Date(taskDate)
               currentDate.setDate(currentDate.getDate() + i)
+              const normalizedCurrent = normalizeDate(currentDate)
               
-              if (currentDate >= startDate && currentDate <= endDate) {
+              if (normalizedCurrent >= normalizedStart && normalizedCurrent <= normalizedEnd) {
                 calendarItems.push({
                   ...task,
                   type: 'task',
                   original_id: task.id,
-                  instance_date: currentDate.toISOString().split('T')[0],
+                  instance_date: normalizedCurrent.toISOString().split('T')[0],
                   is_recurring: false,
-                  duration_day: i + 1, // Which day of duration (1, 2, 3...)
+                  duration_day: i + 1,
                   total_duration: duration
                 })
               }
@@ -153,38 +174,40 @@ export function useCalendarItems(startDate, endDate, options = {}) {
           }
         })
 
-        // Process subtasks
-        subtasks.forEach(subtask => {
+        // ✅ Process subtasks with timezone fix
+        ;(subtasks || []).forEach(subtask => {
           if (isRecurring(subtask)) {
-            // Handle recurring subtasks
             const occurrences = generateOccurrences(
               subtask.recurrence_rule,
-              new Date(subtask.scheduled_date || startDate),
-              endDate,
+              dateStringToLocal(subtask.scheduled_date || normalizedStart),
+              normalizedEnd,
               365
             )
 
             occurrences.forEach(date => {
-              if (date >= startDate && date <= endDate) {
+              const normalizedOccurrence = normalizeDate(date)
+              if (normalizedOccurrence >= normalizedStart && normalizedOccurrence <= normalizedEnd) {
                 calendarItems.push({
                   ...subtask,
                   type: 'subtask',
                   original_id: subtask.id,
-                  instance_date: date.toISOString().split('T')[0],
+                  instance_date: normalizedOccurrence.toISOString().split('T')[0],
                   is_recurring: true,
                   goal: subtask.task?.goal
                 })
               }
             })
           } else if (subtask.scheduled_date) {
-            // Handle one-time subtasks
-            const subtaskDate = new Date(subtask.scheduled_date)
-            if (subtaskDate >= startDate && subtaskDate <= endDate) {
+            // ✅ FIX: Parse date string correctly
+            const subtaskDate = dateStringToLocal(subtask.scheduled_date)
+            const normalizedSubtask = normalizeDate(subtaskDate)
+            
+            if (normalizedSubtask >= normalizedStart && normalizedSubtask <= normalizedEnd) {
               calendarItems.push({
                 ...subtask,
                 type: 'subtask',
                 original_id: subtask.id,
-                instance_date: subtask.scheduled_date,
+                instance_date: normalizedSubtask.toISOString().split('T')[0],
                 is_recurring: false,
                 goal: subtask.task?.goal
               })
@@ -197,8 +220,6 @@ export function useCalendarItems(startDate, endDate, options = {}) {
           new Date(a.instance_date) - new Date(b.instance_date)
         )
 
-        console.log('✅ Calendar items generated:', calendarItems.length)
-
         if (!cancelled) {
           setItems(calendarItems)
           setLoading(false)
@@ -208,7 +229,7 @@ export function useCalendarItems(startDate, endDate, options = {}) {
           return
         }
         if (!cancelled) {
-          console.error('❌ Error fetching calendar items:', err)
+          console.error('Error fetching calendar items:', err)
           setError(err.message)
           setLoading(false)
         }
@@ -223,22 +244,19 @@ export function useCalendarItems(startDate, endDate, options = {}) {
       cancelled = true
       controller.abort()
     }
-  }, [dateKey, optionsKey, refreshTrigger]) // ✅ Include refreshTrigger
+  }, [dateKey, optionsKey])
 
   return {
     items,
     loading,
     error,
     refetch: () => {
-      console.log('🔄 Refetch triggered')
-      setRefreshTrigger(prev => prev + 1) // ✅ Increment to trigger re-fetch
+      setLoading(true)
+      setError(null)
     }
   }
 }
 
-/**
- * Hook to fetch calendar items for a specific date
- */
 export function useCalendarItemsByDate(date, options = {}) {
   const startOfDay = new Date(date)
   startOfDay.setHours(0, 0, 0, 0)
@@ -249,12 +267,13 @@ export function useCalendarItemsByDate(date, options = {}) {
   return useCalendarItems(startOfDay, endOfDay, options)
 }
 
-/**
- * Hook to fetch calendar items for a specific month
- */
 export function useCalendarItemsForMonth(year, month, options = {}) {
+  // ✅ Create dates in local timezone
   const startDate = new Date(year, month, 1)
+  startDate.setHours(0, 0, 0, 0)
+  
   const endDate = new Date(year, month + 1, 0)
+  endDate.setHours(23, 59, 59, 999)
 
   return useCalendarItems(startDate, endDate, options)
 }

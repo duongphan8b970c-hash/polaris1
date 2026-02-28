@@ -68,8 +68,16 @@ export function formatDateKey(date) {
  * Get items for a specific date
  */
 export function getItemsForDate(items, date) {
-  const dateKey = formatDateKey(date)
-  return items.filter(item => item.instance_date === dateKey)
+  // Normalize input date to YYYY-MM-DD
+  const targetDate = new Date(date)
+  const dateKey = formatDateKey(targetDate)
+  
+  return items.filter(item => {
+    if (!item.instance_date) return false
+    
+    // Both are already in YYYY-MM-DD format, direct string comparison
+    return item.instance_date === dateKey
+  })
 }
 
 /**
