@@ -54,6 +54,12 @@ export default function GoalsCalendarDashboard() {
 
   const handleDateClick = (date) => {
     setSelectedDate(date)
+
+    console.log('📅 Clicked date:', {
+    date: date,
+    formatted: formatDateString(date),
+    items: getItemsForDate(items, date)
+  })
   }
 
   const todayItems = getItemsForDate(items, selectedDate)

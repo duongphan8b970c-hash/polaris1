@@ -1,3 +1,5 @@
+import { parseDateString, formatDateString, normalizeToMidnight, isSameDay as dateUtilsIsSameDay } from './dateUtils'
+
 /**
  * Calendar Utilities
  */
@@ -40,11 +42,7 @@ export function getDaysInMonth(year, month) {
  * Check if two dates are the same day
  */
 export function isSameDay(date1, date2) {
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  )
+  return dateUtilsIsSameDay(date1, date2)
 }
 
 /**
@@ -58,25 +56,18 @@ export function isToday(date) {
  * Format date to YYYY-MM-DD
  */
 export function formatDateKey(date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  return formatDateString(date)
 }
 
 /**
  * Get items for a specific date
  */
 export function getItemsForDate(items, date) {
-  // Normalize input date to YYYY-MM-DD
-  const targetDate = new Date(date)
-  const dateKey = formatDateKey(targetDate)
+  const targetDateKey = formatDateString(normalizeToMidnight(date))
   
   return items.filter(item => {
     if (!item.instance_date) return false
-    
-    // Both are already in YYYY-MM-DD format, direct string comparison
-    return item.instance_date === dateKey
+    return item.instance_date === targetDateKey
   })
 }
 
