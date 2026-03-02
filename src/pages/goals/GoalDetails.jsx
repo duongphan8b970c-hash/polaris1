@@ -204,14 +204,6 @@ export default function GoalDetails() {
                 </div>
               </div>
             </div>
-            {goal.is_checkin_enabled && (
-            <button
-              onClick={() => navigate(`/goals/${goalId}/tracker`)}
-              className="px-4 py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg font-medium transition-colors flex items-center gap-2"
-            >
-            📊 Check-in Tracker
-            </button>
-            )}        
             <button
               onClick={() => setShowGoalForm(true)}
               className="btn btn-outline flex items-center gap-2 flex-shrink-0 text-sm hover:scale-105 transition-transform"
