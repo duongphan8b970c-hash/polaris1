@@ -87,7 +87,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<Navigate to="/goals/calendar" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="transactions" element={<FinancialTracking />} />
           <Route path="trades" element={<TradeTracking />} />
