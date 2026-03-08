@@ -89,40 +89,42 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
   const previewDays = calculateTargetDaysPreview()
 
   const handleSubmit = (e) => {
-  e.preventDefault()
-  
-  if (!formData.name.trim()) {
-    alert('Vui lòng nhập tên mục tiêu')
-    return
-  }
+    e.preventDefault()
+    
+    if (!formData.name.trim()) {
+      alert('Vui lòng nhập tên mục tiêu')
+      return
+    }
 
-  // ✅ FIX: Remove empty string dates before submitting
-  let submitData = { ...formData }
-  
-  // Convert empty strings to null for dates
-  if (submitData.start_date === '') {
-    submitData.start_date = new Date().toISOString().split('T')[0]
-  }
-  if (submitData.target_date === '') {
-    submitData.target_date = null // ✅ NULL instead of empty string
-  }
+    // ✅ FIX: Convert empty strings to null for ALL date fields
+    let submitData = { ...formData }
+    
+    // Convert empty strings to null for dates
+    if (submitData.start_date === '') {
+      submitData.start_date = null
+    }
+    if (submitData.target_date === '') {
+      submitData.target_date = null
+    }
+    if (submitData.end_date === '' || submitData.end_date === undefined) {
+      submitData.end_date = null  // ✅ ADD THIS LINE
+    }
 
-  // Checkin logic
-  if (formData.is_checkin_enabled) {
-    if (formData.checkin_frequency === 'custom') {
-      submitData.checkin_target_days = parseInt(formData.checkin_target_days) || null
+    // Checkin logic
+    if (formData.is_checkin_enabled) {
+      if (formData.checkin_frequency === 'custom') {
+        submitData.checkin_target_days = parseInt(formData.checkin_target_days) || null
+      } else {
+        submitData.checkin_target_days = null
+      }
     } else {
       submitData.checkin_target_days = null
+      submitData.checkin_frequency = 'daily'
+      submitData.checkin_days_per_week = 7
     }
-  } else {
-    submitData.checkin_target_days = null
-    submitData.checkin_frequency = 'daily'
-    submitData.checkin_days_per_week = 7
-  }
 
-  console.log('📤 Submitting goal data:', submitData)
-  console.log('📤 assigned_to:', submitData.assigned_to)
-  onSubmit(submitData)
+    console.log('📤 Submitting goal data:', submitData)
+    onSubmit(submitData)
   }
 
   return (

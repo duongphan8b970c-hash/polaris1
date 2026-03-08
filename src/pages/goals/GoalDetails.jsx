@@ -196,6 +196,26 @@ export default function GoalDetails() {
                   >
                     📊 {progress.toFixed(1)}%
                   </span>
+                  {/* ✅ ADD: Thời gian bắt đầu */}
+                  {goal.start_date && (
+                    <span className="px-3 py-1.5 rounded-lg text-xs bg-white/60 backdrop-blur-sm text-gray-700 font-medium shadow-sm border border-gray-200">
+                      🚀 Bắt đầu: {new Date(goal.start_date).toLocaleDateString('vi-VN')}
+                    </span>
+                  )}
+                  
+                  {/* ✅ ADD: Thời gian dự kiến hoàn thành */}
+                  {goal.target_date && (
+                    <span className="px-3 py-1.5 rounded-lg text-xs bg-white/60 backdrop-blur-sm text-gray-700 font-medium shadow-sm border border-gray-200">
+                      🎯 Dự kiến: {new Date(goal.target_date).toLocaleDateString('vi-VN')}
+                    </span>
+                  )}
+                  
+                  {/* ✅ ADD: Thời gian hoàn thành thực tế (nếu đã hoàn thành) */}
+                  {isCompleted && goal.end_date && (
+                    <span className="px-3 py-1.5 rounded-lg text-xs bg-green-50 backdrop-blur-sm text-green-700 font-medium shadow-sm border border-green-200">
+                      ✅ Hoàn thành: {new Date(goal.end_date).toLocaleDateString('vi-VN')}
+                    </span>
+                  )}
                   {goal.category && (
                     <span className="px-3 py-1.5 rounded-lg text-xs bg-white/60 backdrop-blur-sm text-gray-700 font-medium shadow-sm border border-gray-200">
                       {goal.category}
