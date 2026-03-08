@@ -145,7 +145,7 @@ export function useWallets() {
         return { success: false, error: 'Số dư mới giống số dư hiện tại' }
       }
 
-      // ✅ 1. Update wallet balance
+      // 1. Update wallet balance
       const { error: updateError } = await supabase
         .from('wallets')
         .update({ current_amount: newBalance })
@@ -153,8 +153,10 @@ export function useWallets() {
 
       if (updateError) throw updateError
 
-      // ✅ 2. Create correction transaction
+      // 2. Create correction transaction
       const transactionType = difference > 0 ? 'income' : 'expense'
+      
+      // ✅ FIX: Insert without category_id at all
       const { error: txnError } = await supabase
         .from('financial_transactions')
         .insert({
@@ -162,20 +164,25 @@ export function useWallets() {
           type: transactionType,
           amount: Math.abs(difference),
           description: `Correct balance (${currentBalance.toLocaleString()} → ${newBalance.toLocaleString()})`,
-          category: 'adjustment',
           date: new Date().toISOString().split('T')[0],
           time: new Date().toTimeString().split(' ')[0]
+          // ❌ NO category_id field at all
         })
 
-      if (txnError) throw txnError
+      if (txnError) {
+        console.error('❌ Transaction error:', txnError)
+        throw txnError
+      }
 
+      // ✅ 3. Refetch wallets to update UI
       await fetchWallets()
+      
       return { 
         success: true, 
-        message: `✅ Đã reset ví "${wallet.name}" và tạo giao dịch điều chỉnh ${Math.abs(difference).toLocaleString()} ${wallet.currency}`
+        message: `✅ Đã reset ví "${wallet.name}" thành ${newBalance.toLocaleString()} ${wallet.currency}`
       }
     } catch (err) {
-      console.error('Error resetting wallet balance:', err)
+      console.error('❌ Error resetting wallet balance:', err)
       return { success: false, error: err.message }
     }
   }
