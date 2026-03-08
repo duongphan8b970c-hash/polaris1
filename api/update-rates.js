@@ -102,14 +102,14 @@ export default async function handler(req, res) {
 
     console.log('✅ All exchange rates updated successfully!')
 
-    console.log('🔢 Recalculating wallet balances...')
+    // console.log('🔢 Recalculating wallet balances...')
     
-    const { error: recalcError } = await supabase.rpc('recalculate_all_wallet_balances')
+    // const { error: recalcError } = await supabase.rpc('recalculate_all_wallet_balances')
     
-    if (recalcError) {
-      console.error('❌ Error recalculating balances:', recalcError)
-      throw recalcError
-    }
+    // if (recalcError) {
+    //   console.error('❌ Error recalculating balances:', recalcError)
+    //   throw recalcError
+    // }
 
     console.log('✅ Exchange rates updated successfully!')
 

@@ -154,19 +154,21 @@ export function useWallets() {
       if (updateError) throw updateError
 
       // 2. Create correction transaction
+      // ✅ FIX: Đúng logic - expense phải âm, income phải dương
       const transactionType = difference > 0 ? 'income' : 'expense'
+      const transactionAmount = difference > 0 
+        ? Math.abs(difference)  // Income: positive number
+        : -Math.abs(difference) // Expense: NEGATIVE number
       
-      // ✅ FIX: Insert without category_id at all
       const { error: txnError } = await supabase
         .from('financial_transactions')
         .insert({
           wallet_id: walletId,
           type: transactionType,
-          amount: Math.abs(difference),
+          amount: transactionAmount, // ✅ Đã có dấu đúng
           description: `Correct balance (${currentBalance.toLocaleString()} → ${newBalance.toLocaleString()})`,
           date: new Date().toISOString().split('T')[0],
           time: new Date().toTimeString().split(' ')[0]
-          // ❌ NO category_id field at all
         })
 
       if (txnError) {
@@ -174,7 +176,7 @@ export function useWallets() {
         throw txnError
       }
 
-      // ✅ 3. Refetch wallets to update UI
+      // 3. Refetch wallets
       await fetchWallets()
       
       return { 
