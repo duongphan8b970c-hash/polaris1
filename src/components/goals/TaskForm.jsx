@@ -79,8 +79,6 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    // ✅ REMOVED: project_id validation
-
     if (!formData.title.trim()) {
       alert('Vui lòng nhập tên công việc')
       return
@@ -91,7 +89,21 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
       return
     }
 
-    onSubmit(formData)
+    // ✅ FIX: Convert empty strings to null for date fields
+    let submitData = { ...formData }
+    
+    if (submitData.start_date === '') {
+      submitData.start_date = null
+    }
+    if (submitData.due_date === '') {
+      submitData.due_date = null
+    }
+    if (submitData.scheduled_date === '') {
+      submitData.scheduled_date = null
+    }
+
+    console.log('📤 Submitting task data:', submitData)
+    onSubmit(submitData)
   }
 
   return (
