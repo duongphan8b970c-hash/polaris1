@@ -14,15 +14,34 @@ export function useGoals() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      const { data, error: fetchError } = await supabase
+      const { data: goalsData, error: goalsError } = await supabase
         .from('goals')
         .select('*')
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
 
-      if (fetchError) throw fetchError
+      if (goalsError) throw goalsError
 
-      setGoals(data || [])
+      // ✅ NEW: Calculate progress based on subtasks for each goal
+      const goalsWithProgress = await Promise.all(
+        goalsData.map(async (goal) => {
+          const { data: progressData } = await supabase
+            .rpc('calculate_goal_progress_by_subtasks', { goal_id_param: goal.id })
+            .single()
+
+          return {
+            ...goal,
+            total_subtasks: progressData?.total_subtasks || 0,
+            completed_subtasks: progressData?.completed_subtasks || 0,
+            progress: progressData?.progress || 0,
+            // Keep task counts for reference
+            total_tasks: goal.total_tasks || 0,
+            completed_tasks: goal.completed_tasks || 0
+          }
+        })
+      )
+
+      setGoals(goalsWithProgress)
     } catch (err) {
       console.error('Error fetching goals:', err)
       setError(err.message)

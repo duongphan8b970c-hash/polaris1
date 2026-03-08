@@ -32,7 +32,40 @@ export default function WalletCard({ wallet, onEdit, onDelete }) {
           </button>
         </div>
       </div>
+      {/* Reset Balance Button */}
+      <button
+        onClick={() => setShowResetForm(!showResetForm)}
+        className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Reset số dư
+      </button>
 
+      {/* Reset Form */}
+      {showResetForm && (
+        <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg space-y-2">
+          <p className="text-xs text-gray-700">
+            💡 Nhập số dư mới. Hệ thống sẽ tự động tạo giao dịch "Correct balance".
+          </p>
+          <input
+            type="number"
+            value={newBalance}
+            onChange={(e) => setNewBalance(e.target.value)}
+            placeholder="Nhập số dư mới"
+            className="input text-sm"
+          />
+          <div className="flex gap-2">
+            <button onClick={handleReset} className="btn btn-primary btn-sm flex-1">
+              Xác nhận
+            </button>
+            <button onClick={() => setShowResetForm(false)} className="btn btn-secondary btn-sm flex-1">
+              Hủy
+            </button>
+          </div>
+        </div>
+      )}
       <div className="space-y-3">
         <div>
           <p className="text-sm text-gray-500">Số dư hiện tại</p>

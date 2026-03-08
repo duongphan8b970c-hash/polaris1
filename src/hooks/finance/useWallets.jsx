@@ -128,6 +128,58 @@ export function useWallets() {
     }
   }
 
+  const resetWalletBalance = async (walletId, newBalance) => {
+    try {
+      const { data: wallet, error: fetchError } = await supabase
+        .from('wallets')
+        .select('id, name, currency, current_amount')
+        .eq('id', walletId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      const currentBalance = wallet.current_amount || 0
+      const difference = newBalance - currentBalance
+
+      if (difference === 0) {
+        return { success: false, error: 'Số dư mới giống số dư hiện tại' }
+      }
+
+      // ✅ 1. Update wallet balance
+      const { error: updateError } = await supabase
+        .from('wallets')
+        .update({ current_amount: newBalance })
+        .eq('id', walletId)
+
+      if (updateError) throw updateError
+
+      // ✅ 2. Create correction transaction
+      const transactionType = difference > 0 ? 'income' : 'expense'
+      const { error: txnError } = await supabase
+        .from('financial_transactions')
+        .insert({
+          wallet_id: walletId,
+          type: transactionType,
+          amount: Math.abs(difference),
+          description: `Correct balance (${currentBalance.toLocaleString()} → ${newBalance.toLocaleString()})`,
+          category: 'adjustment',
+          date: new Date().toISOString().split('T')[0],
+          time: new Date().toTimeString().split(' ')[0]
+        })
+
+      if (txnError) throw txnError
+
+      await fetchWallets()
+      return { 
+        success: true, 
+        message: `✅ Đã reset ví "${wallet.name}" và tạo giao dịch điều chỉnh ${Math.abs(difference).toLocaleString()} ${wallet.currency}`
+      }
+    } catch (err) {
+      console.error('Error resetting wallet balance:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
   const getMonthlyReport = async (walletId, year, month) => {
     try {
       const monthKey = `${year}-${String(month).padStart(2, '0')}-01`
@@ -158,6 +210,7 @@ export function useWallets() {
     error,
     createWallet,
     updateWallet,
+    resetWalletBalance,
     getMonthlyReport,
     refetch: fetchWallets,
   }
