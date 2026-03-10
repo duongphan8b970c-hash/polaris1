@@ -168,7 +168,6 @@ export default function TransactionList({
                         {/* ✅ SHOW PAYBACK GOAL */}
                         {isPaybackTransaction && txn.payback_goals && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
-                            <span>💳</span>
                             <span>{txn.payback_goals.name}</span>
                           </span>
                         )}
