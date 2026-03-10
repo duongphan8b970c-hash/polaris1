@@ -34,6 +34,10 @@ export default function Dashboard() {
             name,
             icon,
             type
+          ),
+          payback_goal:payback_goals!payback_goal_id (
+            id,
+            name
           )
         `)
         .order('date', { ascending: false })
