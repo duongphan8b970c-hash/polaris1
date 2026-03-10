@@ -32,9 +32,16 @@ export function useTransactions(filters = {}) {
             name,
             icon,
             type
+          ),
+          payback_goals (
+            id,
+            name,
+            target_amount,
+            status
           )
         `)
         .order('date', { ascending: false })
+        .order('time', { ascending: false })
 
       // Apply filters
       if (filters.wallet_id) {

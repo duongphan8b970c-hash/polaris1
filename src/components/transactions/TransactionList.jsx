@@ -7,7 +7,7 @@ export default function TransactionList({
 }) {
   // ✅ Pagination state
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(10) // 10 items per page
+  const [itemsPerPage] = useState(10)
 
   // Safe filter with validation
   const displayTransactions = useMemo(() => {
@@ -91,232 +91,203 @@ export default function TransactionList({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {currentTransactions.map((txn) => (
-                <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
-                  {/* Date - ✅ ADD TIME */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    <div>
-                      {new Date(txn.date).toLocaleDateString('vi-VN')}
-                    </div>
-                    {txn.time && (
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {txn.time.slice(0, 5)}  {/* Display HH:MM */}
+              {currentTransactions.map((txn) => {
+                // ✅ Check if payback transaction
+                const isPaybackTransaction = txn.categories?.name === 'Payback'
+                
+                return (
+                  <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
+                    {/* Date + Time */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <div>
+                        {new Date(txn.date).toLocaleDateString('vi-VN')}
                       </div>
-                    )}
-                  </td>
-                  {/* Type Badge */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {txn.type === 'income' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                        Thu nhập
-                      </span>
-                    )}
-                    {txn.type === 'expense' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                        </svg>
-                        Chi tiêu
-                      </span>
-                    )}
-                    {txn.type === 'transfer' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                        </svg>
-                        Chuyển khoản
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Wallet / Transfer Info */}
-                  <td className="px-6 py-4 text-sm">
-                    {txn.type === 'transfer' ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-900 font-medium">
-                          {txn.wallets?.name}
-                        </span>
-                        <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                        <span className="text-gray-900 font-medium">
-                          {txn.to_wallet?.name}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-900">
-                        {txn.wallets?.name}
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Category */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {txn.categories ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                        <span>{txn.categories.icon}</span>
-                        <span>{txn.categories.name}</span>
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-xs">-</span>
-                    )}
-                  </td>
-
-                  {/* Description */}
-                  <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                    {txn.description || '-'}
-                  </td>
-
-                  {/* Amount */}
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${
-                    txn.amount > 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {txn.amount > 0 && '+'}
-                    {txn.amount.toLocaleString('vi-VN')} {txn.wallets?.currency || 'VND'}
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                    <div className="flex items-center justify-end gap-3">
-                      {txn.type === 'transfer' ? (
-                        <>
-                          <span className="text-gray-400 text-xs italic">
-                            Không thể sửa
-                          </span>
-                          {onDelete && (
-                            <button
-                              onClick={() => onDelete(txn)}
-                              className="text-red-600 hover:text-red-800 font-medium transition-colors"
-                            >
-                              Xóa
-                            </button>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          {onEdit && (
-                            <button
-                              onClick={() => onEdit(txn)}
-                              className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
-                            >
-                              Sửa
-                            </button>
-                          )}
-                          {onDelete && (
-                            <button
-                              onClick={() => onDelete(txn)}
-                              className="text-red-600 hover:text-red-800 font-medium transition-colors"
-                            >
-                              Xóa
-                            </button>
-                          )}
-                        </>
+                      {txn.time && (
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          {txn.time.slice(0, 5)}
+                        </div>
                       )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+
+                    {/* Type Badge */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {txn.type === 'income' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                          </svg>
+                          Thu nhập
+                        </span>
+                      )}
+                      {txn.type === 'expense' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                          </svg>
+                          Chi tiêu
+                        </span>
+                      )}
+                      {txn.type === 'transfer' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                          </svg>
+                          Chuyển khoản
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Wallet / Transfer Info */}
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {txn.type === 'transfer' ? (
+                        <div className="flex items-center gap-1 text-xs">
+                          <span className="font-medium">{txn.wallets?.name}</span>
+                          <svg className="w-3 h-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                          <span className="font-medium">{txn.to_wallet?.name}</span>
+                        </div>
+                      ) : (
+                        <span className="font-medium">{txn.wallets?.name}</span>
+                      )}
+                    </td>
+
+                    {/* Category + Payback Goal */}
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        {txn.type !== 'transfer' && (
+                          <>
+                            <span>{txn.categories?.icon}</span>
+                            <span className="text-gray-900 font-medium">{txn.categories?.name}</span>
+                          </>
+                        )}
+                        {txn.type === 'transfer' && (
+                          <span className="text-gray-400">-</span>
+                        )}
+                        
+                        {/* ✅ SHOW PAYBACK GOAL */}
+                        {isPaybackTransaction && txn.payback_goals && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
+                            <span>💳</span>
+                            <span>{txn.payback_goals.name}</span>
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Description */}
+                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                      {txn.description || '-'}
+                    </td>
+
+                    {/* Amount */}
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className={`text-sm font-bold ${
+                        txn.type === 'transfer' ? 'text-blue-600' :
+                        txn.type === 'expense' ? 'text-red-600' :
+                        'text-green-600'
+                      }`}>
+                        {txn.type === 'expense' && txn.amount < 0 ? '' : '+'}
+                        {Math.abs(txn.amount).toLocaleString('vi-VN')}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {txn.wallets?.currency || 'VND'}
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => onEdit(txn)}
+                          className="text-blue-600 hover:text-blue-900 transition-colors"
+                          title="Sửa"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => onDelete(txn)}
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                          title="Xóa"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* ✅ Pagination Controls */}
+      {/* ✅ Pagination (existing code - keep as is) */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg shadow-sm">
-          {/* Mobile Pagination */}
-          <div className="flex flex-1 justify-between sm:hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+          <div className="flex justify-between sm:hidden">
             <button
               onClick={prevPage}
               disabled={currentPage === 1}
-              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Trước
             </button>
             <button
               onClick={nextPage}
               disabled={currentPage === totalPages}
-              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Sau
             </button>
           </div>
-
-          {/* Desktop Pagination */}
           <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700">
                 Hiển thị <span className="font-medium">{startIndex + 1}</span> đến{' '}
                 <span className="font-medium">{Math.min(endIndex, displayTransactions.length)}</span> trong{' '}
-                <span className="font-medium">{displayTransactions.length}</span> kết quả
+                <span className="font-medium">{displayTransactions.length}</span> giao dịch
               </p>
             </div>
             <div>
-              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                {/* Previous Button */}
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                 <button
                   onClick={prevPage}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="sr-only">Trang trước</span>
-                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                  <span className="sr-only">Previous</span>
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => goToPage(page)}
+                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                      page === currentPage
+                        ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
+                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
 
-                {/* Page Numbers */}
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                  // Show first page, last page, current page, and pages around current
-                  const showPage = 
-                    page === 1 || 
-                    page === totalPages || 
-                    (page >= currentPage - 1 && page <= currentPage + 1)
-
-                  // Show ellipsis
-                  const showEllipsisBefore = page === currentPage - 2 && currentPage > 3
-                  const showEllipsisAfter = page === currentPage + 2 && currentPage < totalPages - 2
-
-                  if (showEllipsisBefore || showEllipsisAfter) {
-                    return (
-                      <span
-                        key={page}
-                        className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300"
-                      >
-                        ...
-                      </span>
-                    )
-                  }
-
-                  if (!showPage) return null
-
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => goToPage(page)}
-                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                        currentPage === page
-                          ? 'z-10 bg-primary-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600'
-                          : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                })}
-
-                {/* Next Button */}
                 <button
                   onClick={nextPage}
                   disabled={currentPage === totalPages}
-                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="sr-only">Trang sau</span>
-                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                  <span className="sr-only">Next</span>
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                   </svg>
                 </button>
               </nav>
