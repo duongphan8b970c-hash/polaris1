@@ -376,10 +376,10 @@ export default function FinanceTab({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 text-sm truncate">
-                        {txn.description || 'Không có mô tả'}
+                        {txn.description || txn.categories || 'Không có mô tả'}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {formatDate(txn.date)}
+                        {formatDateTime(txn.date)}
                         {txn.categories && ` • ${txn.categories.name}`}
                       </p>
                     </div>

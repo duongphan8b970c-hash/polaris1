@@ -37,6 +37,7 @@ export default function Dashboard() {
           )
         `)
         .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
 
       setTransactions(txnData || [])
 
