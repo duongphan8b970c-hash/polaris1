@@ -179,7 +179,7 @@ export default function TransactionList({
                       {txn.description || '-'}
                     </td>
 
-                    {/* Amount */}
+                    {/* Amount column - show fee if exists */}
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className={`text-sm font-bold ${
                         txn.type === 'transfer' ? 'text-blue-600' :
@@ -189,6 +189,14 @@ export default function TransactionList({
                         {txn.type === 'expense' && txn.amount < 0 ? '' : '+'}
                         {Math.abs(txn.amount).toLocaleString('vi-VN')}
                       </div>
+                      
+                      {/* ✅ Show fee if exists */}
+                      {txn.fee && parseFloat(txn.fee) > 0 && (
+                        <div className="text-xs text-orange-600 mt-0.5">
+                          Phí: {parseFloat(txn.fee).toLocaleString('vi-VN')}
+                        </div>
+                      )}
+                      
                       <div className="text-xs text-gray-500 mt-0.5">
                         {txn.wallets?.currency || 'VND'}
                       </div>

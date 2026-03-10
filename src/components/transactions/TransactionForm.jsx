@@ -15,11 +15,11 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
     to_wallet_id: transaction?.to_wallet_id || '',
     category_id: transaction?.category_id || '',
     amount: transaction?.amount ? Math.abs(transaction.amount) : '',
+    fee: transaction?.fee || '', // ✅ ADD: Fee field
     description: transaction?.description || '',
     payback_goal_id: transaction?.payback_goal_id || '',
     date: transaction?.date ? transaction.date.split('T')[0] : new Date().toISOString().split('T')[0],
-    // ✅ ADD: Time field
-    time: transaction?.time || new Date().toTimeString().slice(0, 5)  // HH:MM format
+    time: transaction?.time || new Date().toTimeString().slice(0, 5)
   })
 
   const [transactionType, setTransactionType] = useState(transaction?.type || 'expense')
@@ -78,11 +78,19 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
       return
     }
 
+    // ✅ Validate fee
+    const fee = parseFloat(formData.fee || 0)
+    if (fee < 0) {
+      alert('Phí không thể âm')
+      return
+    }
+
     const submitData = {
       ...formData,
       amount: formData.type === 'expense' 
         ? -Math.abs(parseFloat(formData.amount))
-        : Math.abs(parseFloat(formData.amount))
+        : Math.abs(parseFloat(formData.amount)),
+      fee: fee // ✅ ADD: Include fee
     }
 
     if (formData.type === 'transfer') {
@@ -90,6 +98,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
       delete submitData.payback_goal_id
     } else {
       delete submitData.to_wallet_id
+      delete submitData.fee // ✅ Fee only for transfers
       
       if (!isPaybackCategory) {
         delete submitData.payback_goal_id
@@ -110,26 +119,6 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
           Giao dịch chuyển khoản tạo 2 bản ghi liên kết. <br />
           Vui lòng xóa và tạo lại nếu cần thay đổi.
         </p>
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between text-sm">
-            <div>
-              <p className="text-gray-600">Từ:</p>
-              <p className="font-semibold">{transaction.wallets?.name}</p>
-            </div>
-            <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-            <div>
-              <p className="text-gray-600">Đến:</p>
-              <p className="font-semibold">{transaction.to_wallet?.name}</p>
-            </div>
-          </div>
-          <div className="mt-2 text-center">
-            <p className="text-lg font-bold text-red-600">
-              {Math.abs(transaction.amount).toLocaleString('vi-VN')} VND
-            </p>
-          </div>
-        </div>
         <button
           onClick={onCancel}
           className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
@@ -151,7 +140,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
         <div className="grid grid-cols-3 gap-3">
           <button
             type="button"
-            onClick={() => setFormData(prev => ({ ...prev, type: 'income', to_wallet_id: '', category_id: '', payback_goal_id: '' }))}
+            onClick={() => setFormData(prev => ({ ...prev, type: 'income', to_wallet_id: '', category_id: '', payback_goal_id: '', fee: '' }))}
             className={`px-4 py-3 rounded-lg font-medium transition-all ${
               formData.type === 'income'
                 ? 'bg-green-100 text-green-700 border-2 border-green-500'
@@ -167,7 +156,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
 
           <button
             type="button"
-            onClick={() => setFormData(prev => ({ ...prev, type: 'expense', to_wallet_id: '', category_id: '', payback_goal_id: '' }))}
+            onClick={() => setFormData(prev => ({ ...prev, type: 'expense', to_wallet_id: '', category_id: '', payback_goal_id: '', fee: '' }))}
             className={`px-4 py-3 rounded-lg font-medium transition-all ${
               formData.type === 'expense'
                 ? 'bg-red-100 text-red-700 border-2 border-red-500'
@@ -265,18 +254,74 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
             </div>
           </div>
 
+          {/* ✅ NEW: Amount + Fee row */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Amount */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Số tiền chuyển <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                name="amount"
+                value={formData.amount}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                💰 Số tiền người nhận sẽ nhận được
+              </p>
+            </div>
+
+            {/* ✅ Fee */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phí giao dịch (không bắt buộc)
+              </label>
+              <input
+                type="number"
+                name="fee"
+                value={formData.fee}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                💸 Phí sẽ bị trừ từ ví nguồn
+              </p>
+            </div>
+          </div>
+
           {/* Transfer Summary Card */}
           {formData.wallet_id && formData.to_wallet_id && formData.amount && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-3">
                 <div className="text-sm">
-                  <p className="text-gray-600">Từ:</p>
+                  <p className="text-gray-600 mb-1">Từ:</p>
                   <p className="font-semibold text-gray-900">
                     {wallets.find(w => w.id === formData.wallet_id)?.name}
                   </p>
-                  <p className="text-xs text-red-600">
-                    -{parseFloat(formData.amount).toLocaleString('vi-VN')} {wallets.find(w => w.id === formData.wallet_id)?.currency}
+                  <p className="text-xs text-red-600 mt-1">
+                    -{parseFloat(formData.amount).toLocaleString('vi-VN')}
+                    {formData.fee && parseFloat(formData.fee) > 0 && (
+                      <span className="text-orange-600">
+                        {' '}- {parseFloat(formData.fee).toLocaleString('vi-VN')} (phí)
+                      </span>
+                    )}
+                    {' '}{wallets.find(w => w.id === formData.wallet_id)?.currency}
                   </p>
+                  {formData.fee && parseFloat(formData.fee) > 0 && (
+                    <p className="text-xs font-semibold text-red-700 mt-1">
+                      Tổng trừ: -{(parseFloat(formData.amount) + parseFloat(formData.fee)).toLocaleString('vi-VN')} 
+                      {' '}{wallets.find(w => w.id === formData.wallet_id)?.currency}
+                    </p>
+                  )}
                 </div>
                 
                 <svg className="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -284,11 +329,11 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
                 </svg>
                 
                 <div className="text-sm text-right">
-                  <p className="text-gray-600">Đến:</p>
+                  <p className="text-gray-600 mb-1">Đến:</p>
                   <p className="font-semibold text-gray-900">
                     {wallets.find(w => w.id === formData.to_wallet_id)?.name}
                   </p>
-                  <p className="text-xs text-green-600">
+                  <p className="text-xs text-green-600 mt-1">
                     +{parseFloat(formData.amount).toLocaleString('vi-VN')} {wallets.find(w => w.id === formData.to_wallet_id)?.currency}
                   </p>
                 </div>
@@ -338,6 +383,24 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
               ))}
             </select>
           </div>
+
+          {/* Amount for regular transactions */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Số tiền <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              name="amount"
+              value={formData.amount}
+              onChange={handleChange}
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
         </>
       )}
 
@@ -377,24 +440,6 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
         </div>
       )}
 
-      {/* Amount */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Số tiền <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="number"
-          name="amount"
-          value={formData.amount}
-          onChange={handleChange}
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          required
-        />
-      </div>
-
       {/* Description */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -414,7 +459,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
         />
       </div>
 
-      {/* ✅ Date & Time (side by side) */}
+      {/* Date & Time */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -430,7 +475,6 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
           />
         </div>
 
-        {/* ✅ ADD: Time input */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Thời gian <span className="text-red-500">*</span>
@@ -465,17 +509,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
           } disabled:opacity-50 disabled:cursor-not-allowed`}
           disabled={loading}
         >
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Đang xử lý...
-            </span>
-          ) : (
-            transaction ? 'Cập nhật' : 'Thêm mới'
-          )}
+          {loading ? 'Đang xử lý...' : (transaction ? 'Cập nhật' : 'Thêm mới')}
         </button>
       </div>
 
