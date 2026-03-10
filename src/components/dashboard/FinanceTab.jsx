@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { formatNumber, formatDate } from '../../utils'
+import { formatNumber, formatDate, formatDateTime } from '../../utils'
 
 export default function FinanceTab({ 
   wallets, 
