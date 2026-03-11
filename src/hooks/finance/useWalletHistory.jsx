@@ -48,7 +48,7 @@ export function useWalletHistory(walletId, filters = {}) {
             name
           )
         `)
-        .or(`wallet_id.eq.${walletId},to_wallet_id.eq.${walletId}`)
+        .eq('wallet_id', walletId)
         .order('date', { ascending: false })
         .order('time', { ascending: false })
 
