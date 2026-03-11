@@ -9,34 +9,34 @@ export function useWallets() {
   const fetchWallets = async () => {
     try {
       setLoading(true)
-      
-      // Fetch wallets with monthly snapshot data
+      setError(null)
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+
       const { data: walletsData, error: walletsError } = await supabase
         .from('wallets')
         .select('*')
         .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-      
+        .order('name')
+
       if (walletsError) throw walletsError
-      
-      // Get current month's first day
+
       const currentMonth = new Date()
       currentMonth.setDate(1)
       currentMonth.setHours(0, 0, 0, 0)
       const monthKey = currentMonth.toISOString().split('T')[0]
-      
-      // Fetch monthly snapshots for current month
+
       const { data: snapshots, error: snapshotsError } = await supabase
         .from('wallet_monthly_snapshots')
         .select('*')
+        .in('wallet_id', walletsData.map(w => w.id))
         .eq('month', monthKey)
-      
+
       if (snapshotsError) throw snapshotsError
-      
-      // Merge snapshot data with wallets
+
       const walletsWithSnapshots = walletsData.map(wallet => {
         const snapshot = snapshots?.find(s => s.wallet_id === wallet.id)
-        
         return {
           ...wallet,
           monthly_snapshot: snapshot ? {
@@ -56,30 +56,28 @@ export function useWallets() {
     }
   }
 
-    const createWallet = async (walletData) => {
+  useEffect(() => {
+    fetchWallets()
+  }, [])
+
+  const createWallet = async (walletData) => {
     try {
       const initialAmount = parseFloat(walletData.initial_amount)
-      
-      console.log('Creating wallet with data:', walletData) // DEBUG
       
       const { data, error: createError } = await supabase
         .from('wallets')
         .insert([{
           name: walletData.name,
-          type: walletData.type || 'other', // ✅ Ensure type is included
+          type: walletData.type || 'other',
           currency: walletData.currency || 'VND',
           initial_amount: initialAmount,
-          current_amount: initialAmount, // ✅ Current = Initial when creating
+          current_amount: initialAmount,
         }])
         .select()
         .single()
       
-      if (createError) {
-        console.error('Create wallet error:', createError) // DEBUG
-        throw createError
-      }
+      if (createError) throw createError
       
-      // Create monthly snapshot for current month
       const currentMonth = new Date()
       currentMonth.setDate(1)
       currentMonth.setHours(0, 0, 0, 0)
@@ -93,7 +91,7 @@ export function useWallets() {
         }])
       
       if (snapshotError) {
-        console.error('Snapshot error (non-critical):', snapshotError) // DEBUG
+        console.error('Snapshot error (non-critical):', snapshotError)
       }
       
       await fetchWallets()
@@ -112,7 +110,6 @@ export function useWallets() {
           name: walletData.name,
           type: walletData.type,
           currency: walletData.currency,
-          // initial_amount is NOT updated - it's immutable
         })
         .eq('id', id)
         .select()
@@ -130,61 +127,115 @@ export function useWallets() {
 
   const resetWalletBalance = async (walletId, newBalance) => {
     try {
+      console.log('🔄 Resetting wallet balance:', { walletId, newBalance })
+
+      // 1. Get wallet info
       const { data: wallet, error: fetchError } = await supabase
         .from('wallets')
-        .select('id, name, currency, current_amount')
+        .select('id, name, currency, current_amount, initial_amount')
         .eq('id', walletId)
         .single()
 
       if (fetchError) throw fetchError
 
-      const currentBalance = wallet.current_amount || 0
-      const difference = newBalance - currentBalance
+      const currentBalance = parseFloat(wallet.current_amount || 0)
+      const parsedNewBalance = parseFloat(newBalance)
+      const difference = parsedNewBalance - currentBalance
+
+      console.log('💰 Balance info:', {
+        current: currentBalance,
+        new: parsedNewBalance,
+        difference: difference
+      })
 
       if (difference === 0) {
         return { success: false, error: 'Số dư mới giống số dư hiện tại' }
       }
 
-      // 1. Update wallet balance
-      const { error: updateError } = await supabase
-        .from('wallets')
-        .update({ current_amount: newBalance })
-        .eq('id', walletId)
+      // 2. Get or create "Balance Correction" category
+      let correctionCategory
+      const { data: existingCategory } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('name', 'Balance Correction')
+        .eq('type', difference > 0 ? 'income' : 'expense')
+        .single()
 
-      if (updateError) throw updateError
+      if (existingCategory) {
+        correctionCategory = existingCategory
+      } else {
+        // Create Balance Correction category if not exists
+        const { data: newCategory, error: categoryError } = await supabase
+          .from('categories')
+          .insert({
+            name: 'Balance Correction',
+            type: difference > 0 ? 'income' : 'expense',
+            icon: '⚖️'
+          })
+          .select()
+          .single()
 
-      // 2. Create correction transaction
-      // ✅ FIX: Đúng logic - expense phải âm, income phải dương
-      const transactionType = difference > 0 ? 'income' : 'expense'
-      const transactionAmount = difference > 0 
-        ? Math.abs(difference)  // Income: positive number
-        : -Math.abs(difference) // Expense: NEGATIVE number
-      
-      const { error: txnError } = await supabase
+        if (categoryError) throw categoryError
+        correctionCategory = newCategory
+      }
+
+      console.log('📂 Using category:', correctionCategory.id)
+
+      // 3. Create Balance Correction transaction
+      const { data: transaction, error: transactionError } = await supabase
         .from('financial_transactions')
         .insert({
           wallet_id: walletId,
-          type: transactionType,
-          amount: transactionAmount, // ✅ Đã có dấu đúng
-          description: `Correct balance (${currentBalance.toLocaleString()} → ${newBalance.toLocaleString()})`,
+          category_id: correctionCategory.id,
+          type: difference > 0 ? 'income' : 'expense',
+          amount: Math.abs(difference), // Always positive, type determines direction
+          description: `Điều chỉnh số dư: ${currentBalance.toLocaleString()} → ${parsedNewBalance.toLocaleString()} ${wallet.currency}`,
           date: new Date().toISOString().split('T')[0],
-          time: new Date().toTimeString().split(' ')[0]
+          time: new Date().toTimeString().slice(0, 8)
         })
+        .select()
+        .single()
 
-      if (txnError) {
-        console.error('❌ Transaction error:', txnError)
-        throw txnError
+      if (transactionError) {
+        console.error('❌ Transaction error:', transactionError)
+        throw transactionError
       }
 
-      // 3. Refetch wallets
+      console.log('✅ Balance correction transaction created:', transaction.id)
+
+      // 4. Recalculate wallet balance (triggers will handle this)
+      const { error: recalcError } = await supabase.rpc('recalculate_all_wallet_balances')
+      
+      if (recalcError) {
+        console.error('⚠️ Recalculation error:', recalcError)
+      }
+
+      // 5. Refetch wallets
       await fetchWallets()
       
       return { 
         success: true, 
-        message: `✅ Đã reset ví "${wallet.name}" thành ${newBalance.toLocaleString()} ${wallet.currency}`
+        message: `✅ Đã tạo giao dịch điều chỉnh ${Math.abs(difference).toLocaleString()} ${wallet.currency}`
       }
     } catch (err) {
       console.error('❌ Error resetting wallet balance:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
+  const deleteWallet = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('wallets')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      
+      await fetchWallets()
+      return { success: true }
+    } catch (err) {
+      console.error('Error deleting wallet:', err)
       return { success: false, error: err.message }
     }
   }
@@ -204,14 +255,10 @@ export function useWallets() {
       
       return data
     } catch (err) {
-      console.error('Error fetching monthly report:', err)
+      console.error('Error getting monthly report:', err)
       return null
     }
   }
-
-  useEffect(() => {
-    fetchWallets()
-  }, [])
 
   return {
     wallets,
@@ -219,8 +266,9 @@ export function useWallets() {
     error,
     createWallet,
     updateWallet,
-    resetWalletBalance,
+    resetWalletBalance, // ✅ Export this
+    deleteWallet,
     getMonthlyReport,
-    refetch: fetchWallets,
+    refetch: fetchWallets
   }
 }
