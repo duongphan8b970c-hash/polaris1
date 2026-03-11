@@ -15,20 +15,13 @@ export default function GroupSelectionModal({
   if (!isOpen) return null
 
   const handleSubmit = async () => {
-    if (!selectedGroupId && !newGroupName.trim()) return
-    setSubmitting(true)
-    try {
-      if (selectedGroupId) {
-        await onSelectGroup(selectedGroupId)
-      } else {
-        await onCreateGroup(radical, newGroupName.trim())
-      }
-      setNewGroupName('')
-      setSelectedGroupId(null)
-      onClose()
-    } finally {
-      setSubmitting(false)
+    if (selectedGroupId) {
+      await onSelectGroup(selectedGroupId)
+    } else if (newGroupName.trim()) {
+      // ✅ FIX: Chỉ pass name, radical sẽ lấy từ pendingKanji
+      await onCreateGroup(newGroupName.trim())
     }
+    onClose()
   }
 
   const handleClose = () => {

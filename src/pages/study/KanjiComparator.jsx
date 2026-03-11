@@ -31,19 +31,23 @@ export default function KanjiComparator() {
     const kanji = inputValue.trim()
     if (!kanji) return
 
-    // Pre-fetch kanji data to get the radical before showing the group modal
-    setAdding(true)
-    let radical = null
     try {
-      const data = await fetchKanjiFromJisho(kanji)
-      radical = data?.radical || null
-    } catch {
-      // proceed without radical; groups won't be pre-filtered
-    }
-    setAdding(false)
+      // ✅ FIX: Fetch Jisho data TRƯỚC
+      console.log('Fetching Kanji data from Jisho...')
+      const kanjiData = await fetchKanjiFromJisho(kanji)
+      console.log('Kanji data:', kanjiData)
 
-    setPendingKanji({ kanji, radical })
-    setShowGroupModal(true)
+      // ✅ Check if radical exists
+      const radical = kanjiData.radical || 'No Radical'
+      console.log('Radical:', radical)
+
+      // ✅ Sau đó mới show modal
+      setPendingKanji({ kanji, radical, data: kanjiData })
+      setShowGroupModal(true)
+    } catch (err) {
+      console.error('Error fetching Kanji:', err)
+      alert('Failed to fetch Kanji data. Please try again.')
+    }
   }
 
   const handleGroupSelected = async (groupId) => {
@@ -59,20 +63,19 @@ export default function KanjiComparator() {
     }
   }
 
-  const handleCreateGroup = async (radical, name) => {
+  const handleCreateGroup = async (name) => {
+    if (!pendingKanji) return
+    
+    // ✅ Lấy radical từ pendingKanji
+    const radical = pendingKanji.radical || 'No Radical'
+    
+    console.log('Creating group:', { radical, name })
+    
     const result = await createGroup(radical, name)
     if (result.success && pendingKanji) {
-      setAdding(true)
-      const addResult = await addKanjiCard(pendingKanji.kanji, result.data.id)
-      setAdding(false)
-      if (addResult.success) {
-        setInputValue('')
-        setPendingKanji(null)
-      } else {
-        alert('Error adding Kanji: ' + addResult.error)
-      }
-    } else if (!result.success) {
-      alert('Error creating group: ' + result.error)
+      await addKanjiCard(pendingKanji.kanji, result.data.id)
+      setInputValue('')
+      setPendingKanji(null)
     }
   }
 
