@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { formatCurrency } from '../../utils'
+import { useNavigate } from 'react-router-dom'
 
 export default function WalletCard({ wallet, onEdit, onDelete, onResetBalance }) {
+  const navigate = useNavigate()
   const balanceChange = wallet.current_amount - wallet.initial_amount
   const isPositive = balanceChange >= 0
   
