@@ -46,7 +46,7 @@ export function useTransactions(filters = {}) {
 
       // Apply filters
       if (filters.wallet_id) {
-        query = query.or(`wallet_id.eq.${filters.wallet_id},to_wallet_id.eq.${filters.wallet_id}`)
+        query = query.eq('wallet_id', filters.wallet_id)
       }
       if (filters.type) {
         query = query.eq('type', filters.type)
