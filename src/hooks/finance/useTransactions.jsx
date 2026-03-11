@@ -104,7 +104,15 @@ export function useTransactions(filters = {}) {
         if (sourceError || !sourceWallet) {
           throw new Error('Không tìm thấy ví nguồn')
         }
+        const { data: destWallet, error: destError } = await supabase
+          .from('wallets')
+          .select('id, name, currency')
+          .eq('id', to_wallet_id)
+          .single()
 
+        if (destError || !destWallet) {
+          throw new Error('Không tìm thấy ví đích')
+        }
         // ✅ Check balance including fee
         const totalDeduction = transferAmount + transferFee
         if (sourceWallet.current_amount < totalDeduction) {
@@ -125,7 +133,7 @@ export function useTransactions(filters = {}) {
             type: 'transfer',
             amount: -(transferAmount + transferFee), // ✅ Include fee in deduction
             fee: transferFee, // ✅ Store fee
-            description: description || `Chuyển đến ${wallets.find(w => w.id === to_wallet_id)?.name}`,
+            description: description || `Chuyển đến ${destWallet.name}`,
             date: date,
             time: time,
             transfer_pair_id: transferPairId,
