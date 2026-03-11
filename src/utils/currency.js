@@ -1,3 +1,5 @@
+import { supabase } from '../lib/supabase' // ✅ ADD THIS
+
 /**
  * Format number as Vietnamese currency
  * @param {number} amount - Amount to format
@@ -78,46 +80,70 @@ export const calculatePercentage = (value, total) => {
   return (value / total) * 100
 }
 
-export const getExchangeRate = async (supabase, fromCurrency, toCurrency) => {
+/**
+ * Get exchange rate between two currencies
+ * @param {string} fromCurrency - Source currency (e.g., 'USD')
+ * @param {string} toCurrency - Target currency (e.g., 'VND')
+ * @returns {Promise<number>} - Exchange rate
+ */
+export const getExchangeRate = async (fromCurrency, toCurrency) => {
+  // ✅ REMOVED supabase parameter, import it instead
+  
   // Same currency, no conversion needed
   if (fromCurrency === toCurrency) {
     return 1
   }
 
   try {
+    console.log(`🔍 Fetching rate: ${fromCurrency} → ${toCurrency}`)
+    
     // Query exchange_rates table
     const { data, error } = await supabase
       .from('exchange_rates')
       .select('rate')
       .eq('from_currency', fromCurrency)
       .eq('to_currency', toCurrency)
-      .single()
+      .maybeSingle() // ✅ Changed from .single() to .maybeSingle()
 
-    if (error || !data) {
-      // If direct rate not found, try reverse rate
-      const { data: reverseData, error: reverseError } = await supabase
-        .from('exchange_rates')
-        .select('rate')
-        .eq('from_currency', toCurrency)
-        .eq('to_currency', fromCurrency)
-        .single()
-
-      if (reverseError || !reverseData) {
-        throw new Error(`Không tìm thấy tỷ giá ${fromCurrency} → ${toCurrency}`)
-      }
-
-      // Return inverse rate
-      return 1 / parseFloat(reverseData.rate)
+    if (data && !error) {
+      console.log(`✅ Direct rate found: ${data.rate}`)
+      return parseFloat(data.rate)
     }
 
-    return parseFloat(data.rate)
+    // If direct rate not found, try reverse rate
+    console.log(`⚠️ Direct rate not found, trying reverse...`)
+    
+    const { data: reverseData, error: reverseError } = await supabase
+      .from('exchange_rates')
+      .select('rate')
+      .eq('from_currency', toCurrency)
+      .eq('to_currency', fromCurrency)
+      .maybeSingle() // ✅ Changed from .single() to .maybeSingle()
+
+    if (reverseData && !reverseError) {
+      const inverseRate = 1 / parseFloat(reverseData.rate)
+      console.log(`✅ Reverse rate found: ${reverseData.rate}, inverse: ${inverseRate}`)
+      return inverseRate
+    }
+
+    // Both failed
+    throw new Error(`Không tìm thấy tỷ giá ${fromCurrency} → ${toCurrency}`)
   } catch (err) {
-    console.error('Error getting exchange rate:', err)
+    console.error('❌ Error getting exchange rate:', err)
     throw err
   }
 }
-export const convertCurrency = async (supabase, amount, fromCurrency, toCurrency) => {
-  const rate = await getExchangeRate(supabase, fromCurrency, toCurrency)
+
+/**
+ * Convert amount from one currency to another
+ * @param {number} amount - Amount to convert
+ * @param {string} fromCurrency - Source currency
+ * @param {string} toCurrency - Target currency
+ * @returns {Promise<Object>} - { convertedAmount, rate }
+ */
+export const convertCurrency = async (amount, fromCurrency, toCurrency) => {
+  // ✅ REMOVED supabase parameter
+  const rate = await getExchangeRate(fromCurrency, toCurrency)
   const convertedAmount = amount * rate
   
   return {
