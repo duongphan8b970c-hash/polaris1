@@ -5,8 +5,8 @@ import { useCategories } from '../../hooks/finance/useCategories'
 import { usePaybackGoals } from '../../hooks/finance/usePaybackGoals'
 
 export default function TransactionForm({ transaction, onSubmit, onCancel, loading }) {
-  const { wallets } = useWallets()
-  const { goals: paybackGoals } = usePaybackGoals()
+  const { wallets = [], loading: walletsLoading } = useWallets()  
+  const { goals: paybackGoals = [], loading: goalsLoading } = usePaybackGoals()  
   const isEditingTransfer = transaction && transaction.type === 'transfer'
   
   const [formData, setFormData] = useState({
@@ -128,7 +128,14 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
       </div>
     )
   }
-
+  if (walletsLoading || goalsLoading) {
+  return (
+    <div className="flex justify-center items-center py-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <span className="ml-3 text-gray-600">Đang tải dữ liệu...</span>
+    </div>
+  )
+  }
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       
