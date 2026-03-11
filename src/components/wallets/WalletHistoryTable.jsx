@@ -116,6 +116,12 @@ function TransactionRow({ transaction: txn, wallet, isFirst }) {
             🎯 {txn.payback_goals.name}
           </div>
         )}
+        {/* ✅ Show exchange rate for transfers */}
+        {txn.type === 'transfer' && txn.exchange_rate && (
+          <div className="text-blue-600 text-xs mt-1 font-medium">
+            💱 Tỷ giá: {parseFloat(txn.exchange_rate).toLocaleString()}
+          </div>
+        )}
       </td>
 
       {/* Balance Before */}

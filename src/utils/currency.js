@@ -1,79 +1,81 @@
+import { supabase } from '../lib/supabase'
+
 /**
- * Format number as Vietnamese currency
- * @param {number} amount - Amount to format
- * @param {string} currency - Currency code (default: VND)
- * @returns {string} Formatted currency string
+ * Get exchange rate between two currencies
+ * @param {string} fromCurrency - Source currency (e.g., 'USD')
+ * @param {string} toCurrency - Target currency (e.g., 'VND')
+ * @returns {Promise<number>} - Exchange rate
  */
-export const formatCurrency = (amount, currency = 'VND') => {
-  if (amount == null || isNaN(amount)) return '0 ₫'
-  
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount)
+export async function getExchangeRate(fromCurrency, toCurrency) {
+  // Same currency, no conversion needed
+  if (fromCurrency === toCurrency) {
+    return 1
+  }
+
+  try {
+    // Query exchange_rates table
+    const { data, error } = await supabase
+      .from('exchange_rates')
+      .select('rate')
+      .eq('from_currency', fromCurrency)
+      .eq('to_currency', toCurrency)
+      .single()
+
+    if (error || !data) {
+      // If direct rate not found, try reverse rate
+      const { data: reverseData, error: reverseError } = await supabase
+        .from('exchange_rates')
+        .select('rate')
+        .eq('from_currency', toCurrency)
+        .eq('to_currency', fromCurrency)
+        .single()
+
+      if (reverseError || !reverseData) {
+        throw new Error(`Không tìm thấy tỷ giá ${fromCurrency} → ${toCurrency}`)
+      }
+
+      // Return inverse rate
+      return 1 / parseFloat(reverseData.rate)
+    }
+
+    return parseFloat(data.rate)
+  } catch (err) {
+    console.error('Error getting exchange rate:', err)
+    throw err
+  }
 }
 
 /**
- * Format number with thousand separators
- * @param {number} number - Number to format
- * @returns {string} Formatted number string
+ * Convert amount from one currency to another
+ * @param {number} amount - Amount to convert
+ * @param {string} fromCurrency - Source currency
+ * @param {string} toCurrency - Target currency
+ * @returns {Promise<number>} - Converted amount
  */
-export const formatNumber = (number) => {
-  if (number == null || isNaN(number)) return '0'
-  
-  return new Intl.NumberFormat('vi-VN').format(number)
+export async function convertCurrency(amount, fromCurrency, toCurrency) {
+  const rate = await getExchangeRate(fromCurrency, toCurrency)
+  return amount * rate
 }
 
 /**
- * Parse currency string to number
- * @param {string} currencyString - Currency string to parse
- * @returns {number} Parsed number
+ * Get all exchange rates for a currency
+ * @param {string} currency - Currency code
+ * @returns {Promise<Object>} - Map of currency -> rate
  */
-export const parseCurrency = (currencyString) => {
-  if (!currencyString) return 0
-  
-  // Remove all non-digit characters except minus sign
-  const cleaned = currencyString.replace(/[^\d-]/g, '')
-  return parseInt(cleaned) || 0
-}
+export async function getAllRatesForCurrency(currency) {
+  const { data, error } = await supabase
+    .from('exchange_rates')
+    .select('to_currency, rate')
+    .eq('from_currency', currency)
 
-/**
- * Format number as compact (e.g., 1.2K, 3.4M)
- * @param {number} number - Number to format
- * @returns {string} Compact formatted number
- */
-export const formatCompactNumber = (number) => {
-  if (number == null || isNaN(number)) return '0'
-  
-  return new Intl.NumberFormat('vi-VN', {
-    notation: 'compact',
-    compactDisplay: 'short'
-  }).format(number)
-}
+  if (error) {
+    console.error('Error getting rates:', error)
+    return {}
+  }
 
-/**
- * Format percentage
- * @param {number} value - Value to format
- * @param {number} total - Total value
- * @param {number} decimals - Decimal places (default: 1)
- * @returns {string} Formatted percentage
- */
-export const formatPercentage = (value, total, decimals = 1) => {
-  if (!total || total === 0) return '0%'
-  
-  const percentage = (value / total) * 100
-  return `${percentage.toFixed(decimals)}%`
-}
-
-/**
- * Calculate percentage
- * @param {number} value - Value
- * @param {number} total - Total value
- * @returns {number} Percentage
- */
-export const calculatePercentage = (value, total) => {
-  if (!total || total === 0) return 0
-  return (value / total) * 100
+  const ratesMap = {}
+  data.forEach(r => {
+    ratesMap[r.to_currency] = parseFloat(r.rate)
+  })
+  return ratesMap
 }

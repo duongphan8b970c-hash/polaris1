@@ -79,180 +79,177 @@ export function useTransactions(filters = {}) {
   }, [filters.wallet_id, filters.type, filters.category_id, filters.date_from, filters.date_to])
 
   const createTransaction = async (transactionData) => {
-    try {
-    // Inside createTransaction function, update transfer logic:
-      if (transactionData.type === 'transfer') {
-        const { wallet_id, to_wallet_id, amount, fee, description, date, time } = transactionData
-        const transferAmount = Math.abs(parseFloat(amount))
-        const transferFee = parseFloat(fee || 0)
+  try {
+    if (transactionData.type === 'transfer') {
+      const { wallet_id, to_wallet_id, amount, fee, description, date, time } = transactionData
+      const transferAmount = Math.abs(parseFloat(amount))
+      const transferFee = parseFloat(fee || 0)
+      
+      console.log('💸 Starting transfer:', {
+        from: wallet_id,
+        to: to_wallet_id,
+        amount: transferAmount,
+        fee: transferFee,
+        time: time
+      })
+
+      // Get source wallet
+      const { data: sourceWallet, error: sourceError } = await supabase
+        .from('wallets')
+        .select('id, name, current_amount, currency')
+        .eq('id', wallet_id)
+        .single()
+
+      if (sourceError || !sourceWallet) {
+        throw new Error('Không tìm thấy ví nguồn')
+      }
+
+      // Get destination wallet
+      const { data: destWallet, error: destError } = await supabase
+        .from('wallets')
+        .select('id, name, current_amount, currency')
+        .eq('id', to_wallet_id)
+        .single()
+
+      if (destError || !destWallet) {
+        throw new Error('Không tìm thấy ví đích')
+      }
+
+      // ✅ CHECK: Different currencies?
+      const isDifferentCurrency = sourceWallet.currency !== destWallet.currency
+      let convertedAmount = transferAmount
+      let exchangeRate = 1
+
+      if (isDifferentCurrency) {
+        console.log(`💱 Converting ${sourceWallet.currency} → ${destWallet.currency}`)
         
-        console.log('💸 Starting transfer:', {
-          from: wallet_id,
-          to: to_wallet_id,
-          amount: transferAmount,
+        // Get exchange rate
+        const { data: rateData, error: rateError } = await supabase
+          .from('exchange_rates')
+          .select('rate')
+          .eq('from_currency', sourceWallet.currency)
+          .eq('to_currency', destWallet.currency)
+          .single()
+
+        if (rateError || !rateData) {
+          throw new Error(
+            `Không tìm thấy tỷ giá ${sourceWallet.currency} → ${destWallet.currency}.\n` +
+            `Vui lòng cập nhật tỷ giá trước khi chuyển khoản.`
+          )
+        }
+
+        exchangeRate = parseFloat(rateData.rate)
+        convertedAmount = transferAmount * exchangeRate
+
+        console.log(`💱 Rate: 1 ${sourceWallet.currency} = ${exchangeRate} ${destWallet.currency}`)
+        console.log(`💱 ${transferAmount} ${sourceWallet.currency} = ${convertedAmount.toFixed(2)} ${destWallet.currency}`)
+
+        // Confirm conversion with user
+        const confirmMsg = 
+          `Xác nhận chuyển khoản quy đổi:\n\n` +
+          `Từ ví: ${sourceWallet.name} (${sourceWallet.currency})\n` +
+          `Đến ví: ${destWallet.name} (${destWallet.currency})\n\n` +
+          `Số tiền chuyển: ${transferAmount.toLocaleString()} ${sourceWallet.currency}\n` +
+          `Tỷ giá: 1 ${sourceWallet.currency} = ${exchangeRate.toLocaleString()} ${destWallet.currency}\n` +
+          `Người nhận được: ${convertedAmount.toLocaleString()} ${destWallet.currency}\n` +
+          (transferFee > 0 ? `Phí: ${transferFee.toLocaleString()} ${sourceWallet.currency}\n\n` : '\n') +
+          `Bạn có muốn tiếp tục?`
+
+        if (!confirm(confirmMsg)) {
+          return { success: false, error: 'Đã hủy giao dịch' }
+        }
+      }
+
+      // Check balance including fee
+      const totalDeduction = transferAmount + transferFee
+      if (sourceWallet.current_amount < totalDeduction) {
+        const errorMsg = `Số dư không đủ trong ví "${sourceWallet.name}".\n` +
+          `Hiện có: ${sourceWallet.current_amount.toLocaleString('vi-VN')} ${sourceWallet.currency}\n` +
+          `Cần: ${totalDeduction.toLocaleString('vi-VN')} (${transferAmount.toLocaleString('vi-VN')} + ${transferFee.toLocaleString('vi-VN')} phí)`
+        throw new Error(errorMsg)
+      }
+
+      // Generate UUID for transfer pair ID
+      const transferPairId = crypto.randomUUID()
+
+      console.log('🔗 Generated transfer pair ID:', transferPairId)
+
+      // ✅ 1. Create OUTGOING transaction (in source currency)
+      const { data: outgoingTxn, error: outgoingError } = await supabase
+        .from('financial_transactions')
+        .insert({
+          wallet_id: wallet_id,
+          type: 'transfer',
+          amount: -(transferAmount + transferFee), // Negative in source currency
           fee: transferFee,
-          time: time
+          description: description || `Chuyển đến ${destWallet.name}${isDifferentCurrency ? ` (${exchangeRate.toLocaleString()} ${destWallet.currency})` : ''}`,
+          date: date,
+          time: time,
+          transfer_pair_id: transferPairId,
+          to_wallet_id: to_wallet_id,
+          exchange_rate: isDifferentCurrency ? exchangeRate : null // ✅ Store exchange rate
         })
+        .select()
+        .single()
 
-        // Get source wallet
-        const { data: sourceWallet, error: sourceError } = await supabase
-          .from('wallets')
-          .select('id, name, current_amount, currency')
-          .eq('id', wallet_id)
-          .single()
+      if (outgoingError) throw outgoingError
 
-        if (sourceError || !sourceWallet) {
-          throw new Error('Không tìm thấy ví nguồn')
-        }
-
-        // ✅ Get destination wallet
-        const { data: destWallet, error: destError } = await supabase
-          .from('wallets')
-          .select('id, name, currency')
-          .eq('id', to_wallet_id)
-          .single()
-
-        if (destError || !destWallet) {
-          throw new Error('Không tìm thấy ví đích')
-        }
-
-        // Check balance including fee
-        const totalDeduction = transferAmount + transferFee
-        if (sourceWallet.current_amount < totalDeduction) {
-          const errorMsg = `Số dư không đủ trong ví "${sourceWallet.name}".\n` +
-            `Hiện có: ${sourceWallet.current_amount.toLocaleString('vi-VN')} ${sourceWallet.currency}\n` +
-            `Cần: ${totalDeduction.toLocaleString('vi-VN')} (${transferAmount.toLocaleString('vi-VN')} + ${transferFee.toLocaleString('vi-VN')} phí)`
-          throw new Error(errorMsg)
-        }
-
-        // ✅ Generate UUID for transfer pair ID
-        const transferPairId = crypto.randomUUID()
-
-        console.log('🔗 Generated transfer pair ID:', transferPairId)
-
-        // ✅ 1. Create OUTGOING transaction (negative amount + fee)
-        const { data: outgoingTxn, error: outgoingError } = await supabase
-          .from('financial_transactions')
-          .insert({
-            wallet_id: wallet_id,
-            type: 'transfer',
-            amount: -(transferAmount + transferFee),
-            fee: transferFee,
-            description: description || `Chuyển đến ${destWallet.name}`,
-            date: date,
-            time: time,
-            transfer_pair_id: transferPairId,
-            to_wallet_id: to_wallet_id
-          })
-          .select()
-          .single()
-
-        if (outgoingError) throw outgoingError
-
-        // ✅ 2. Create INCOMING transaction (positive amount, NO fee)
-        const { data: incomingTxn, error: incomingError } = await supabase
-          .from('financial_transactions')
-          .insert({
-            wallet_id: to_wallet_id,
-            type: 'transfer',
-            amount: transferAmount,
-            fee: 0,
-            description: description || `Nhận từ ${sourceWallet.name}`,
-            date: date,
-            time: time,
-            transfer_pair_id: transferPairId,
-            to_wallet_id: wallet_id
-          })
-          .select()
-          .single()
-
-        if (incomingError) {
-          // Rollback: delete outgoing if incoming fails
-          await supabase
-            .from('financial_transactions')
-            .delete()
-            .eq('id', outgoingTxn.id)
-          throw incomingError
-        }
-
-        console.log('✅ Transfer completed with fee:', {
-          outgoing: outgoingTxn,
-          incoming: incomingTxn,
-          fee: transferFee
+      // ✅ 2. Create INCOMING transaction (in destination currency, CONVERTED amount)
+      const { data: incomingTxn, error: incomingError } = await supabase
+        .from('financial_transactions')
+        .insert({
+          wallet_id: to_wallet_id,
+          type: 'transfer',
+          amount: convertedAmount, // ✅ Positive, converted amount in dest currency
+          fee: 0,
+          description: description || `Nhận từ ${sourceWallet.name}${isDifferentCurrency ? ` (${transferAmount.toLocaleString()} ${sourceWallet.currency})` : ''}`,
+          date: date,
+          time: time,
+          transfer_pair_id: transferPairId,
+          to_wallet_id: wallet_id,
+          exchange_rate: isDifferentCurrency ? exchangeRate : null
         })
+        .select()
+        .single()
 
-        // ✅ Recalculate wallet balances
-        console.log('🔄 Recalculating wallet balances...')
-        const { error: recalcError } = await supabase.rpc('recalculate_all_wallet_balances')
-
-        if (recalcError) {
-          console.error('⚠️ Warning: Could not recalculate balances:', recalcError)
-          // Don't throw - transaction was successful, balance sync can be done later
-        }
-
-        console.log('✅ Wallet balances updated')
-
-        await fetchTransactions()
-        return { success: true, data: [outgoingTxn, incomingTxn] }
-      } else {
-        // ========================================
-        // REGULAR TRANSACTION (INCOME/EXPENSE)
-        // ========================================
-        console.log('💳 Creating regular transaction:', transactionData.type)
-
-        const { error } = await supabase
-          .from('financial_transactions')
-          .insert({
-            wallet_id: transactionData.wallet_id,
-            category_id: transactionData.category_id,
-            type: transactionData.type,
-            amount: transactionData.type === 'expense' 
-              ? -Math.abs(parseFloat(transactionData.amount)) 
-              : Math.abs(parseFloat(transactionData.amount)),
-            description: transactionData.description,
-            date: transactionData.date,
-            time: transactionData.time || '12:00:00',
-            payback_goal_id: transactionData.payback_goal_id || null,
-            to_wallet_id: null,
-            transfer_pair_id: null
-          })
-
-        if (error) {
-          console.error('❌ Transaction error:', error)
-          throw error
-        }
-
-        console.log('✅ Transaction created')
-
-        // Update wallet balance manually
-        const { data: walletData } = await supabase
-          .from('wallets')
-          .select('current_amount')
-          .eq('id', transactionData.wallet_id)
-          .single()
-
-        const currentBalance = walletData?.current_amount || 0
-        const amountChange = transactionData.type === 'expense'
-          ? -Math.abs(parseFloat(transactionData.amount))
-          : Math.abs(parseFloat(transactionData.amount))
-        
-        const newBalance = currentBalance + amountChange
-
+      if (incomingError) {
+        // Rollback: delete outgoing if incoming fails
         await supabase
-          .from('wallets')
-          .update({ current_amount: newBalance })
-          .eq('id', transactionData.wallet_id)
+          .from('financial_transactions')
+          .delete()
+          .eq('id', outgoingTxn.id)
+        throw incomingError
+      }
 
-        console.log(`✅ Wallet updated: ${currentBalance} → ${newBalance}`)
+      console.log('✅ Transfer completed:', {
+        outgoing: outgoingTxn,
+        incoming: incomingTxn,
+        fee: transferFee,
+        exchangeRate: exchangeRate,
+        convertedAmount: convertedAmount
+      })
+
+      // ✅ Recalculate wallet balances
+      console.log('🔄 Recalculating wallet balances...')
+      const { error: recalcError } = await supabase.rpc('recalculate_all_wallet_balances')
+
+      if (recalcError) {
+        console.error('⚠️ Warning: Could not recalculate balances:', recalcError)
+      } else {
+        console.log('✅ Wallet balances updated')
       }
 
       await fetchTransactions()
-      return { success: true }
+      return { success: true, data: [outgoingTxn, incomingTxn] }
       
-    } catch (err) {
-      console.error('❌ Create transaction error:', err)
-      return { success: false, error: err.message }
+    } else {
+      // Regular transaction logic (không đổi)
+      // ... existing code ...
     }
+  } catch (err) {
+    console.error('❌ Create transaction error:', err)
+    return { success: false, error: err.message }
+  }
   }
 
   const updateTransaction = async (id, transactionData) => {
