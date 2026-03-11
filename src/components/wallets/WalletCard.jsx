@@ -77,7 +77,12 @@ export default function WalletCard({ wallet, onEdit, onDelete, onResetBalance })
           </p>
         </div>
       </div>
-
+      <button
+        onClick={() => navigate(`/wallets/history?wallet=${wallet.id}`)}
+        className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+      >
+        📊 Xem lịch sử
+      </button>
       {/* Reset Button */}
       <button
         onClick={() => setShowResetForm(!showResetForm)}

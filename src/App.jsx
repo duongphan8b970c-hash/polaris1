@@ -16,6 +16,7 @@ import PaybackPriorityConfig from './pages/finance/PaybackPriorityConfig'
 import UserProfile from './pages/UserProfile'
 import GoalsCalendarDashboard from './pages/goals/GoalsCalendarDashboard'
 import AnalyticsDashboard from './pages/analytics/AnalyticsDashboard'
+import WalletHistory from './pages/finance/WalletHistory'
 
 // ✅ Create ProtectedRoute component
 function ProtectedRoute({ children, session }) {
@@ -92,6 +93,7 @@ function App() {
           <Route path="transactions" element={<FinancialTracking />} />
           <Route path="trades" element={<TradeTracking />} />
           <Route path="wallets" element={<Wallets />} />
+          <Route path="wallets/history" element={<WalletHistory />} />
           <Route path="reports" element={<Reports />} />
           <Route path="payback" element={<PaybackTracking />} />
           <Route path="payback/priorities" element={<PaybackPriorityConfig />} />
