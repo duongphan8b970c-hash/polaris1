@@ -104,6 +104,8 @@ export function useTransactions(filters = {}) {
         if (sourceError || !sourceWallet) {
           throw new Error('Không tìm thấy ví nguồn')
         }
+
+        // ✅ Get destination wallet
         const { data: destWallet, error: destError } = await supabase
           .from('wallets')
           .select('id, name, currency')
@@ -113,7 +115,8 @@ export function useTransactions(filters = {}) {
         if (destError || !destWallet) {
           throw new Error('Không tìm thấy ví đích')
         }
-        // ✅ Check balance including fee
+
+        // Check balance including fee
         const totalDeduction = transferAmount + transferFee
         if (sourceWallet.current_amount < totalDeduction) {
           const errorMsg = `Số dư không đủ trong ví "${sourceWallet.name}".\n` +
@@ -122,8 +125,10 @@ export function useTransactions(filters = {}) {
           throw new Error(errorMsg)
         }
 
-        // Generate transfer pair ID
-        const transferPairId = `transfer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        // ✅ Generate UUID for transfer pair ID
+        const transferPairId = crypto.randomUUID()
+
+        console.log('🔗 Generated transfer pair ID:', transferPairId)
 
         // ✅ 1. Create OUTGOING transaction (negative amount + fee)
         const { data: outgoingTxn, error: outgoingError } = await supabase
@@ -131,8 +136,8 @@ export function useTransactions(filters = {}) {
           .insert({
             wallet_id: wallet_id,
             type: 'transfer',
-            amount: -(transferAmount + transferFee), // ✅ Include fee in deduction
-            fee: transferFee, // ✅ Store fee
+            amount: -(transferAmount + transferFee),
+            fee: transferFee,
             description: description || `Chuyển đến ${destWallet.name}`,
             date: date,
             time: time,
@@ -150,8 +155,8 @@ export function useTransactions(filters = {}) {
           .insert({
             wallet_id: to_wallet_id,
             type: 'transfer',
-            amount: transferAmount, // ✅ Only amount, no fee
-            fee: 0, // ✅ No fee for incoming
+            amount: transferAmount,
+            fee: 0,
             description: description || `Nhận từ ${sourceWallet.name}`,
             date: date,
             time: time,
@@ -173,7 +178,8 @@ export function useTransactions(filters = {}) {
         console.log('✅ Transfer completed with fee:', {
           outgoing: outgoingTxn,
           incoming: incomingTxn,
-          fee: transferFee
+          fee: transferFee,
+          transferPairId: transferPairId
         })
 
         await fetchTransactions()
