@@ -71,7 +71,7 @@ export function useWalletHistory(walletId, filters = {}) {
       if (txnError) throw txnError
 
       // Calculate running balance for each transaction
-      const transactionsWithBalance = calculateRunningBalance(txnData, walletId, walletData.current_amount)
+      const transactionsWithBalance = calculateRunningBalance(txnData, walletId, walletData.initial_amount)
 
       setTransactions(transactionsWithBalance)
 
@@ -88,21 +88,21 @@ export function useWalletHistory(walletId, filters = {}) {
   }, [walletId, filters.type, filters.category_id, filters.date_from, filters.date_to])
 
   // Calculate running balance (số dư lũy kế)
-    const calculateRunningBalance = (transactions, currentWalletId, finalBalance) => {
+    const calculateRunningBalance = (transactions, currentWalletId, initialBalance) => {
     if (!transactions || transactions.length === 0) return []
 
-    // Sort by date/time DESCENDING (newest first) - same as display order
+    // Sort by date/time ASCENDING (oldest first) - calculate forward in time
     const sorted = [...transactions].sort((a, b) => {
-        const dateCompare = new Date(b.date) - new Date(a.date)
+        const dateCompare = new Date(a.date) - new Date(b.date)
         if (dateCompare !== 0) return dateCompare
-        return (b.time || '00:00:00').localeCompare(a.time || '00:00:00')
+        return (a.time || '00:00:00').localeCompare(b.time || '00:00:00')
     })
 
-    // Start from current balance (most recent transaction)
-    let currentBalance = finalBalance
+    // Start from initial balance (initial wallet balance)
+    let runningBalance = initialBalance
     const result = []
 
-    // Go through transactions from newest to oldest
+    // Go through transactions from oldest to newest
     for (let i = 0; i < sorted.length; i++) {
         const txn = sorted[i]
         
@@ -125,11 +125,9 @@ export function useWalletHistory(walletId, filters = {}) {
         }
         }
 
-        // For display:
-        // - balance_after is the balance AFTER this transaction happened
-        // - balance_before is the balance BEFORE this transaction happened
-        const balanceAfterThisTxn = currentBalance
-        const balanceBeforeThisTxn = currentBalance - balanceChange
+        // Calculate balance before and after this transaction
+        const balanceBeforeThisTxn = runningBalance
+        const balanceAfterThisTxn = runningBalance + balanceChange
 
         result.push({
         ...txn,
@@ -139,11 +137,12 @@ export function useWalletHistory(walletId, filters = {}) {
         is_inflow: balanceChange > 0
         })
 
-        // Move to the previous transaction's ending balance
-        currentBalance = balanceBeforeThisTxn
+        // Update running balance for next transaction
+        runningBalance = balanceAfterThisTxn
     }
 
-    return result
+    // Reverse to show newest first (UI requirement)
+    return result.reverse()
     }
 
   // Calculate statistics
