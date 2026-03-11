@@ -9,19 +9,31 @@ export default function WalletCard({ wallet, onEdit, onDelete, onResetBalance })
   
   const [showResetForm, setShowResetForm] = useState(false)
   const [newBalance, setNewBalance] = useState('')
+  const [resetting, setResetting] = useState(false)
 
-  const handleReset = () => {
+  const handleReset = async () => {
     const balance = parseFloat(newBalance)
+    
     if (isNaN(balance)) {
       alert('Vui lòng nhập số dư hợp lệ')
       return
     }
     
-    if (!window.confirm(`Xác nhận reset số dư ví "${wallet.name}" thành ${balance.toLocaleString()} ${wallet.currency}?`)) {
+    if (!window.confirm(
+      `Xác nhận reset số dư ví "${wallet.name}"?\n\n` +
+      `Từ: ${wallet.current_amount.toLocaleString()} ${wallet.currency}\n` +
+      `Sang: ${balance.toLocaleString()} ${wallet.currency}\n\n` +
+      `Hệ thống sẽ tạo giao dịch điều chỉnh "Balance Correction".`
+    )) {
       return
     }
     
-    onResetBalance(wallet.id, balance)
+    setResetting(true)
+    
+    // ✅ Call the reset function properly
+    await onResetBalance(wallet.id, balance)
+    
+    setResetting(false)
     setShowResetForm(false)
     setNewBalance('')
   }
@@ -84,7 +96,7 @@ export default function WalletCard({ wallet, onEdit, onDelete, onResetBalance })
           </div>
         </div>
 
-        {/* ✅ Action Buttons - 2 buttons in one row */}
+        {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-2 mb-3">
           <button
             onClick={() => navigate(`/wallets/history?wallet=${wallet.id}`)}
@@ -99,7 +111,8 @@ export default function WalletCard({ wallet, onEdit, onDelete, onResetBalance })
 
           <button
             onClick={() => setShowResetForm(!showResetForm)}
-            className="px-3 py-2.5 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            disabled={resetting}
+            className="px-3 py-2.5 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -133,26 +146,40 @@ export default function WalletCard({ wallet, onEdit, onDelete, onResetBalance })
                 placeholder={wallet.current_amount.toString()}
                 className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
                 autoFocus
+                disabled={resetting}
               />
             </div>
 
             <div className="flex gap-2">
               <button 
                 onClick={handleReset} 
-                disabled={!newBalance || newBalance === ''}
+                disabled={!newBalance || newBalance === '' || resetting}
                 className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Xác nhận
+                {resetting ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Đang xử lý...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Xác nhận
+                  </>
+                )}
               </button>
               <button 
                 onClick={() => {
                   setShowResetForm(false)
                   setNewBalance('')
                 }} 
-                className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                disabled={resetting}
+                className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 Hủy
               </button>
