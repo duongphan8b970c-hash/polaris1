@@ -88,57 +88,63 @@ export function useWalletHistory(walletId, filters = {}) {
   }, [walletId, filters.type, filters.category_id, filters.date_from, filters.date_to])
 
   // Calculate running balance (số dư lũy kế)
-  const calculateRunningBalance = (transactions, currentWalletId, finalBalance) => {
+    const calculateRunningBalance = (transactions, currentWalletId, finalBalance) => {
     if (!transactions || transactions.length === 0) return []
 
-    // Sort by date/time ascending to calculate from oldest
+    // Sort by date/time DESCENDING (newest first) - same as display order
     const sorted = [...transactions].sort((a, b) => {
-      const dateCompare = new Date(a.date) - new Date(b.date)
-      if (dateCompare !== 0) return dateCompare
-      return (a.time || '00:00:00').localeCompare(b.time || '00:00:00')
+        const dateCompare = new Date(b.date) - new Date(a.date)
+        if (dateCompare !== 0) return dateCompare
+        return (b.time || '00:00:00').localeCompare(a.time || '00:00:00')
     })
 
-    // Start from current balance and work backwards
-    let runningBalance = finalBalance
+    // Start from current balance (most recent transaction)
+    let currentBalance = finalBalance
     const result = []
 
-    // Calculate backwards from newest to oldest
-    for (let i = sorted.length - 1; i >= 0; i--) {
-      const txn = sorted[i]
-      
-      // For this wallet, calculate the effect on balance
-      let balanceChange = 0
-      
-      if (txn.type === 'transfer') {
+    // Go through transactions from newest to oldest
+    for (let i = 0; i < sorted.length; i++) {
+        const txn = sorted[i]
+        
+        // Calculate the effect on balance for this wallet
+        let balanceChange = 0
+        
+        if (txn.type === 'transfer') {
         // Transfer: check if this wallet is sender or receiver
         if (txn.wallet_id === currentWalletId) {
-          // This wallet is sender: subtract amount
-          balanceChange = txn.amount // already negative with fee
+            // This wallet is sender: subtract amount (already negative with fee)
+            balanceChange = txn.amount
         } else if (txn.to_wallet_id === currentWalletId) {
-          // This wallet is receiver: add amount
-          balanceChange = Math.abs(txn.amount)
+            // This wallet is receiver: add amount (positive)
+            balanceChange = Math.abs(txn.amount)
         }
-      } else {
-        // Regular transaction: amount is already signed
-        balanceChange = txn.amount
-      }
+        } else {
+        // Regular transaction: amount is already signed correctly
+        if (txn.wallet_id === currentWalletId) {
+            balanceChange = txn.amount
+        }
+        }
 
-      // The balance BEFORE this transaction
-      const balanceBeforeTxn = runningBalance - balanceChange
+        // For display:
+        // - balance_after is the balance AFTER this transaction happened
+        // - balance_before is the balance BEFORE this transaction happened
+        const balanceAfterThisTxn = currentBalance
+        const balanceBeforeThisTxn = currentBalance - balanceChange
 
-      result.unshift({
+        result.push({
         ...txn,
-        balance_before: balanceBeforeTxn,
-        balance_after: runningBalance,
+        balance_before: balanceBeforeThisTxn,
+        balance_after: balanceAfterThisTxn,
         balance_change: balanceChange,
-        is_inflow: txn.wallet_id === currentWalletId ? txn.amount > 0 : txn.to_wallet_id === currentWalletId
-      })
+        is_inflow: balanceChange > 0
+        })
 
-      runningBalance = balanceBeforeTxn
+        // Move to the previous transaction's ending balance
+        currentBalance = balanceBeforeThisTxn
     }
 
     return result
-  }
+    }
 
   // Calculate statistics
   const stats = useMemo(() => {

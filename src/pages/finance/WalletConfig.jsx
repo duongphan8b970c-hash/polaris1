@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
 import WalletList from '../../components/wallets/WalletList'
 import WalletForm from '../../components/wallets/WalletForm'
+import WalletCard from '../../components/wallets/WalletCard'
 import Modal from '../../components/common/Modal'
 import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
@@ -78,14 +79,43 @@ export default function WalletConfig() {
   }
 
   // ✅ ADD: Handle reset balance
-  const handleResetBalance = async (walletId, newBalance) => {
-    const result = await resetWalletBalance(walletId, newBalance)
+  const handleResetBalance = async (wallet) => {
+    const currentBalance = wallet.current_amount
+
+    const newBalance = prompt(
+      `Reset số dư cho ví "${wallet.name}"\n\n` +
+      `Số dư hiện tại: ${formatNumber(currentBalance)} ${wallet.currency}\n\n` +
+      `Nhập số dư mới:`,
+      currentBalance
+    )
+    
+    if (newBalance === null) return // User cancelled
+  
+    const parsedBalance = parseFloat(newBalance)
+    
+    if (isNaN(parsedBalance)) {
+      alert('Số dư không hợp lệ!')
+      return
+    }
+    
+    if (!confirm(
+      `Xác nhận reset số dư?\n\n` +
+      `Ví: ${wallet.name}\n` +
+      `Từ: ${formatNumber(currentBalance)} ${wallet.currency}\n` +
+      `Sang: ${formatNumber(parsedBalance)} ${wallet.currency}\n\n` +
+      `⚠️ Lưu ý: Thao tác này chỉ thay đổi số dư, không tạo giao dịch điều chỉnh.`
+    )) {
+      return
+    }
+  
+    const result = await updateWallet(wallet.id, {
+      current_amount: parsedBalance
+    })
     
     if (result.success) {
-      alert(result.message)
-      await refetch()
+      alert('✅ Đã reset số dư thành công!')
     } else {
-      alert(`Lỗi: ${result.error}`)
+      alert('❌ Lỗi: ' + result.error)
     }
   }
 
