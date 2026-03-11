@@ -24,12 +24,14 @@ export default function WalletConfig() {
   const [submitting, setSubmitting] = useState(false)
   const [selectedType, setSelectedType] = useState('all')
 
+  // Filter wallets by type
   const filteredWallets = useMemo(() => {
     return selectedType === 'all' 
       ? wallets 
       : wallets.filter(w => w.type === selectedType)
   }, [wallets, selectedType])
 
+  // Group wallets by type
   const groupedWallets = useMemo(() => {
     const groups = {}
     
@@ -75,7 +77,7 @@ export default function WalletConfig() {
     }
   }
 
-  // ✅ FIXED: Match WalletCard's signature (walletId, newBalance)
+  // Handle reset balance - match WalletCard's signature
   const handleResetBalance = async (walletId, newBalance) => {
     const result = await resetWalletBalance(walletId, newBalance)
     
@@ -101,7 +103,8 @@ export default function WalletConfig() {
   }
 
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Page Header */}
       <PageHeader 
         title="Cấu hình ví" 
         action={
@@ -114,47 +117,63 @@ export default function WalletConfig() {
         }
       />
 
-      {/* Filter by type */}
-      <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
-        <button
-          onClick={() => setSelectedType('all')}
-          className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-            selectedType === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          Tất cả ({wallets.length})
-        </button>
-        
-        {Object.keys(WALLET_TYPES).map(type => {
-          const count = wallets.filter(w => w.type === type).length
-          if (count === 0) return null
+      {/* Filter Tabs */}
+      <div className="card">
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          <button
+            onClick={() => setSelectedType('all')}
+            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+              selectedType === 'all'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Tất cả ({wallets.length})
+          </button>
           
-          const typeInfo = getWalletTypeInfo(type)
-          return (
-            <button
-              key={type}
-              onClick={() => setSelectedType(type)}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                selectedType === type
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {typeInfo.icon} {typeInfo.label} ({count})
-            </button>
-          )
-        })}
+          {Object.keys(WALLET_TYPES).map(type => {
+            const count = wallets.filter(w => w.type === type).length
+            if (count === 0) return null
+            
+            const typeInfo = getWalletTypeInfo(type)
+            return (
+              <button
+                key={type}
+                onClick={() => setSelectedType(type)}
+                className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                  selectedType === type
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {typeInfo.icon} {typeInfo.label} ({count})
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Wallet List */}
-      <WalletList 
-        wallets={filteredWallets}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onResetBalance={handleResetBalance}
-      />
+      {filteredWallets.length === 0 ? (
+        <div className="card text-center py-12">
+          <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+          <p className="text-gray-500 font-medium mb-2">
+            {selectedType === 'all' ? 'Chưa có ví nào' : `Chưa có ví ${getWalletTypeInfo(selectedType).label}`}
+          </p>
+          <p className="text-gray-400 text-sm">
+            {selectedType === 'all' ? 'Tạo ví đầu tiên của bạn!' : 'Thêm ví mới cho loại này'}
+          </p>
+        </div>
+      ) : (
+        <WalletList 
+          wallets={filteredWallets}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onResetBalance={handleResetBalance}
+        />
+      )}
 
       {/* Wallet Form Modal */}
       <Modal
