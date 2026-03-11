@@ -1,3 +1,5 @@
+import { detectRadicalFromKanji } from './kanjiRadicals'
+
 /**
  * Fetch Kanji data from Jisho.org API via Vercel serverless function
  */
@@ -44,7 +46,7 @@ export async function fetchKanjiFromJisho(kanji) {
       meanings: meanings.length > 0 ? meanings : ['No meanings found'],
       readings_on: allReadings.length > 0 ? allReadings : [],
       readings_kun: [],
-      radical: extractRadical(result),
+      radical: extractRadical(result, kanji),
       stroke_count: extractStrokeCount(result),
       jisho_data: result
     }
@@ -55,25 +57,31 @@ export async function fetchKanjiFromJisho(kanji) {
 }
 
 /**
- * Extract radical from Jisho data
+ * Extract radical from Jisho data, with fallback to local kanji lookup
  */
-function extractRadical(jishoData) {
-  if (!jishoData || !jishoData.tags) return null
-  
-  const tags = jishoData.tags
-  
-  // Look for radical tag
-  const radicalTag = tags.find(t => 
-    typeof t === 'string' && t.toLowerCase().includes('radical')
-  )
-  
-  if (radicalTag) {
-    // Try to extract the radical character (CJK Unified Ideographs)
-    const match = radicalTag.match(/[一-龯]/u)
-    return match ? match[0] : radicalTag
+function extractRadical(jishoData, originalKanji) {
+  if (jishoData && jishoData.tags) {
+    const tags = jishoData.tags
+    
+    // Look for radical tag
+    const radicalTag = tags.find(t => 
+      typeof t === 'string' && t.toLowerCase().includes('radical')
+    )
+    
+    if (radicalTag) {
+      // Try to extract the radical character (CJK Unified Ideographs)
+      const match = radicalTag.match(/[一-龯]/u)
+      if (match) return match[0]
+    }
   }
   
-  return null
+  // Fallback: Try to detect from kanji itself using local lookup
+  if (originalKanji) {
+    const detected = detectRadicalFromKanji(originalKanji)
+    if (detected) return detected
+  }
+  
+  return null // Will trigger manual selection modal
 }
 
 /**
