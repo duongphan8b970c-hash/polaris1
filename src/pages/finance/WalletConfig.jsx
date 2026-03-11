@@ -2,12 +2,13 @@ import { useState, useMemo } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
 import WalletList from '../../components/wallets/WalletList'
 import WalletForm from '../../components/wallets/WalletForm'
+import WalletCard from '../../components/wallets/WalletCard'
 import Modal from '../../components/common/Modal'
-import PageHeader from '../../components/common/PageHeader'
+import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
-import { formatNumber } from '../../utils'
 import { WALLET_TYPES, getWalletTypeInfo } from '../../constants' 
+import { formatNumber } from '../../utils'
 
 export default function WalletConfig() {
   const { 
@@ -16,7 +17,7 @@ export default function WalletConfig() {
     error, 
     createWallet, 
     updateWallet, 
-    resetWalletBalance,
+    resetWalletBalance, // ✅ ADD
     refetch 
   } = useWallets()
   
@@ -25,12 +26,14 @@ export default function WalletConfig() {
   const [submitting, setSubmitting] = useState(false)
   const [selectedType, setSelectedType] = useState('all')
 
+  // ✅ Filter wallets by type
   const filteredWallets = useMemo(() => {
     return selectedType === 'all' 
       ? wallets 
       : wallets.filter(w => w.type === selectedType)
   }, [wallets, selectedType])
 
+  // ✅ Group wallets by type
   const groupedWallets = useMemo(() => {
     const groups = {}
     
@@ -76,22 +79,45 @@ export default function WalletConfig() {
     }
   }
 
-  // ✅ SIMPLIFIED: Just pass the function directly to WalletCard
-  const handleResetBalance = async (walletId, newBalance) => {
-    const result = await resetWalletBalance(walletId, newBalance)
+  // ✅ ADD: Handle reset balance
+  const handleResetBalance = async (wallet) => {
+    const currentBalance = wallet.current_amount
+
+    const newBalance = prompt(
+      `Reset số dư cho ví "${wallet.name}"\n\n` +
+      `Số dư hiện tại: ${formatNumber(currentBalance)} ${wallet.currency}\n\n` +
+      `Nhập số dư mới:`,
+      currentBalance
+    )
+    
+    if (newBalance === null) return // User cancelled
+  
+    const parsedBalance = parseFloat(newBalance)
+    
+    if (isNaN(parsedBalance)) {
+      alert('Số dư không hợp lệ!')
+      return
+    }
+    
+    if (!confirm(
+      `Xác nhận reset số dư?\n\n` +
+      `Ví: ${wallet.name}\n` +
+      `Từ: ${formatNumber(currentBalance)} ${wallet.currency}\n` +
+      `Sang: ${formatNumber(parsedBalance)} ${wallet.currency}\n\n` +
+      `⚠️ Lưu ý: Thao tác này chỉ thay đổi số dư, không tạo giao dịch điều chỉnh.`
+    )) {
+      return
+    }
+  
+    const result = await updateWallet(wallet.id, {
+      current_amount: parsedBalance
+    })
     
     if (result.success) {
-      alert(result.message || '✅ Đã reset số dư thành công!')
+      alert('✅ Đã reset số dư thành công!')
     } else {
       alert('❌ Lỗi: ' + result.error)
     }
-  }
-
-  const handleDelete = async (wallet) => {
-    if (!confirm(`Xác nhận xóa ví "${wallet.name}"?`)) return
-    
-    // TODO: Implement deleteWallet
-    alert('Chức năng xóa ví đang được phát triển')
   }
 
   if (loading) {
@@ -115,50 +141,94 @@ export default function WalletConfig() {
           </button>
         }
       />
-
-      {/* Filter by type */}
-      <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
-        <button
-          onClick={() => setSelectedType('all')}
-          className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-            selectedType === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          Tất cả ({wallets.length})
-        </button>
-        
-        {Object.keys(WALLET_TYPES).map(type => {
-          const count = wallets.filter(w => w.type === type).length
-          if (count === 0) return null
+      
+      {/* ✅ Filter Buttons */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        {WALLET_TYPES.map(type => {
+          const count = type.value === 'all' 
+            ? wallets.length 
+            : wallets.filter(w => w.type === type.value).length
           
-          const typeInfo = getWalletTypeInfo(type)
           return (
             <button
-              key={type}
-              onClick={() => setSelectedType(type)}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                selectedType === type
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              key={type.value}
+              onClick={() => setSelectedType(type.value)}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                selectedType === type.value
+                  ? `${type.color} ring-2 ring-offset-2 ${type.activeRing} shadow-md`
+                  : `bg-gray-50 text-gray-600 border border-gray-200 ${type.hoverColor}`
               }`}
+              title={type.description}
             >
-              {typeInfo.icon} {typeInfo.label} ({count})
+              <span className="mr-1.5">{type.icon}</span>
+              {type.label}
+              <span className="ml-1.5 text-xs opacity-70">({count})</span>
             </button>
           )
         })}
       </div>
 
-      {/* Wallet List */}
-      <WalletList 
-        wallets={filteredWallets}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onResetBalance={handleResetBalance}
-      />
+      {/* ✅ Wallet List with Reset Balance */}
+      {selectedType === 'all' ? (
+        <div className="space-y-8">
+          {Object.keys(groupedWallets).length === 0 ? (
+            <div className="card text-center py-12">
+              <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              <p className="text-gray-500">Chưa có ví nào</p>
+            </div>
+          ) : (
+            Object.entries(groupedWallets)
+              .sort((a, b) => {
+                const orderA = WALLET_TYPES.findIndex(t => t.value === a[0])
+                const orderB = WALLET_TYPES.findIndex(t => t.value === b[0])
+                return orderA - orderB
+              })
+              .map(([type, typeWallets]) => {
+                const typeInfo = getWalletTypeInfo(type)
+                return (
+                  <div key={type}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`px-3 py-1.5 rounded-lg ${typeInfo.color} font-medium text-sm`}>
+                        <span className="mr-1.5">{typeInfo.icon}</span>
+                        {typeInfo.label}
+                        <span className="ml-1.5 opacity-70">({typeWallets.length})</span>
+                      </div>
+                      <div className="flex-1 h-px bg-gray-200"></div>
+                    </div>
+                    <WalletList 
+                      wallets={typeWallets} 
+                      onEdit={handleEdit}
+                      onResetBalance={handleResetBalance} // ✅ PASS THIS
+                    />
+                  </div>
+                )
+              })
+          )}
+        </div>
+      ) : (
+        filteredWallets.length > 0 ? (
+          <WalletList 
+            wallets={filteredWallets} 
+            onEdit={handleEdit}
+            onResetBalance={handleResetBalance} // ✅ PASS THIS
+          />
+        ) : (
+          <div className="card text-center py-12">
+            <div className="text-4xl mb-4">{getWalletTypeInfo(selectedType).icon}</div>
+            <p className="text-gray-500 font-medium">Chưa có ví {getWalletTypeInfo(selectedType).label.toLowerCase()}</p>
+            <button 
+              onClick={handleCreate}
+              className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              + Tạo ví mới
+            </button>
+          </div>
+        )
+      )}
 
-      {/* Wallet Form Modal */}
+      {/* Modal */}
       <Modal
         isOpen={showForm}
         onClose={handleCloseForm}
