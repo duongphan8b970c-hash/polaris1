@@ -28,7 +28,7 @@ export function useKanjiCards() {
     }
   }
 
-  const addKanjiCard = async (kanji) => {
+  const addKanjiCard = async (kanji, groupId = null) => {
     try {
       // Check auth first
       const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -53,7 +53,8 @@ export function useKanjiCards() {
         .insert({
           ...kanjiData,
           position: maxPosition + 1,
-          user_id: user.id
+          user_id: user.id,
+          group_id: groupId
         })
         .select()
         .single()
@@ -64,6 +65,23 @@ export function useKanjiCards() {
       return { success: true, data }
     } catch (err) {
       console.error('Error adding kanji card:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
+  const moveCardToGroup = async (cardId, newGroupId) => {
+    try {
+      const { error } = await supabase
+        .from('kanji_cards')
+        .update({ group_id: newGroupId })
+        .eq('id', cardId)
+
+      if (error) throw error
+
+      await fetchCards()
+      return { success: true }
+    } catch (err) {
+      console.error('Error moving kanji card to group:', err)
       return { success: false, error: err.message }
     }
   }
@@ -113,6 +131,7 @@ export function useKanjiCards() {
     addKanjiCard,
     updateKanjiCard,
     deleteKanjiCard,
+    moveCardToGroup,
     refetch: fetchCards
   }
 }

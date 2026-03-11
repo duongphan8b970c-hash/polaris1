@@ -1,55 +1,179 @@
 import { useState } from 'react'
 import { useKanjiCards } from '../../hooks/study/useKanjiCards'
+import { useKanjiGroups } from '../../hooks/study/useKanjiGroups'
 import KanjiCard from '../../components/study/KanjiCard'
+import GroupSelectionModal from '../../components/study/GroupSelectionModal'
 import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
+import { fetchKanjiFromJisho } from '../../utils/jishoAPI'
 
 export default function KanjiComparator() {
-  const { cards, loading, error, addKanjiCard, updateKanjiCard, deleteKanjiCard, refetch } = useKanjiCards()
+  const { cards, loading, error, addKanjiCard, updateKanjiCard, deleteKanjiCard, moveCardToGroup, refetch } = useKanjiCards()
+  const { groups, createGroup, updateGroup, deleteGroup } = useKanjiGroups()
+
   const [inputValue, setInputValue] = useState('')
   const [adding, setAdding] = useState(false)
 
+  // Group selection modal state: { kanji, radical }
+  const [showGroupModal, setShowGroupModal] = useState(false)
+  const [pendingKanji, setPendingKanji] = useState(null)
+
+  // Inline rename state: { [groupId]: draftName }
+  const [renamingGroup, setRenamingGroup] = useState(null)
+  const [renameValue, setRenameValue] = useState('')
+
+  // Drag & drop state
+  const [dragOverGroupId, setDragOverGroupId] = useState(null)
+
   const handleAddKanji = async (e) => {
     e.preventDefault()
+    const kanji = inputValue.trim()
+    if (!kanji) return
 
-    const trimmed = inputValue.trim()
-    if (!trimmed) {
-      alert('Please enter a Kanji character')
-      return
-    }
-
+    // Pre-fetch kanji data to get the radical before showing the group modal
     setAdding(true)
-    const result = await addKanjiCard(trimmed)
+    let radical = null
+    try {
+      const data = await fetchKanjiFromJisho(kanji)
+      radical = data?.radical || null
+    } catch {
+      // proceed without radical; groups won't be pre-filtered
+    }
     setAdding(false)
 
+    setPendingKanji({ kanji, radical })
+    setShowGroupModal(true)
+  }
+
+  const handleGroupSelected = async (groupId) => {
+    if (!pendingKanji) return
+    setAdding(true)
+    const result = await addKanjiCard(pendingKanji.kanji, groupId)
+    setAdding(false)
     if (result.success) {
       setInputValue('')
+      setPendingKanji(null)
     } else {
       alert('Error adding Kanji: ' + result.error)
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Remove this Kanji card?')) return
-
-    const result = await deleteKanjiCard(id)
-    if (!result.success) {
-      alert('Error deleting card: ' + result.error)
+  const handleCreateGroup = async (radical, name) => {
+    const result = await createGroup(radical, name)
+    if (result.success && pendingKanji) {
+      setAdding(true)
+      const addResult = await addKanjiCard(pendingKanji.kanji, result.data.id)
+      setAdding(false)
+      if (addResult.success) {
+        setInputValue('')
+        setPendingKanji(null)
+      } else {
+        alert('Error adding Kanji: ' + addResult.error)
+      }
+    } else if (!result.success) {
+      alert('Error creating group: ' + result.error)
     }
   }
 
-  // Analyze common radicals across cards
-  const radicalCounts = cards.reduce((acc, card) => {
-    if (card.radical) {
-      acc[card.radical] = (acc[card.radical] || 0) + 1
+  const handleDelete = async (cardId, groupId) => {
+    if (!window.confirm('Remove this Kanji card?')) return
+
+    // Determine if this is the last card in the group before deleting
+    const isLastInGroup = groupId
+      ? cards.filter(c => c.group_id === groupId).length === 1
+      : false
+
+    const result = await deleteKanjiCard(cardId)
+    if (!result.success) {
+      alert('Error deleting card: ' + result.error)
+      return
     }
+
+    // Auto-delete group if it was the last card
+    if (isLastInGroup) {
+      await deleteGroup(groupId)
+    }
+  }
+
+  const handleStartRename = (group) => {
+    setRenamingGroup(group.id)
+    setRenameValue(group.name)
+  }
+
+  const handleSaveRename = async (groupId) => {
+    const trimmed = renameValue.trim()
+    if (!trimmed) return
+    await updateGroup(groupId, { name: trimmed })
+    setRenamingGroup(null)
+    setRenameValue('')
+  }
+
+  const handleDeleteGroup = async (groupId) => {
+    if (!window.confirm('Delete this group? Cards will become ungrouped.')) return
+    await deleteGroup(groupId)
+  }
+
+  // Drag & drop handlers
+  const handleDragStart = (e, cardId) => {
+    e.dataTransfer.setData('cardId', cardId)
+  }
+
+  const handleDragOver = (e, groupId) => {
+    e.preventDefault()
+    setDragOverGroupId(groupId)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverGroupId(null)
+  }
+
+  const handleDrop = async (e, targetGroupId) => {
+    e.preventDefault()
+    setDragOverGroupId(null)
+    const cardId = e.dataTransfer.getData('cardId')
+    if (!cardId) return
+
+    const card = cards.find(c => c.id === cardId)
+    if (!card || card.group_id === targetGroupId) return
+
+    const sourceGroupId = card.group_id
+    // Check if moving this card will empty the source group (before the async move)
+    const isLastInSourceGroup = sourceGroupId
+      ? cards.filter(c => c.group_id === sourceGroupId).length === 1
+      : false
+
+    const result = await moveCardToGroup(cardId, targetGroupId)
+    if (!result.success) {
+      alert('Error moving card: ' + result.error)
+      return
+    }
+
+    // Auto-delete source group if it is now empty
+    if (isLastInSourceGroup) {
+      await deleteGroup(sourceGroupId)
+    }
+  }
+
+  // Build nested structure: { [radical]: { [groupId]: card[] } }
+  const groupedCards = cards.reduce((acc, card) => {
+    const radical = card.radical || 'No Radical'
+    if (!acc[radical]) acc[radical] = {}
+    const gid = card.group_id || 'ungrouped'
+    if (!acc[radical][gid]) acc[radical][gid] = []
+    acc[radical][gid].push(card)
     return acc
   }, {})
 
-  const commonRadicals = Object.entries(radicalCounts)
-    .filter(([, count]) => count > 1)
-    .map(([radical]) => radical)
+  // Total card count per radical
+  const radicalCardCount = (radical) =>
+    Object.values(groupedCards[radical] || {}).reduce((sum, arr) => sum + arr.length, 0)
+
+  // Existing groups for the pending kanji's radical (derived from pre-fetched data)
+  const pendingRadical = pendingKanji?.radical || null
+  const groupsForModal = pendingRadical
+    ? groups.filter(g => g.radical === pendingRadical)
+    : []
 
   if (loading) {
     return <Loading message="Loading Kanji cards..." />
@@ -104,33 +228,16 @@ export default function KanjiComparator() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>
-              Copy Kanji directly from <a href="https://jisho.org" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">Jisho.org</a>
+              Copy Kanji directly from{' '}
+              <a href="https://jisho.org" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
+                Jisho.org
+              </a>
             </span>
           </div>
         </form>
       </div>
 
-      {/* Comparison Insights */}
-      {cards.length > 1 && commonRadicals.length > 0 && (
-        <div className="card p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-          <div className="flex items-start gap-3">
-            <svg className="w-6 h-6 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-            <div>
-              <div className="text-sm font-semibold text-blue-900 mb-1">
-                🔍 Comparison Insights
-              </div>
-              <div className="text-sm text-blue-800">
-                <strong>Common Radicals:</strong> <span className="text-2xl ml-2">{commonRadicals.join(' ')}</span>
-                <span className="ml-2 text-xs">({commonRadicals.length} found)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Kanji Cards Grid */}
+      {/* Cards — empty state */}
       {cards.length === 0 ? (
         <div className="card text-center py-16">
           <div className="text-7xl mb-4">🎌</div>
@@ -138,28 +245,136 @@ export default function KanjiComparator() {
           <p className="text-gray-400">Add your first Kanji to start comparing!</p>
         </div>
       ) : (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm text-gray-500">
-              {cards.length} {cards.length === 1 ? 'card' : 'cards'}
-            </div>
-            <div className="text-xs text-gray-400">
-              Scroll horizontally to see all cards →
-            </div>
-          </div>
-          <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory">
-            {cards.map(card => (
-              <div key={card.id} className="snap-start">
-                <KanjiCard
-                  card={card}
-                  onUpdate={updateKanjiCard}
-                  onDelete={handleDelete}
-                />
+        /* Grouped display: Radical → Subgroups → Cards */
+        <div className="space-y-6">
+          {Object.entries(groupedCards).map(([radical, groupsInRadical]) => (
+            <div key={radical} className="card p-6 border border-gray-200">
+              {/* Radical header */}
+              <div className="flex items-center gap-3 mb-5">
+                <span className="text-4xl">{radical !== 'No Radical' ? radical : '🔤'}</span>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Radical: {radical}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {radicalCardCount(radical)} {radicalCardCount(radical) === 1 ? 'card' : 'cards'}
+                  </p>
+                </div>
               </div>
-            ))}
-          </div>
+
+              {/* Subgroups */}
+              <div className="space-y-4">
+                {Object.entries(groupsInRadical).map(([groupId, cardsInGroup]) => {
+                  const group = groups.find(g => g.id === groupId)
+                  const groupName = group?.name || 'Ungrouped'
+                  const isDragOver = dragOverGroupId === groupId
+
+                  return (
+                    <div
+                      key={groupId}
+                      className={`border rounded-lg p-4 transition-colors ${
+                        isDragOver
+                          ? 'border-blue-400 bg-blue-50'
+                          : 'border-gray-200 bg-gray-50'
+                      }`}
+                      onDragOver={(e) => handleDragOver(e, groupId)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, groupId)}
+                    >
+                      {/* Subgroup header */}
+                      <div className="flex items-center gap-2 mb-3">
+                        {renamingGroup === groupId ? (
+                          <div className="flex items-center gap-2 flex-1">
+                            <input
+                              type="text"
+                              value={renameValue}
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveRename(groupId)
+                                if (e.key === 'Escape') setRenamingGroup(null)
+                              }}
+                              className="px-2 py-1 text-sm border border-blue-400 rounded-lg focus:ring-2 focus:ring-blue-500"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => handleSaveRename(groupId)}
+                              className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setRenamingGroup(null)}
+                              className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <h3 className="text-base font-semibold text-gray-800 flex-1">
+                              {groupName}
+                            </h3>
+                            {group && (
+                              <>
+                                <button
+                                  onClick={() => handleStartRename(group)}
+                                  className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                                  title="Rename group"
+                                >
+                                  ✏️ Rename
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteGroup(group.id)}
+                                  className="text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                                  title="Delete group"
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {/* Cards grid — responsive, wraps to new rows */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {cardsInGroup.map(card => (
+                          <div
+                            key={card.id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, card.id)}
+                            className="cursor-grab active:cursor-grabbing"
+                          >
+                            <KanjiCard
+                              card={card}
+                              onUpdate={updateKanjiCard}
+                              onDelete={(id) => handleDelete(id, card.group_id)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
+
+      {/* Group Selection Modal */}
+      <GroupSelectionModal
+        isOpen={showGroupModal}
+        onClose={() => {
+          setShowGroupModal(false)
+          setPendingKanji(null)
+        }}
+        radical={pendingRadical}
+        existingGroups={groupsForModal}
+        onSelectGroup={handleGroupSelected}
+        onCreateGroup={handleCreateGroup}
+      />
     </div>
   )
 }
+
