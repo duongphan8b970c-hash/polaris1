@@ -178,9 +178,19 @@ export function useTransactions(filters = {}) {
         console.log('✅ Transfer completed with fee:', {
           outgoing: outgoingTxn,
           incoming: incomingTxn,
-          fee: transferFee,
-          transferPairId: transferPairId
+          fee: transferFee
         })
+
+        // ✅ Recalculate wallet balances
+        console.log('🔄 Recalculating wallet balances...')
+        const { error: recalcError } = await supabase.rpc('recalculate_all_wallet_balances')
+
+        if (recalcError) {
+          console.error('⚠️ Warning: Could not recalculate balances:', recalcError)
+          // Don't throw - transaction was successful, balance sync can be done later
+        }
+
+        console.log('✅ Wallet balances updated')
 
         await fetchTransactions()
         return { success: true, data: [outgoingTxn, incomingTxn] }
