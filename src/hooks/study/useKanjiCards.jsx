@@ -30,6 +30,16 @@ export function useKanjiCards() {
 
   const addKanjiCard = async (kanji) => {
     try {
+      // Check auth first
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+      if (authError || !user) {
+        return {
+          success: false,
+          error: 'Please login to add Kanji cards'
+        }
+      }
+
       // Fetch data from Jisho API
       const kanjiData = await fetchKanjiFromJisho(kanji)
 
@@ -42,7 +52,8 @@ export function useKanjiCards() {
         .from('kanji_cards')
         .insert({
           ...kanjiData,
-          position: maxPosition + 1
+          position: maxPosition + 1,
+          user_id: user.id
         })
         .select()
         .single()
