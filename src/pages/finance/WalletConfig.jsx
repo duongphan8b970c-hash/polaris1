@@ -8,6 +8,7 @@ import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { WALLET_TYPES, getWalletTypeInfo } from '../../constants' 
+import { formatNumber } from '../../utils/format'
 
 export default function WalletConfig() {
   const { 
