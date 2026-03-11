@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS kanji_card_groups (
 
 -- Add group_id to kanji_cards
 ALTER TABLE kanji_cards
-ADD COLUMN IF NOT EXISTS group_id UUID REFERENCES kanji_card_groups(id) ON DELETE SET NULL;
+ADD COLUMN IF NOT EXISTS group_id UUID REFERENCES kanji_card_groups(id) ON DELETE CASCADE;
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_groups_user_radical ON kanji_card_groups(user_id, radical);

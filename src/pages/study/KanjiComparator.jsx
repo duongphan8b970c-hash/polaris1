@@ -3,6 +3,7 @@ import { useKanjiCards } from '../../hooks/study/useKanjiCards'
 import { useKanjiGroups } from '../../hooks/study/useKanjiGroups'
 import KanjiCard from '../../components/study/KanjiCard'
 import GroupSelectionModal from '../../components/study/GroupSelectionModal'
+import RadicalSelectionModal from '../../components/study/RadicalSelectionModal'
 import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
@@ -19,6 +20,9 @@ export default function KanjiComparator() {
   const [showGroupModal, setShowGroupModal] = useState(false)
   const [pendingKanji, setPendingKanji] = useState(null)
 
+  // Radical selection modal state
+  const [showRadicalModal, setShowRadicalModal] = useState(false)
+
   // Inline rename state: { [groupId]: draftName }
   const [renamingGroup, setRenamingGroup] = useState(null)
   const [renameValue, setRenameValue] = useState('')
@@ -28,25 +32,38 @@ export default function KanjiComparator() {
 
   const handleAddKanji = async (e) => {
     e.preventDefault()
+    if (adding) return
     const kanji = inputValue.trim()
     if (!kanji) return
 
+    setAdding(true)
     try {
-      // ✅ FIX: Fetch Jisho data TRƯỚC
-      console.log('Fetching Kanji data from Jisho...')
       const kanjiData = await fetchKanjiFromJisho(kanji)
-      console.log('Kanji data:', kanjiData)
 
-      // ✅ Check if radical exists
-      const radical = kanjiData.radical || 'No Radical'
-      console.log('Radical:', radical)
+      const radical = kanjiData.radical
 
-      // ✅ Sau đó mới show modal
-      setPendingKanji({ kanji, radical, data: kanjiData })
-      setShowGroupModal(true)
+      if (!radical) {
+        // Show manual radical selection modal
+        setPendingKanji({ kanji, radical: null, data: kanjiData })
+        setShowRadicalModal(true)
+      } else {
+        // Show group selection modal
+        setPendingKanji({ kanji, radical, data: kanjiData })
+        setShowGroupModal(true)
+      }
     } catch (err) {
       console.error('Error fetching Kanji:', err)
       alert('Failed to fetch Kanji data. Please try again.')
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  const handleRadicalSelected = (radical) => {
+    if (pendingKanji) {
+      setPendingKanji({ ...pendingKanji, radical })
+      setShowRadicalModal(false)
+      setShowGroupModal(true)
     }
   }
 
@@ -58,6 +75,7 @@ export default function KanjiComparator() {
     if (result.success) {
       setInputValue('')
       setPendingKanji(null)
+      setShowGroupModal(false)
     } else {
       alert('Error adding Kanji: ' + result.error)
     }
@@ -66,16 +84,14 @@ export default function KanjiComparator() {
   const handleCreateGroup = async (name) => {
     if (!pendingKanji) return
     
-    // ✅ Lấy radical từ pendingKanji
     const radical = pendingKanji.radical || 'No Radical'
-    
-    console.log('Creating group:', { radical, name })
     
     const result = await createGroup(radical, name)
     if (result.success && pendingKanji) {
       await addKanjiCard(pendingKanji.kanji, result.data.id)
       setInputValue('')
       setPendingKanji(null)
+      setShowGroupModal(false)
     }
   }
 
@@ -113,7 +129,21 @@ export default function KanjiComparator() {
   }
 
   const handleDeleteGroup = async (groupId) => {
-    if (!window.confirm('Delete this group? Cards will become ungrouped.')) return
+    const group = groups.find(g => g.id === groupId)
+    const cardsInGroup = cards.filter(c => c.group_id === groupId)
+
+    const confirmMessage = cardsInGroup.length > 0
+      ? `⚠️ Delete group "${group?.name}"?\n\nThis will permanently delete:\n- The group\n- ${cardsInGroup.length} card(s) inside\n\nThis action cannot be undone.`
+      : `Delete empty group "${group?.name}"?`
+
+    if (!window.confirm(confirmMessage)) return
+
+    // Delete all cards in the group first
+    for (const card of cardsInGroup) {
+      await deleteKanjiCard(card.id)
+    }
+
+    // Then delete the group
     await deleteGroup(groupId)
   }
 
@@ -376,6 +406,17 @@ export default function KanjiComparator() {
         existingGroups={groupsForModal}
         onSelectGroup={handleGroupSelected}
         onCreateGroup={handleCreateGroup}
+      />
+
+      {/* Radical Selection Modal */}
+      <RadicalSelectionModal
+        isOpen={showRadicalModal}
+        onClose={() => {
+          setShowRadicalModal(false)
+          setPendingKanji(null)
+        }}
+        onSelectRadical={handleRadicalSelected}
+        kanji={pendingKanji?.kanji}
       />
     </div>
   )
