@@ -28,7 +28,7 @@ export function useKanjiCards() {
     }
   }
 
-  const addKanjiCard = async (kanji, groupId = null) => {
+  const addKanjiCard = async (kanji, groupId = null, radical = null) => {
     try {
       // Check auth first
       const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -52,6 +52,7 @@ export function useKanjiCards() {
         .from('kanji_cards')
         .insert({
           ...kanjiData,
+          radical: radical || kanjiData.radical || null,
           position: maxPosition + 1,
           user_id: user.id,
           group_id: groupId
