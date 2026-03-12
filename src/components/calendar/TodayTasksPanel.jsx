@@ -57,14 +57,11 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
         console.log('✅ Subtask updated:', data)
       }
 
-      // ✅ SAFE: Call onRefresh in background with defensive checks
+      // ✅ Await onRefresh so the UI updates before clearing loading state
       if (onRefresh && typeof onRefresh === 'function') {
-        console.log('🔄 Triggering background refresh...')
-        
-        // Wrap in try-catch to prevent unhandled rejections
-        Promise.resolve(onRefresh())
-          .then(() => console.log('✅ Background refresh completed'))
-          .catch(err => console.warn('⚠️ Background refresh failed (safe to ignore):', err))
+        console.log('🔄 Refreshing data...')
+        await onRefresh()
+        console.log('✅ Refresh completed')
       }
       
     } catch (err) {
