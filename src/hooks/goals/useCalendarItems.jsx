@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import { generateOccurrences, isRecurring } from '../../utils/recurrence'
 import { parseDateString, formatDateString, normalizeToMidnight } from '../../utils/dateUtils'
@@ -7,6 +7,7 @@ export function useCalendarItems(startDate, endDate, options = {}) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0) // ⭐ ADD: Trigger để force re-fetch
 
   const { userId = null, includeTeam = true } = options
   const optionsKey = useMemo(() => 
@@ -112,47 +113,31 @@ export function useCalendarItems(startDate, endDate, options = {}) {
           if (isRecurring(task)) {
             const taskStartDate = parseDateString(task.scheduled_date) || rangeStart
             const occurrences = generateOccurrences(
-              task.recurrence_rule,
               taskStartDate,
+              rangeStart,
               rangeEnd,
-              365
+              task.recurrence_rule
             )
 
             occurrences.forEach(occDate => {
-              const normalized = normalizeToMidnight(occDate)
-              if (normalized >= rangeStart && normalized <= rangeEnd) {
-                calendarItems.push({
-                  ...task,
-                  type: 'task',
-                  original_id: task.id,
-                  instance_date: formatDateString(normalized),
-                  is_recurring: true
-                })
-              }
+              calendarItems.push({
+                ...task,
+                type: 'task',
+                original_id: task.id,
+                instance_date: formatDateString(occDate),
+                is_recurring_instance: true
+              })
             })
           } else if (task.scheduled_date) {
-            // ✅ CRITICAL: Parse date string correctly
             const taskDate = parseDateString(task.scheduled_date)
-            if (!taskDate) return
-            
-            const duration = task.duration_days || 1
-            
-            for (let i = 0; i < duration; i++) {
-              const currentDate = new Date(taskDate)
-              currentDate.setDate(currentDate.getDate() + i)
-              const normalized = normalizeToMidnight(currentDate)
-              
-              if (normalized >= rangeStart && normalized <= rangeEnd) {
-                calendarItems.push({
-                  ...task,
-                  type: 'task',
-                  original_id: task.id,
-                  instance_date: formatDateString(normalized),
-                  is_recurring: false,
-                  duration_day: i + 1,
-                  total_duration: duration
-                })
-              }
+            if (taskDate && taskDate >= rangeStart && taskDate <= rangeEnd) {
+              calendarItems.push({
+                ...task,
+                type: 'task',
+                original_id: task.id,
+                instance_date: formatDateString(taskDate),
+                is_recurring_instance: false
+              })
             }
           }
         })
@@ -162,40 +147,32 @@ export function useCalendarItems(startDate, endDate, options = {}) {
           if (isRecurring(subtask)) {
             const subtaskStartDate = parseDateString(subtask.scheduled_date) || rangeStart
             const occurrences = generateOccurrences(
-              subtask.recurrence_rule,
               subtaskStartDate,
+              rangeStart,
               rangeEnd,
-              365
+              subtask.recurrence_rule
             )
 
             occurrences.forEach(occDate => {
-              const normalized = normalizeToMidnight(occDate)
-              if (normalized >= rangeStart && normalized <= rangeEnd) {
-                calendarItems.push({
-                  ...subtask,
-                  type: 'subtask',
-                  original_id: subtask.id,
-                  instance_date: formatDateString(normalized),
-                  is_recurring: true,
-                  goal: subtask.task?.goal
-                })
-              }
-            })
-          } else if (subtask.scheduled_date) {
-            // ✅ CRITICAL: Parse date string correctly
-            const subtaskDate = parseDateString(subtask.scheduled_date)
-            if (!subtaskDate) return
-            
-            const normalized = normalizeToMidnight(subtaskDate)
-            
-            if (normalized >= rangeStart && normalized <= rangeEnd) {
               calendarItems.push({
                 ...subtask,
                 type: 'subtask',
                 original_id: subtask.id,
-                instance_date: formatDateString(normalized),
-                is_recurring: false,
-                goal: subtask.task?.goal
+                instance_date: formatDateString(occDate),
+                is_recurring_instance: true,
+                goal: subtask.task?.goal || null
+              })
+            })
+          } else if (subtask.scheduled_date) {
+            const subtaskDate = parseDateString(subtask.scheduled_date)
+            if (subtaskDate && subtaskDate >= rangeStart && subtaskDate <= rangeEnd) {
+              calendarItems.push({
+                ...subtask,
+                type: 'subtask',
+                original_id: subtask.id,
+                instance_date: formatDateString(subtaskDate),
+                is_recurring_instance: false,
+                goal: subtask.task?.goal || null
               })
             }
           }
@@ -227,16 +204,19 @@ export function useCalendarItems(startDate, endDate, options = {}) {
       cancelled = true
       controller.abort()
     }
-  }, [dateKey, optionsKey])
+  }, [dateKey, optionsKey, refreshTrigger]) // ⭐ ADD: refreshTrigger vào dependencies
+
+  // ✅ FIX: refetch function trigger lại useEffect
+  const refetch = useCallback(() => {
+    console.log('🔄 Manual refetch triggered')
+    setRefreshTrigger(prev => prev + 1) // Increment trigger để useEffect chạy lại
+  }, [])
 
   return {
     items,
     loading,
     error,
-    refetch: () => {
-      setLoading(true)
-      setError(null)
-    }
+    refetch
   }
 }
 
