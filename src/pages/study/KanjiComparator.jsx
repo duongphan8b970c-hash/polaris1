@@ -70,7 +70,7 @@ export default function KanjiComparator() {
   const handleGroupSelected = async (groupId) => {
     if (!pendingKanji) return
     setAdding(true)
-    const result = await addKanjiCard(pendingKanji.kanji, groupId)
+    const result = await addKanjiCard(pendingKanji.kanji, groupId, pendingKanji.radical)
     setAdding(false)
     if (result.success) {
       setInputValue('')
@@ -88,7 +88,7 @@ export default function KanjiComparator() {
     
     const result = await createGroup(radical, name)
     if (result.success && pendingKanji) {
-      await addKanjiCard(pendingKanji.kanji, result.data.id)
+      await addKanjiCard(pendingKanji.kanji, result.data.id, pendingKanji.radical)
       setInputValue('')
       setPendingKanji(null)
       setShowGroupModal(false)
