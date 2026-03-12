@@ -61,10 +61,8 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
       if (onRefresh && typeof onRefresh === 'function') {
         console.log('🔄 Triggering background refresh...')
         
-        // Wrap in try-catch to prevent unhandled rejections
-        Promise.resolve(onRefresh())
-          .then(() => console.log('✅ Background refresh completed'))
-          .catch(err => console.warn('⚠️ Background refresh failed (safe to ignore):', err))
+        await onRefresh()  // ⭐ THÊM AWAIT
+        console.log('✅ Refresh completed')
       }
       
     } catch (err) {
