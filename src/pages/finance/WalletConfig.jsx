@@ -6,7 +6,7 @@ import Modal from '../../components/common/Modal'
 import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
-import { WALLET_TYPES, getWalletTypeInfo } from '../../constants' 
+import { getWalletTypeInfo } from '../../constants'
 
 export default function WalletConfig() {
   const { 
@@ -22,14 +22,6 @@ export default function WalletConfig() {
   const [showForm, setShowForm] = useState(false)
   const [editingWallet, setEditingWallet] = useState(null)
   const [submitting, setSubmitting] = useState(false)
-  const [selectedType, setSelectedType] = useState('all')
-
-  // Filter wallets by type
-  const filteredWallets = useMemo(() => {
-    return selectedType === 'all' 
-      ? wallets 
-      : wallets.filter(w => w.type === selectedType)
-  }, [wallets, selectedType])
 
   // Group wallets by type
   const groupedWallets = useMemo(() => {
@@ -117,62 +109,40 @@ export default function WalletConfig() {
         }
       />
 
-      {/* Filter Tabs */}
-      <div className="card">
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          <button
-            onClick={() => setSelectedType('all')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-              selectedType === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            Tất cả ({wallets.length})
-          </button>
-          
-          {Object.keys(WALLET_TYPES).map(type => {
-            const count = wallets.filter(w => w.type === type).length
-            if (count === 0) return null
-            
-            const typeInfo = getWalletTypeInfo(type)
-            return (
-              <button
-                key={type}
-                onClick={() => setSelectedType(type)}
-                className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                  selectedType === type
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {typeInfo.icon} {typeInfo.label} ({count})
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Wallet List */}
-      {filteredWallets.length === 0 ? (
+      {/* Grouped Wallet Sections */}
+      {wallets.length === 0 ? (
         <div className="card text-center py-12">
           <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
           </svg>
-          <p className="text-gray-500 font-medium mb-2">
-            {selectedType === 'all' ? 'Chưa có ví nào' : `Chưa có ví ${getWalletTypeInfo(selectedType).label}`}
-          </p>
-          <p className="text-gray-400 text-sm">
-            {selectedType === 'all' ? 'Tạo ví đầu tiên của bạn!' : 'Thêm ví mới cho loại này'}
-          </p>
+          <p className="text-gray-500 font-medium mb-2">Chưa có ví nào</p>
+          <p className="text-gray-400 text-sm">Tạo ví đầu tiên của bạn!</p>
         </div>
       ) : (
-        <WalletList 
-          wallets={filteredWallets}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onResetBalance={handleResetBalance}
-        />
+        Object.entries(groupedWallets).map(([type, typeWallets]) => {
+          const typeInfo = getWalletTypeInfo(type)
+          return (
+            <div key={type} className="card overflow-hidden">
+              <div className={`px-5 py-3 flex items-center gap-2 border-b border-gray-200 ${typeInfo.color}`}>
+                <span className="text-lg">{typeInfo.icon}</span>
+                <span className="font-semibold uppercase tracking-wide text-sm">
+                  {typeInfo.label}
+                </span>
+                <span className="ml-auto text-sm font-medium opacity-75">
+                  ({typeWallets.length})
+                </span>
+              </div>
+              <div className="p-4">
+                <WalletList
+                  wallets={typeWallets}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onResetBalance={handleResetBalance}
+                />
+              </div>
+            </div>
+          )
+        })
       )}
 
       {/* Wallet Form Modal */}

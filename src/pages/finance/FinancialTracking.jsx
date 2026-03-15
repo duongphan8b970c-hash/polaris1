@@ -24,7 +24,7 @@ export default function FinancialTracking() {
   const [filters, setFilters] = useState({
     wallet_id: '',
     type: '',
-    category_id: '',
+    category_ids: [],
     date_from: '',
     date_to: ''
   })
@@ -117,9 +117,22 @@ export default function FinancialTracking() {
     setFilters({
       wallet_id: '',
       type: '',
-      category_id: '',
+      category_ids: [],
       date_from: '',
       date_to: ''
+    })
+  }
+
+  const handleCategoryToggle = (categoryId) => {
+    setFilters(prev => {
+      const currentIds = prev.category_ids
+      const isSelected = currentIds.includes(categoryId)
+      return {
+        ...prev,
+        category_ids: isSelected
+          ? currentIds.filter(id => id !== categoryId)
+          : [...currentIds, categoryId]
+      }
     })
   }
   // ✅ ADD: Calculate filtered transaction statistics
@@ -417,11 +430,15 @@ const filteredStats = useMemo(() => {
                   <div>
                     <h3 className="font-semibold text-gray-900">Bộ Lọc & Tìm Kiếm</h3>
                     <p className="text-xs text-gray-500">
-                      {(filters.wallet_id || filters.type || filters.category_id || filters.date_from || filters.date_to) ? (
+                      {(filters.wallet_id || filters.type || filters.category_ids.length > 0 || filters.date_from || filters.date_to) ? (
                         <>
                           {filters.type && `${filters.type === 'income' ? 'Thu nhập' : filters.type === 'expense' ? 'Chi tiêu' : 'Chuyển khoản'} • `}
                           {filters.wallet_id && safeWallets.length > 0 && `${safeWallets.find(w => w.id === filters.wallet_id)?.name || ''} • `}
-                          {filters.category_id && safeAllCategories.length > 0 && `${safeAllCategories.find(c => c.id === filters.category_id)?.name || ''} • `}
+                          {filters.category_ids.length > 0 && safeAllCategories.length > 0 && (
+                            filters.category_ids.length === 1
+                              ? `${safeAllCategories.find(c => c.id === filters.category_ids[0])?.name || ''} • `
+                              : `${filters.category_ids.length} danh mục • `
+                          )}
                           {(filters.date_from || filters.date_to) && 'Lọc theo ngày'}
                         </>
                       ) : (
@@ -432,7 +449,7 @@ const filteredStats = useMemo(() => {
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  {(filters.wallet_id || filters.type || filters.category_id || filters.date_from || filters.date_to) && (
+                  {(filters.wallet_id || filters.type || filters.category_ids.length > 0 || filters.date_from || filters.date_to) && (
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
                       {safeTransactions.length} kết quả
                     </span>
@@ -504,22 +521,46 @@ const filteredStats = useMemo(() => {
                     </select>
                   </div>
 
-                  {/* Category Filter */}
+                  {/* Category Filter - Multi Select */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
-                    <select
-                      name="category_id"
-                      value={filters.category_id}
-                      onChange={handleFilterChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    >
-                      <option value="">Tất cả danh mục</option>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Danh mục {filters.category_ids.length > 0 && `(${filters.category_ids.length} đã chọn)`}
+                    </label>
+                    <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto space-y-1">
+                      <label className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.category_ids.length === safeAllCategories.length && safeAllCategories.length > 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFilters(prev => ({ ...prev, category_ids: safeAllCategories.map(c => c.id) }))
+                            } else {
+                              setFilters(prev => ({ ...prev, category_ids: [] }))
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 rounded"
+                        />
+                        <span className="font-medium text-gray-700 text-sm">Tất cả danh mục</span>
+                      </label>
+                      <hr className="my-1" />
                       {safeAllCategories.map(cat => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.icon} {cat.name}
-                        </option>
+                        <label
+                          key={cat.id}
+                          className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={filters.category_ids.includes(cat.id)}
+                            onChange={() => handleCategoryToggle(cat.id)}
+                            className="w-4 h-4 text-blue-600 rounded"
+                          />
+                          <span className="text-sm">{cat.icon} {cat.name}</span>
+                        </label>
                       ))}
-                    </select>
+                      {safeAllCategories.length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-2">Không có danh mục nào</p>
+                      )}
+                    </div>
                   </div>
 
                   {/* Date From */}
@@ -549,7 +590,7 @@ const filteredStats = useMemo(() => {
                 </div>
 
                 {/* Clear Filters Button */}
-                {(filters.wallet_id || filters.type || filters.category_id || filters.date_from || filters.date_to) && (
+                {(filters.wallet_id || filters.type || filters.category_ids.length > 0 || filters.date_from || filters.date_to) && (
                   <div className="mt-4 flex justify-end">
                     <button
                       onClick={handleClearFilters}

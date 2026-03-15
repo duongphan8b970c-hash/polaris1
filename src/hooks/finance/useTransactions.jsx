@@ -51,8 +51,8 @@ export function useTransactions(filters = {}) {
       if (filters.type) {
         query = query.eq('type', filters.type)
       }
-      if (filters.category_id) {
-        query = query.eq('category_id', filters.category_id)
+      if (filters.category_ids && filters.category_ids.length > 0) {
+        query = query.in('category_id', filters.category_ids)
       }
       if (filters.date_from) {
         query = query.gte('date', filters.date_from)
@@ -77,7 +77,7 @@ export function useTransactions(filters = {}) {
   useEffect(() => {
     fetchTransactions()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.wallet_id, filters.type, filters.category_id, filters.date_from, filters.date_to])
+  }, [filters.wallet_id, filters.type, filters.category_ids, filters.date_from, filters.date_to])
 
   const createTransaction = async (transactionData) => {
     try {
