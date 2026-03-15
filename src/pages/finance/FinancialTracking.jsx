@@ -519,9 +519,9 @@ const filteredStats = useMemo(() => {
 
             {/* Filter Content - Collapsible */}
             {filtersOpen && (
-              <div className="px-6 pb-6 border-t border-gray-200 animate-slideIn">
+              <div className="px-6 pb-6 border-t border-gray-200 animate-slideIn overflow-visible">
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 overflow-visible">
                   
                   {/* Wallet Filter */}
                   <div>
@@ -558,7 +558,7 @@ const filteredStats = useMemo(() => {
                   </div>
 
                   {/* Category Filter - Collapsible Multi-select */}
-                  <div className="relative">
+                  <div className="relative z-10">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
                     <button
                       type="button"
@@ -585,7 +585,7 @@ const filteredStats = useMemo(() => {
                     </button>
 
                     {categoryDropdownOpen && filters.type !== 'transfer' && (
-                      <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto animate-slideIn">
+                      <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto animate-slideIn">
                         {filteredCategoriesByType.length === 0 ? (
                           <p className="px-3 py-3 text-sm text-gray-400 text-center">Không có danh mục</p>
                         ) : (
