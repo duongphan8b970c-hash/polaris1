@@ -80,6 +80,42 @@ export function useTrades(filters = {}) {
     }
   }
 
+  const createTradeTransaction = async (trade) => {
+    const profitLoss = parseFloat(trade.profit_loss)
+    if (!trade.wallet_id || isNaN(profitLoss) || profitLoss === 0) return
+
+    const isProfit = profitLoss > 0
+    const transactionType = isProfit ? 'income' : 'expense'
+
+    const { data: category, error: categoryError } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('type', transactionType)
+      .limit(1)
+      .single()
+
+    if (categoryError || !category) {
+      console.warn(`No ${transactionType} category found, skipping wallet transaction`)
+      return
+    }
+
+    const { error: txError } = await supabase
+      .from('financial_transactions')
+      .insert({
+        wallet_id: trade.wallet_id,
+        category_id: category.id,
+        type: transactionType,
+        amount: isProfit ? Math.abs(profitLoss) : -Math.abs(profitLoss),
+        description: `Trade ${trade.symbol} - ${isProfit ? 'Win' : 'Loss'} (${trade.leverage || 1}x)`,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0, 8),
+      })
+
+    if (txError) {
+      console.error('Error creating trade transaction:', txError)
+    }
+  }
+
   const updateTrade = async (id, tradeData) => {
     try {
       const updateData = {
@@ -108,6 +144,11 @@ export function useTrades(filters = {}) {
         .single()
       
       if (updateError) throw updateError
+
+      // Create financial transaction when closing a trade
+      if (tradeData.status === 'closed' && data.profit_loss !== null) {
+        await createTradeTransaction(data)
+      }
       
       setTrades(prev => prev.map(t => t.id === id ? data : t))
       return { success: true, data }
@@ -134,6 +175,9 @@ export function useTrades(filters = {}) {
         .single()
       
       if (updateError) throw updateError
+
+      // Create financial transaction for the closed trade
+      await createTradeTransaction(data)
       
       setTrades(prev => prev.map(t => t.id === id ? data : t))
       return { success: true, data }
