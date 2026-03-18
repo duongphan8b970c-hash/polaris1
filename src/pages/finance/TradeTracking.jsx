@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import PageHeader from '../../components/layout/PageHeader'
 import TradeList from '../../components/trades/TradeList'
 import TradeForm from '../../components/trades/TradeForm'
@@ -9,6 +9,21 @@ import { useTrades } from '../../hooks/finance/useTrades'
 import { formatCurrency } from '../../utils'
 import ErrorModal from '../../components/common/ErrorModal'
 import QuickCloseModal from '../../components/trades/QuickCloseModal'
+
+// Generate month options: current month + past 11 months
+function generateMonthOptions() {
+  const options = [{ value: 'all', label: 'Tất cả' }]
+  const now = new Date()
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const label = `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`
+    options.push({ value, label })
+  }
+  return options
+}
+
+const MONTH_OPTIONS = generateMonthOptions()
 
 export default function TradeTracking() {
   const [filters, setFilters] = useState({})
@@ -22,26 +37,37 @@ export default function TradeTracking() {
     trade: null,
     resultType: null // 'win' or 'loss'
   })
-      // Calculate statistics
-  const stats = trades.reduce((acc, t) => {
+  const [selectedMonth, setSelectedMonth] = useState(MONTH_OPTIONS[1].value) // index 1 = current month (index 0 is 'Tất cả')
+
+  // Filter trades by selected month
+  const filteredTrades = useMemo(() => {
+    if (selectedMonth === 'all') return trades
+    const [year, month] = selectedMonth.split('-').map(Number)
+    return trades.filter(t => {
+      const d = new Date(t.created_at)
+      return d.getFullYear() === year && d.getMonth() + 1 === month
+    })
+  }, [trades, selectedMonth])
+
+  // Calculate statistics for filtered trades
+  const stats = useMemo(() => filteredTrades.reduce((acc, t) => {
     if (t.status === 'closed') {
       acc.closedCount++
       
       const pl = t.profit_loss || 0
       const currency = t.exit_currency || t.wallet?.currency || 'USDT'
       
-      // Group P&L by currency
-      if (!acc.plByCurrency[currency]) {
-        acc.plByCurrency[currency] = 0
-      }
+      if (!acc.plByCurrency[currency]) acc.plByCurrency[currency] = 0
       acc.plByCurrency[currency] += pl
       
       if (pl > 0) {
         acc.winCount++
         acc.totalWin += pl
+        if (acc.bestTrade === null || pl > acc.bestTrade.profit_loss) acc.bestTrade = t
       } else if (pl < 0) {
         acc.lossCount++
         acc.totalLoss += Math.abs(pl)
+        if (acc.worstTrade === null || pl < acc.worstTrade.profit_loss) acc.worstTrade = t
       }
     } else {
       acc.openCount++
@@ -54,10 +80,14 @@ export default function TradeTracking() {
     lossCount: 0, 
     totalWin: 0,
     totalLoss: 0,
-    plByCurrency: {}
-  })
+    plByCurrency: {},
+    bestTrade: null,
+    worstTrade: null,
+  }), [filteredTrades])
 
   stats.winRate = stats.closedCount > 0 ? (stats.winCount / stats.closedCount * 100).toFixed(1) : 0
+
+  const selectedMonthLabel = MONTH_OPTIONS.find(o => o.value === selectedMonth)?.label || ''
 
   const handleCreate = () => {
     setEditingTrade(null)
@@ -134,8 +164,28 @@ export default function TradeTracking() {
         }
       />
 
-           {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      {/* Monthly Filter */}
+      <div className="flex items-center gap-3 mb-4">
+        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Lọc theo tháng:</label>
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="input w-auto min-w-[160px]"
+        >
+          {MONTH_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Statistics */}
+      <div className="mb-1">
+        <p className="text-xs text-gray-400 mb-2">
+          Thống kê: <span className="font-medium text-gray-600">{selectedMonthLabel}</span>
+          {' '}({filteredTrades.length} trades)
+        </p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
         {/* Open Trades */}
         <div className="stat-card border-blue-500">
           <p className="text-sm text-gray-500">Đang mở</p>
@@ -175,8 +225,38 @@ export default function TradeTracking() {
         </div>
       </div>
 
+      {/* Best / Worst Trade */}
+      {(stats.bestTrade || stats.worstTrade) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {stats.bestTrade && (
+            <div className="stat-card border-green-400">
+              <p className="text-sm text-gray-500">Best Trade</p>
+              <p className="text-base font-bold text-green-600 mt-1">
+                {stats.bestTrade.symbol} &nbsp;
+                <span className="text-sm font-normal text-gray-500">({stats.bestTrade.leverage || 1}x)</span>
+              </p>
+              <p className="text-lg font-bold text-green-600">
+                +{formatCurrency(stats.bestTrade.profit_loss, stats.bestTrade.exit_currency || stats.bestTrade.wallet?.currency)}
+              </p>
+            </div>
+          )}
+          {stats.worstTrade && (
+            <div className="stat-card border-red-400">
+              <p className="text-sm text-gray-500">Worst Trade</p>
+              <p className="text-base font-bold text-red-600 mt-1">
+                {stats.worstTrade.symbol} &nbsp;
+                <span className="text-sm font-normal text-gray-500">({stats.worstTrade.leverage || 1}x)</span>
+              </p>
+              <p className="text-lg font-bold text-red-600">
+                {formatCurrency(stats.worstTrade.profit_loss, stats.worstTrade.exit_currency || stats.worstTrade.wallet?.currency)}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       <TradeList
-        trades={trades}
+        trades={filteredTrades}
         onEdit={handleEdit}
         onClose={handleCloseTrade}
         onQuickClose={handleQuickClose}
