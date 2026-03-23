@@ -261,7 +261,6 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
                               >
                                 {item.icon}
                                 <span>{item.name}</span>
-                                )
                               </Link>
                             </li>
                           ))}
