@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useGoals } from '../../hooks/goals/useGoals'
 import { useTasks } from '../../hooks/goals/useTasks'
-import TaskCard from '../../components/goals/TaskCard'
+import TableTaskRow from '../../components/common/TableTaskRow'
 import TaskForm from '../../components/goals/TaskForm'
 import GoalForm from '../../components/goals/GoalForm'
 import AssignmentHistory from '../../components/goals/AssignmentHistory'
@@ -435,15 +435,14 @@ export default function GoalDetails() {
                 </button>
               </div>
 
-              {/* ✅ ENHANCED: Larger Task Cards */}
+              {/* Task Table */}
               {tasks.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="text-6xl mb-4">📝</div>
                   <p className="text-base text-gray-600 mb-4">
-                    {filters.status || filters.priority 
+                    {filters.status || filters.priority
                       ? 'Không có task nào phù hợp'
-                      : 'Chưa có task nào'
-                    }
+                      : 'Chưa có task nào'}
                   </p>
                   {!filters.status && !filters.priority && (
                     <button onClick={handleCreateTask} className="btn btn-primary btn-sm">
@@ -452,18 +451,32 @@ export default function GoalDetails() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"> {/* ✅ Increased gap */}
-                  {tasks.map(task => (
-                    <div key={task.id} className="transform transition-transform hover:scale-[1.02]">
-                      <TaskCard
-                        task={task}
-                        onEdit={handleEditTask}
-                        onDelete={() => handleDeleteTask(task)}
-                        onToggleStatus={() => handleToggleTask(task)}
-                        onClick={() => navigate(`/goals/${goalId}/tasks/${task.id}`)}
-                      />
-                    </div>
-                  ))}
+                <div className="overflow-x-auto border border-gray-200 rounded-xl">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tên</th>
+                        <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Trạng thái</th>
+                        <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Ưu tiên</th>
+                        <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Subtasks</th>
+                        <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Hạn chót</th>
+                        <th className="px-3 py-2.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tasks.map((task) => (
+                        <TableTaskRow
+                          key={task.id}
+                          task={task}
+                          depth={0}
+                          goalId={goalId}
+                          onEdit={handleEditTask}
+                          onDelete={(task) => deleteTask(task.id)}
+                          onToggle={handleToggleTask}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

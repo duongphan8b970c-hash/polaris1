@@ -1,17 +1,15 @@
 import { useState } from 'react'
 import { useGoals } from '../../hooks/goals/useGoals'
-import GoalList from '../../components/goals/GoalList'
+import TableGoalList from '../../components/goals/TableGoalList'
 import GoalForm from '../../components/goals/GoalForm'
 import Modal from '../../components/common/Modal'
 import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
-import { useNavigate } from 'react-router-dom'
 
 export default function GoalsDashboard() {
-  const navigate = useNavigate()
   const { goals, loading, error, createGoal, updateGoal, deleteGoal } = useGoals()
-  
+
   const [showForm, setShowForm] = useState(false)
   const [editingGoal, setEditingGoal] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -21,9 +19,9 @@ export default function GoalsDashboard() {
     total: goals.length,
     active: goals.filter(g => g.status === 'active').length,
     completed: goals.filter(g => g.status === 'completed').length,
-    totalProgress: goals.length > 0 
-      ? goals.reduce((sum, g) => sum + parseFloat(g.progress || 0), 0) / goals.length 
-      : 0
+    totalProgress: goals.length > 0
+      ? goals.reduce((sum, g) => sum + parseFloat(g.progress || 0), 0) / goals.length
+      : 0,
   }
 
   const handleCreate = () => {
@@ -38,23 +36,17 @@ export default function GoalsDashboard() {
 
   const handleDelete = async (goal) => {
     if (!confirm(`Xóa mục tiêu "${goal.name}"?\n\nLưu ý: Tất cả tasks bên trong cũng sẽ bị xóa.`)) return
-    
     const result = await deleteGoal(goal.id)
-    if (!result.success) {
-      alert('Lỗi: ' + result.error)
-    }
+    if (!result.success) alert('Lỗi: ' + result.error)
   }
 
-  // ✅ FIX: handleComplete receives (goal, endDate) from GoalCard
   const handleComplete = async (goal, endDate) => {
     if (!confirm(`Đánh dấu "${goal?.name || 'mục tiêu này'}" là đã hoàn thành?`)) return
-    
     const result = await updateGoal(goal.id, {
       status: 'completed',
       end_date: endDate || new Date().toISOString().split('T')[0],
-      progress: 100
+      progress: 100,
     })
-    
     if (result.success) {
       alert('🎉 Chúc mừng! Bạn đã hoàn thành mục tiêu!')
     } else {
@@ -69,36 +61,24 @@ export default function GoalsDashboard() {
 
   const handleSubmit = async (formData) => {
     setSubmitting(true)
-    
     const result = editingGoal
       ? await updateGoal(editingGoal.id, formData)
       : await createGoal(formData)
-    
     if (result.success) {
       handleCloseForm()
     } else {
       alert('Lỗi: ' + result.error)
     }
-    
     setSubmitting(false)
   }
 
-  const handleGoalClick = (goal) => {
-    navigate(`/goals/${goal.id}`)
-  }
-
-  if (loading) {
-    return <Loading message="Đang tải mục tiêu..." />
-  }
-
-  if (error) {
-    return <ErrorMessage message={error} />
-  }
+  if (loading) return <Loading message="Đang tải mục tiêu..." />
+  if (error) return <ErrorMessage message={error} />
 
   return (
     <div>
-      <PageHeader 
-        title="Mục Tiêu & Dự Án" 
+      <PageHeader
+        title="Mục Tiêu & Dự Án"
         subtitle="Quản lý và theo dõi tiến độ các mục tiêu của bạn"
         action={
           <button onClick={handleCreate} className="btn btn-primary">
@@ -172,16 +152,15 @@ export default function GoalsDashboard() {
         </div>
       </div>
 
-      {/* Goals List */}
-      <GoalList
+      {/* Toggle Table Goal List */}
+      <TableGoalList
         goals={goals}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onComplete={handleComplete}
-        onGoalClick={handleGoalClick}
       />
 
-      {/* Form Modal */}
+      {/* Goal Form Modal */}
       <Modal
         isOpen={showForm}
         onClose={handleCloseForm}
