@@ -8,7 +8,6 @@ import TaskForm from '../../components/goals/TaskForm'
 import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
 import { TASK_STATUS_FILTERS, PRIORITY_OPTIONS } from '../../constants'
-import { formatDate } from '../../utils'
 
 export default function TaskDetails() {
   const { goalId, taskId } = useParams()
@@ -155,17 +154,6 @@ export default function TaskDetails() {
               }`}>
                 {priorityOption.icon} {priorityOption.label}
               </span>
-            </div>
-            
-            <div className="flex items-center gap-3 text-xs text-gray-600">
-              <span className="flex items-center gap-1">
-                📅 Bắt đầu: {formatDate(task.start_date)}
-              </span>
-              {task.deadline && (
-                <span className="flex items-center gap-1">
-                  ⏰ Deadline: {formatDate(task.deadline)}
-                </span>
-              )}
             </div>
           </div>
           

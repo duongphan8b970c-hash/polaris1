@@ -1,9 +1,6 @@
-import { useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useState, useRef, useEffect } from 'react'
 import { useSubtasks } from '../../hooks/goals/useSubtasks'
 import TableSubTaskRow from './TableSubTaskRow'
-import TaskForm from '../goals/TaskForm'
-import Modal from './Modal'
 
 const STATUS_CONFIG = {
   todo:        { label: 'Cần làm',     bg: 'bg-gray-100',   text: 'text-gray-700',  icon: '📝' },
@@ -55,70 +52,43 @@ function ChevronIcon({ expanded }) {
   )
 }
 
-// Inline task detail panel
+// Inline task detail panel – compact strip (like GoalInfoStrip)
 function TaskInlineDetail({ task, onEdit, onClose, indentPx }) {
-  const status = STATUS_CONFIG[task.status] || STATUS_CONFIG.todo
-  const priority = PRIORITY_CONFIG[task.priority]
+  const hasInfo = task.description || (task.tags && task.tags.length > 0)
 
   return (
     <tr>
       <td colSpan={6} className="p-0">
         <div
-          className="bg-indigo-50 border-l-4 border-indigo-400 py-3 pr-4"
+          className="bg-indigo-50/60 border-b border-indigo-100 py-2 pr-4 flex flex-wrap items-center gap-x-4 gap-y-1"
           style={{ paddingLeft: `${indentPx}px` }}
         >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="font-bold text-gray-900">{task.title}</p>
-              {task.description && (
-                <p className="text-sm text-gray-600 mt-1">{task.description}</p>
-              )}
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
-                  {status.icon} {status.label}
-                </span>
-                {priority && (
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${priority.bg} ${priority.text}`}>
-                    {priority.label}
-                  </span>
-                )}
-                {task.due_date && (
-                  <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs">
-                    📅 {new Date(task.due_date).toLocaleDateString('vi-VN')}
-                  </span>
-                )}
-                {task.total_subtasks > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs">
-                    📋 {task.completed_subtasks}/{task.total_subtasks} subtasks
-                  </span>
-                )}
-              </div>
-              {task.tags && task.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {task.tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-xs bg-white border border-gray-200 rounded-full text-gray-600">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <button
-                onClick={onEdit}
-                className="text-xs px-2 py-1 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-              >
-                ✏️ Sửa
-              </button>
-              <button
-                onClick={onClose}
-                className="p-1 text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+          {task.description && (
+            <span className="text-xs text-gray-600 italic">{task.description}</span>
+          )}
+          {task.tags?.map((tag) => (
+            <span key={tag} className="px-2 py-0.5 text-xs bg-white border border-indigo-200 rounded-full text-indigo-700">
+              {tag}
+            </span>
+          ))}
+          {!hasInfo && (
+            <span className="text-xs text-gray-400 italic">Không có mô tả</span>
+          )}
+          <div className="ml-auto flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={onEdit}
+              className="text-xs px-2 py-0.5 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+            >
+              ✏️ Sửa
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
       </td>
@@ -136,6 +106,30 @@ function SubtaskLoader({ taskId, depth }) {
     deleteSubtask,
     createSubtask,
   } = useSubtasks(taskId)
+
+  const [newTitle, setNewTitle] = useState('')
+  const [isAdding, setIsAdding] = useState(false)
+  const [showInput, setShowInput] = useState(false)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (showInput && inputRef.current) inputRef.current.focus()
+  }, [showInput])
+
+  const handleAdd = async () => {
+    if (!newTitle.trim()) return
+    setIsAdding(true)
+    const result = await createSubtask({ title: newTitle.trim() })
+    if (!result.success) {
+      alert('Lỗi: ' + result.error)
+    } else {
+      setNewTitle('')
+      setShowInput(false)
+    }
+    setIsAdding(false)
+  }
+
+  const addIndentPx = (depth + 1) * 28 + 36
 
   if (loading) {
     return (
@@ -171,6 +165,56 @@ function SubtaskLoader({ taskId, depth }) {
             onDelete={(id) => deleteSubtask(id)}
           />
         ))
+      )}
+
+      {/* Add subtask row */}
+      {showInput ? (
+        <tr>
+          <td colSpan={6} className="py-1">
+            <div className="flex items-center gap-1.5" style={{ paddingLeft: `${addIndentPx}px` }}>
+              <input
+                ref={inputRef}
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); handleAdd() }
+                  if (e.key === 'Escape') { setShowInput(false); setNewTitle('') }
+                }}
+                placeholder="Tên subtask mới..."
+                className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-purple-400 focus:border-purple-400 max-w-xs"
+              />
+              <button
+                onClick={handleAdd}
+                disabled={isAdding || !newTitle.trim()}
+                className="text-xs px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50 transition-colors"
+              >
+                {isAdding ? '...' : 'Thêm'}
+              </button>
+              <button
+                onClick={() => { setShowInput(false); setNewTitle('') }}
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                Huỷ
+              </button>
+            </div>
+          </td>
+        </tr>
+      ) : (
+        <tr>
+          <td colSpan={6} className="py-1">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowInput(true) }}
+              className="flex items-center gap-1 text-xs text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded px-2 py-1 transition-colors"
+              style={{ marginLeft: `${addIndentPx - 8}px` }}
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Thêm subtask
+            </button>
+          </td>
+        </tr>
       )}
     </>
   )
@@ -286,14 +330,9 @@ export default function TableTaskRow({
           )}
         </td>
 
-        {/* Deadline */}
+        {/* Deadline - hidden per requirements */}
         <td className="px-3 py-2.5 text-xs whitespace-nowrap">
-          {task.due_date ? (
-            <span className={task.is_overdue ? 'text-red-600 font-medium' : 'text-gray-600'}>
-              {new Date(task.due_date).toLocaleDateString('vi-VN')}
-              {task.is_overdue && ' ⚠️'}
-            </span>
-          ) : <span className="text-gray-400">—</span>}
+          <span className="text-gray-400">—</span>
         </td>
 
         {/* Actions - ALWAYS VISIBLE */}
