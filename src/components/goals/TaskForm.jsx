@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import UserSelector from './UserSelector'
 
 const PRIORITY_OPTIONS = [
@@ -14,14 +14,12 @@ const STATUS_OPTIONS = [
   { value: 'blocked', label: 'Bị chặn', icon: '🚫' },
 ]
 
-// ✅ FIX: Remove "projects" prop, add "goalId"
 export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     start_date: '',
     due_date: '',
-    duration_days: 1,
     priority: 'medium',
     status: 'todo',
     tags: [],
@@ -32,6 +30,14 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
   })
 
   const [tagInput, setTagInput] = useState('')
+  const descriptionRef = useRef(null)
+
+  const resizeTextarea = () => {
+    if (descriptionRef.current) {
+      descriptionRef.current.style.height = 'auto'
+      descriptionRef.current.style.height = descriptionRef.current.scrollHeight + 'px'
+    }
+  }
 
   useEffect(() => {
     if (task) {
@@ -51,12 +57,18 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
     }
   }, [task])
 
+  // Auto-resize description textarea whenever its value changes
+  useEffect(() => {
+    resizeTextarea()
+  }, [formData.description])
+
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
       [name]: value
     }))
+    if (name === 'description') resizeTextarea()
   }
 
   const handleAddTag = () => {
@@ -134,13 +146,14 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
           Mô tả
         </label>
         <textarea
+          ref={descriptionRef}
           name="description"
           value={formData.description}
           onChange={handleChange}
-          rows="4"
           className="input"
           placeholder="Mô tả chi tiết về công việc cần làm..."
           disabled={loading}
+          style={{ overflow: 'hidden', resize: 'none', minHeight: '80px' }}
         />
       </div>
 
@@ -203,22 +216,6 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
             disabled={loading}
           />
         </div>
-        {/* ✅ ADD: Duration */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Thời gian (ngày)
-          </label>
-          <input
-            type="number"
-            name="duration_days"
-            min="1"
-            value={formData.duration_days || 1}
-            onChange={handleChange}
-            className="input"
-            disabled={loading}
-            placeholder="Số ngày"
-          />
-        </div>      
         {/* Due Date */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -107,7 +107,7 @@ function SubtaskLoader({ taskId, depth }) {
     createSubtask,
   } = useSubtasks(taskId)
 
-  const [newTitle, setNewTitle] = useState('')
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
   const [isAdding, setIsAdding] = useState(false)
   const [showInput, setShowInput] = useState(false)
   const inputRef = useRef(null)
@@ -117,13 +117,13 @@ function SubtaskLoader({ taskId, depth }) {
   }, [showInput])
 
   const handleAdd = async () => {
-    if (!newTitle.trim()) return
+    if (!newSubtaskTitle.trim()) return
     setIsAdding(true)
-    const result = await createSubtask({ title: newTitle.trim() })
+    const result = await createSubtask({ title: newSubtaskTitle.trim() })
     if (!result.success) {
       alert('Lỗi: ' + result.error)
     } else {
-      setNewTitle('')
+      setNewSubtaskTitle('')
       setShowInput(false)
     }
     setIsAdding(false)
@@ -175,24 +175,24 @@ function SubtaskLoader({ taskId, depth }) {
               <input
                 ref={inputRef}
                 type="text"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
+                value={newSubtaskTitle}
+                onChange={(e) => setNewSubtaskTitle(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') { e.preventDefault(); handleAdd() }
-                  if (e.key === 'Escape') { setShowInput(false); setNewTitle('') }
+                  if (e.key === 'Escape') { setShowInput(false); setNewSubtaskTitle('') }
                 }}
                 placeholder="Tên subtask mới..."
                 className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-purple-400 focus:border-purple-400 max-w-xs"
               />
               <button
                 onClick={handleAdd}
-                disabled={isAdding || !newTitle.trim()}
+                disabled={isAdding || !newSubtaskTitle.trim()}
                 className="text-xs px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50 transition-colors"
               >
                 {isAdding ? '...' : 'Thêm'}
               </button>
               <button
-                onClick={() => { setShowInput(false); setNewTitle('') }}
+                onClick={() => { setShowInput(false); setNewSubtaskTitle('') }}
                 className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
               >
                 Huỷ
