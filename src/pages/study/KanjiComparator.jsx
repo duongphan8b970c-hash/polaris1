@@ -82,16 +82,21 @@ export default function KanjiComparator() {
   }
 
   const handleCreateGroup = async (name) => {
-    if (!pendingKanji) return
-    
+    if (!pendingKanji || adding) return
+    const { kanji } = pendingKanji
     const radical = pendingKanji.radical || 'No Radical'
-    
-    const result = await createGroup(radical, name)
-    if (result.success && pendingKanji) {
-      await addKanjiCard(pendingKanji.kanji, result.data.id, pendingKanji.radical)
-      setInputValue('')
-      setPendingKanji(null)
-      setShowGroupModal(false)
+
+    setAdding(true)
+    try {
+      const result = await createGroup(radical, name)
+      if (result.success) {
+        await addKanjiCard(kanji, result.data.id, radical)
+        setInputValue('')
+        setPendingKanji(null)
+        setShowGroupModal(false)
+      }
+    } finally {
+      setAdding(false)
     }
   }
 
@@ -126,25 +131,6 @@ export default function KanjiComparator() {
     await updateGroup(groupId, { name: trimmed })
     setRenamingGroup(null)
     setRenameValue('')
-  }
-
-  const handleDeleteGroup = async (groupId) => {
-    const group = groups.find(g => g.id === groupId)
-    const cardsInGroup = cards.filter(c => c.group_id === groupId)
-
-    const confirmMessage = cardsInGroup.length > 0
-      ? `⚠️ Delete group "${group?.name}"?\n\nThis will permanently delete:\n- The group\n- ${cardsInGroup.length} card(s) inside\n\nThis action cannot be undone.`
-      : `Delete empty group "${group?.name}"?`
-
-    if (!window.confirm(confirmMessage)) return
-
-    // Delete all cards in the group first
-    for (const card of cardsInGroup) {
-      await deleteKanjiCard(card.id)
-    }
-
-    // Then delete the group
-    await deleteGroup(groupId)
   }
 
   // Drag & drop handlers
@@ -279,11 +265,11 @@ export default function KanjiComparator() {
         </div>
       ) : (
         /* Grouped display: Radical → Subgroups → Cards */
-        <div className="space-y-6">
+        <div className="space-y-4">
           {Object.entries(groupedCards).map(([radical, groupsInRadical]) => (
-            <div key={radical} className="card p-6 border border-gray-200">
+            <div key={radical} className="card p-4 border border-gray-200">
               {/* Radical header */}
-              <div className="flex items-center gap-3 mb-5">
+              <div className="flex items-center gap-3 mb-3">
                 <span className="text-4xl">{radical !== 'No Radical' ? radical : '🔤'}</span>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">
@@ -348,22 +334,13 @@ export default function KanjiComparator() {
                               {groupName}
                             </h3>
                             {group && (
-                              <>
-                                <button
-                                  onClick={() => handleStartRename(group)}
-                                  className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
-                                  title="Rename group"
-                                >
-                                  ✏️ Rename
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteGroup(group.id)}
-                                  className="text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50 transition-colors"
-                                  title="Delete group"
-                                >
-                                  🗑️ Delete
-                                </button>
-                              </>
+                              <button
+                                onClick={() => handleStartRename(group)}
+                                className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                                title="Rename group"
+                              >
+                                ✏️ Rename
+                              </button>
                             )}
                           </>
                         )}
