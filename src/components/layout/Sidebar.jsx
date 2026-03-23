@@ -146,6 +146,11 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
           name: 'Kanji Study',
           path: '/study/kanji',
           icon: <span className="text-base leading-none">🎌</span>
+        },
+        {
+          name: 'Material Vault',
+          path: '/study/materials',
+          icon: <span className="text-base leading-none">📚</span>
         }
       ]
     },

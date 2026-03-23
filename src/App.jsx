@@ -18,6 +18,7 @@ import GoalsCalendarDashboard from './pages/goals/GoalsCalendarDashboard'
 import AnalyticsDashboard from './pages/analytics/AnalyticsDashboard'
 import WalletHistory from './pages/finance/WalletHistory'
 import KanjiComparator from './pages/study/KanjiComparator'
+import StudyMaterialVault from './pages/study/StudyMaterialVault'
 
 // ✅ Create ProtectedRoute component
 function ProtectedRoute({ children, session }) {
@@ -105,6 +106,7 @@ function App() {
           <Route path="goals/:goalId/tasks/:taskId" element={<TaskDetails />} />
           <Route path="profile" element={<UserProfile />} />
           <Route path="study/kanji" element={<KanjiComparator />} />
+          <Route path="study/materials" element={<StudyMaterialVault />} />
         </Route>
 
         {/* ✅ Catch all - redirect to dashboard or login */}

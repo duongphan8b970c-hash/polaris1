@@ -24,11 +24,12 @@ export default function FinancialTracking() {
   const [filters, setFilters] = useState({
     wallet_id: '',
     type: '',
-    category_id: '',
+    category_ids: [],
     date_from: '',
     date_to: ''
   })
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
   
   const { wallets } = useWallets()
   const { 
@@ -107,19 +108,55 @@ export default function FinancialTracking() {
   // Filter handlers
   const handleFilterChange = (e) => {
     const { name, value } = e.target
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    if (name === 'type') {
+      setFilters(prev => ({
+        ...prev,
+        [name]: value,
+        category_ids: []
+      }))
+      setCategoryDropdownOpen(false)
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
   }
 
   const handleClearFilters = () => {
     setFilters({
       wallet_id: '',
       type: '',
-      category_id: '',
+      category_ids: [],
       date_from: '',
       date_to: ''
+    })
+    setCategoryDropdownOpen(false)
+  }
+
+  const handleCategoryToggle = (categoryId) => {
+    setFilters(prev => {
+      const ids = prev.category_ids || []
+      return {
+        ...prev,
+        category_ids: ids.includes(categoryId)
+          ? ids.filter(id => id !== categoryId)
+          : [...ids, categoryId]
+      }
+    })
+  }
+
+  const handleCategorySelectAll = (filteredCats) => {
+    setFilters(prev => {
+      const ids = prev.category_ids || []
+      const filteredIds = filteredCats.map(c => c.id)
+      const allSelected = filteredIds.every(id => ids.includes(id))
+      return {
+        ...prev,
+        category_ids: allSelected
+          ? ids.filter(id => !filteredIds.includes(id))
+          : [...new Set([...ids, ...filteredIds])]
+      }
     })
   }
   // ✅ ADD: Calculate filtered transaction statistics
@@ -309,6 +346,18 @@ const filteredStats = useMemo(() => {
   const safeAllCategories = Array.isArray(allCategories) ? allCategories : []
   const safeTransactions = Array.isArray(transactions) ? transactions : []
   const safeCategories = Array.isArray(categories) ? categories : []
+  const selectedCategoryIds = filters.category_ids || []
+
+  // ✅ Filter categories based on selected transaction type
+  const filteredCategoriesByType = useMemo(() => {
+    if (!filters.type || filters.type === '') {
+      return safeAllCategories
+    }
+    if (filters.type === 'transfer') {
+      return []
+    }
+    return safeAllCategories.filter(cat => cat.type === filters.type)
+  }, [safeAllCategories, filters.type])
 
   const loading = activeTab === 'transactions' ? transactionsLoading : categoriesLoading
   const error = activeTab === 'transactions' ? transactionsError : categoriesError
@@ -401,7 +450,7 @@ const filteredStats = useMemo(() => {
       {activeTab === 'transactions' && (
         <>
           {/* Filters + Add Button */}
-          <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden mb-6">
+          <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 mb-6">
             
             {/* Filter Header Row */}
             <div className="flex items-stretch">
@@ -417,11 +466,15 @@ const filteredStats = useMemo(() => {
                   <div>
                     <h3 className="font-semibold text-gray-900">Bộ Lọc & Tìm Kiếm</h3>
                     <p className="text-xs text-gray-500">
-                      {(filters.wallet_id || filters.type || filters.category_id || filters.date_from || filters.date_to) ? (
+                      {(filters.wallet_id || filters.type || selectedCategoryIds.length > 0 || filters.date_from || filters.date_to) ? (
                         <>
                           {filters.type && `${filters.type === 'income' ? 'Thu nhập' : filters.type === 'expense' ? 'Chi tiêu' : 'Chuyển khoản'} • `}
                           {filters.wallet_id && safeWallets.length > 0 && `${safeWallets.find(w => w.id === filters.wallet_id)?.name || ''} • `}
-                          {filters.category_id && safeAllCategories.length > 0 && `${safeAllCategories.find(c => c.id === filters.category_id)?.name || ''} • `}
+                          {selectedCategoryIds.length > 0 && safeAllCategories.length > 0 && (
+                            selectedCategoryIds.length === 1
+                              ? `${safeAllCategories.find(c => c.id === selectedCategoryIds[0])?.name || ''} • `
+                              : `${selectedCategoryIds.length} danh mục • `
+                          )}
                           {(filters.date_from || filters.date_to) && 'Lọc theo ngày'}
                         </>
                       ) : (
@@ -432,7 +485,7 @@ const filteredStats = useMemo(() => {
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  {(filters.wallet_id || filters.type || filters.category_id || filters.date_from || filters.date_to) && (
+                  {(filters.wallet_id || filters.type || selectedCategoryIds.length > 0 || filters.date_from || filters.date_to) && (
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
                       {safeTransactions.length} kết quả
                     </span>
@@ -466,9 +519,9 @@ const filteredStats = useMemo(() => {
 
             {/* Filter Content - Collapsible */}
             {filtersOpen && (
-              <div className="px-6 pb-6 border-t border-gray-200 animate-slideIn">
+              <div className="px-6 pb-6 border-t border-gray-200 animate-slideIn overflow-visible">
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 overflow-visible">
                   
                   {/* Wallet Filter */}
                   <div>
@@ -504,22 +557,64 @@ const filteredStats = useMemo(() => {
                     </select>
                   </div>
 
-                  {/* Category Filter */}
-                  <div>
+                  {/* Category Filter - Collapsible Multi-select */}
+                  <div className="relative z-10">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
-                    <select
-                      name="category_id"
-                      value={filters.category_id}
-                      onChange={handleFilterChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    <button
+                      type="button"
+                      onClick={() => setCategoryDropdownOpen(prev => !prev)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white flex items-center justify-between"
+                      disabled={filters.type === 'transfer'}
                     >
-                      <option value="">Tất cả danh mục</option>
-                      {safeAllCategories.map(cat => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.icon} {cat.name}
-                        </option>
-                      ))}
-                    </select>
+                      <span className="text-gray-700 truncate">
+                        {filters.type === 'transfer'
+                          ? 'Không áp dụng'
+                          : selectedCategoryIds.length === 0
+                            ? 'Tất cả danh mục'
+                            : selectedCategoryIds.length === 1
+                              ? safeAllCategories.find(c => c.id === selectedCategoryIds[0])?.name || '1 danh mục'
+                              : `${selectedCategoryIds.length} danh mục đã chọn`
+                        }
+                      </span>
+                      <svg
+                        className={`w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ml-2 ${categoryDropdownOpen ? 'rotate-180' : ''}`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {categoryDropdownOpen && filters.type !== 'transfer' && (
+                      <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto animate-slideIn">
+                        {filteredCategoriesByType.length === 0 ? (
+                          <p className="px-3 py-3 text-sm text-gray-400 text-center">Không có danh mục</p>
+                        ) : (
+                          <>
+                            {/* Select All */}
+                            <label className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100">
+                              <input
+                                type="checkbox"
+                                className="rounded text-blue-600"
+                                checked={filteredCategoriesByType.length > 0 && filteredCategoriesByType.every(c => selectedCategoryIds.includes(c.id))}
+                                onChange={() => handleCategorySelectAll(filteredCategoriesByType)}
+                              />
+                              <span className="text-sm font-medium text-gray-700">Chọn tất cả</span>
+                            </label>
+                            {filteredCategoriesByType.map(cat => (
+                              <label key={cat.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="rounded text-blue-600"
+                                  checked={selectedCategoryIds.includes(cat.id)}
+                                  onChange={() => handleCategoryToggle(cat.id)}
+                                />
+                                <span className="text-sm text-gray-700">{cat.icon} {cat.name}</span>
+                              </label>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Date From */}
@@ -549,7 +644,7 @@ const filteredStats = useMemo(() => {
                 </div>
 
                 {/* Clear Filters Button */}
-                {(filters.wallet_id || filters.type || filters.category_id || filters.date_from || filters.date_to) && (
+                {(filters.wallet_id || filters.type || selectedCategoryIds.length > 0 || filters.date_from || filters.date_to) && (
                   <div className="mt-4 flex justify-end">
                     <button
                       onClick={handleClearFilters}

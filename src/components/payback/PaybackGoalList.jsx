@@ -15,189 +15,187 @@ export default function PaybackGoalList({ goals, onEdit, onDelete, onComplete })
     )
   }
 
-  // ✅ Simple grid render - no filtering
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {goals.map(goal => (
-        <PaybackGoalCard 
-          key={goal.id} 
-          goal={goal} 
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onComplete={onComplete}
-        />
-      ))}
+    <div className="card overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tên mục tiêu</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ưu tiên</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Mục tiêu</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Đã trả</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Còn lại</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tiến độ</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Hạn chót</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {goals.map(goal => (
+              <PaybackGoalRow
+                key={goal.id}
+                goal={goal}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onComplete={onComplete}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
 
-// ✅ Card component
-function PaybackGoalCard({ goal, onEdit, onDelete, onComplete }) {
+function PaybackGoalRow({ goal, onEdit, onDelete, onComplete }) {
   const isCompleted = goal.status === 'completed'
   const isOverdue = goal.is_overdue && !isCompleted
 
-  // Calculate days remaining
   const today = new Date()
   const deadline = new Date(goal.deadline)
   const daysRemaining = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24))
 
   return (
-    <div className={`card hover:shadow-lg transition-shadow ${
-      isCompleted ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200' :
-      isOverdue ? 'bg-gradient-to-br from-red-50 to-orange-50 border-red-200' :
-      'bg-white'
-    }`}>
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="font-bold text-gray-900 truncate">{goal.name}</h3>
-            
-            {/* ✅ Priority Badge */}
-            {goal.priority && (
-              <span 
-                className="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                style={{
-                  backgroundColor: `${goal.priority.color}20`,
-                  color: goal.priority.color,
-                  border: `1px solid ${goal.priority.color}40`
-                }}
-              >
-                {goal.priority.icon} {goal.priority.name}
-              </span>
-            )}
-            
-            {isCompleted && (
-              <span className="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                ✓ Hoàn thành
-              </span>
-            )}
-            {isOverdue && (
-              <span className="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                ⚠ Quá hạn
-              </span>
+    <tr className="hover:bg-orange-50 transition-colors group">
+      {/* Name */}
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xl flex-shrink-0">💳</span>
+          <div className="min-w-0">
+            <p className={`font-medium text-gray-900 truncate ${isCompleted ? 'line-through text-gray-400' : ''}`}>
+              {goal.name}
+            </p>
+            {goal.description && (
+              <p className="text-xs text-gray-500 truncate max-w-xs">{goal.description}</p>
             )}
           </div>
-          {goal.description && (
-            <p className="text-sm text-gray-600 line-clamp-2">{goal.description}</p>
-          )}
         </div>
-        <span className="text-3xl ml-2 flex-shrink-0">💳</span>
-      </div>
+      </td>
+
+      {/* Status */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        {isCompleted ? (
+          <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+            ✓ Hoàn thành
+          </span>
+        ) : isOverdue ? (
+          <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+            ⚠ Quá hạn
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
+            ⏳ Đang trả
+          </span>
+        )}
+      </td>
+
+      {/* Priority */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        {goal.priority ? (
+          <span
+            className="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
+            style={{
+              backgroundColor: `${goal.priority.color}20`,
+              color: goal.priority.color,
+              border: `1px solid ${goal.priority.color}40`
+            }}
+          >
+            {goal.priority.icon} {goal.priority.name}
+          </span>
+        ) : (
+          <span className="text-gray-400 text-xs">—</span>
+        )}
+      </td>
+
+      {/* Target Amount */}
+      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
+        {formatNumber(goal.target_amount)} ₫
+      </td>
+
+      {/* Paid */}
+      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-semibold text-green-600">
+        {formatNumber(goal.current_paid)} ₫
+      </td>
+
+      {/* Remaining */}
+      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-bold">
+        {isCompleted ? (
+          <span className="text-green-600">—</span>
+        ) : (
+          <span className="text-red-600">{formatNumber(goal.remaining)} ₫</span>
+        )}
+      </td>
 
       {/* Progress */}
-      <div className="mb-4">
-        <div className="flex justify-between text-sm mb-2">
-          <span className="text-gray-600">Đã trả:</span>
-          <span className="font-bold text-gray-900">
-            {formatNumber(goal.current_paid)} ₫
-          </span>
-        </div>
-        <div className="flex justify-between text-sm mb-2">
-          <span className="text-gray-600">Mục tiêu:</span>
-          <span className="font-bold text-gray-900">
-            {formatNumber(goal.target_amount)} ₫
-          </span>
-        </div>
-        
-        {/* Progress Bar */}
-        <div className="mb-2">
-          <div className="flex justify-between text-xs text-gray-600 mb-1">
-            <span>Tiến độ</span>
-            <span className="font-semibold">{goal.progress.toFixed(1)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div 
-              className={`h-3 rounded-full transition-all ${
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2 min-w-[100px]">
+          <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div
+              className={`h-full rounded-full ${
                 isCompleted ? 'bg-green-500' :
                 isOverdue ? 'bg-red-500' :
                 goal.progress > 80 ? 'bg-yellow-500' :
                 'bg-blue-500'
               }`}
               style={{ width: `${Math.min(goal.progress, 100)}%` }}
-            ></div>
+            />
           </div>
+          <span className="text-xs font-semibold text-gray-700 w-9 text-right">{goal.progress.toFixed(1)}%</span>
         </div>
+      </td>
 
-        {/* Remaining */}
-        {!isCompleted && (
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Còn lại:</span>
-            <span className="font-bold text-red-600">
-              {formatNumber(goal.remaining)} ₫
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Deadline Info */}
-      <div className={`mb-4 p-3 rounded-lg ${
-        isCompleted ? 'bg-green-100 border border-green-200' :
-        isOverdue ? 'bg-red-100 border border-red-200' :
-        daysRemaining <= 7 ? 'bg-yellow-100 border border-yellow-200' :
-        'bg-blue-50 border border-blue-200'
-      }`}>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-700 font-medium">
-            {isCompleted ? '🎉 Hoàn thành:' :
-             isOverdue ? '⏰ Quá hạn:' :
-             '📅 Hạn chót:'}
+      {/* Deadline */}
+      <td className="px-4 py-3 whitespace-nowrap text-sm">
+        {isCompleted ? (
+          <span className="text-green-600 font-medium">
+            🎉 {formatDate(goal.completed_date)}
           </span>
-          <span className="font-bold text-gray-900">
-            {formatDate(isCompleted ? goal.completed_date : goal.deadline)}
+        ) : (
+          <span className={`font-medium ${isOverdue ? 'text-red-600' : daysRemaining <= 7 ? 'text-yellow-600' : 'text-gray-700'}`}>
+            {formatDate(goal.deadline)}
+            {isOverdue && <span className="ml-1 text-xs">(quá {Math.abs(daysRemaining)} ngày)</span>}
+            {!isOverdue && daysRemaining === 0 && <span className="ml-1 text-xs">(hôm nay)</span>}
+            {!isOverdue && daysRemaining > 0 && daysRemaining <= 7 && <span className="ml-1 text-xs">(còn {daysRemaining} ngày)</span>}
           </span>
-        </div>
-        {!isCompleted && (
-          <p className="text-xs text-gray-600 mt-1">
-            {isOverdue 
-              ? `Đã quá ${Math.abs(daysRemaining)} ngày`
-              : daysRemaining === 0
-                ? 'Hết hạn hôm nay!'
-                : `Còn ${daysRemaining} ngày`
-            }
-          </p>
         )}
-      </div>
+      </td>
 
       {/* Actions */}
-      <div className="flex gap-2">
-        {!isCompleted && goal.progress >= 100 && (
+      <td className="px-4 py-3 whitespace-nowrap text-right">
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {!isCompleted && goal.progress >= 100 && (
+            <button
+              onClick={() => onComplete(goal)}
+              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+              title="Đánh dấu hoàn thành"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          )}
           <button
-            onClick={() => onComplete(goal)}
-            className="flex-1 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-lg text-sm font-medium transition-colors"
+            onClick={() => onEdit(goal)}
+            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Sửa"
           >
-            ✓ Đánh dấu hoàn thành
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
           </button>
-        )}
-        <button
-          onClick={() => onEdit(goal)}
-          className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          Sửa
-        </button>
-        <button
-          onClick={() => onDelete(goal)}
-          className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          Xóa
-        </button>
-      </div>
-
-      {/* Initial Amount (if set) */}
-      {goal.initial_amount > 0 && (
-        <div className="mt-3 pt-3 border-t text-xs text-gray-500">
-          <div className="flex justify-between">
-            <span>Tổng tiền ban đầu:</span>
-            <span className="font-medium">{formatNumber(goal.initial_amount)} ₫</span>
-          </div>
-          <div className="flex justify-between mt-1">
-            <span>% đã trả (so với tổng tiền ban đầu):</span>
-            <span className="font-medium">
-              {((goal.current_paid / goal.initial_amount) * 100).toFixed(1)}%
-            </span>
-          </div>
+          <button
+            onClick={() => onDelete(goal)}
+            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            title="Xóa"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
         </div>
-      )}
-    </div>
+      </td>
+    </tr>
   )
 }
