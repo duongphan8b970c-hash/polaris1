@@ -15,12 +15,79 @@ const CATEGORIES = [
   { value: 'general', label: 'General' },
 ]
 
+function toDateKey(isoString) {
+  const d = new Date(isoString)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function formatDateLabel(dateKey) {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  })
+}
+
+function TimelineSidebar({ dates, selectedDate, onSelectDate }) {
+  return (
+    <div className="hidden lg:block shrink-0 w-32 xl:w-36">
+      <div className="sticky top-6">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">Timeline</p>
+        <div className="relative">
+          {dates.length > 1 && (
+            <div className="absolute left-[5px] top-3 bottom-3 w-0.5 bg-gray-200" />
+          )}
+          <div className="space-y-0">
+            {dates.map((dateKey) => {
+              const isSelected = selectedDate === dateKey
+              const [y, mo, dy] = dateKey.split('-').map(Number)
+              const d = new Date(y, mo - 1, dy)
+              const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              const year = d.getFullYear()
+              return (
+                <button
+                  key={dateKey}
+                  onClick={() => onSelectDate(isSelected ? null : dateKey)}
+                  className="flex items-start gap-2 w-full text-left py-1.5 group"
+                >
+                  <div className={`w-3 h-3 rounded-full border-2 shrink-0 mt-0.5 relative z-10 transition-all ${
+                    isSelected
+                      ? 'bg-blue-500 border-blue-500 scale-110'
+                      : 'bg-white border-gray-300 group-hover:border-blue-400'
+                  }`} />
+                  <div className={`text-xs leading-tight transition-colors ${
+                    isSelected ? 'text-blue-600 font-semibold' : 'text-gray-500 group-hover:text-gray-700'
+                  }`}>
+                    <div>{monthDay}</div>
+                    <div className="text-gray-400 text-[10px]">{year}</div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        {selectedDate && (
+          <button
+            onClick={() => onSelectDate(null)}
+            className="mt-3 text-xs text-blue-500 hover:text-blue-700 px-1 underline"
+          >
+            Clear filter
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function StudyMaterialVault() {
   const { materials, loading, error, createMaterial, updateMaterial, deleteMaterial, uploadImage } = useStudyMaterials()
 
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [view, setView] = useState('grid') // 'grid' | 'list'
+  const [selectedDate, setSelectedDate] = useState(null) // 'YYYY-MM-DD' or null
 
   const [formOpen, setFormOpen] = useState(false)
   const [editingMaterial, setEditingMaterial] = useState(null)
@@ -31,7 +98,13 @@ export default function StudyMaterialVault() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  // Filter + search
+  // Unique dates from all materials (sorted newest first)
+  const uniqueDates = useMemo(() => {
+    const dateSet = new Set(materials.map(m => toDateKey(m.created_at)))
+    return Array.from(dateSet).sort((a, b) => b.localeCompare(a))
+  }, [materials])
+
+  // Filter + search + date
   const filtered = useMemo(() => {
     return materials.filter(m => {
       const matchesCategory = selectedCategory === 'all' || m.category === selectedCategory
@@ -41,9 +114,21 @@ export default function StudyMaterialVault() {
         m.title.toLowerCase().includes(q) ||
         (m.content || '').toLowerCase().includes(q) ||
         (m.tags || []).some(t => t.toLowerCase().includes(q))
-      return matchesCategory && matchesSearch
+      const matchesDate = !selectedDate || toDateKey(m.created_at) === selectedDate
+      return matchesCategory && matchesSearch && matchesDate
     })
-  }, [materials, selectedCategory, search])
+  }, [materials, selectedCategory, search, selectedDate])
+
+  // Group filtered materials by date, sorted newest first
+  const groupedByDate = useMemo(() => {
+    const groups = {}
+    filtered.forEach(m => {
+      const key = toDateKey(m.created_at)
+      if (!groups[key]) groups[key] = []
+      groups[key].push(m)
+    })
+    return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]))
+  }, [filtered])
 
   const handleOpenCreate = () => {
     setEditingMaterial(null)
@@ -158,58 +243,100 @@ export default function StudyMaterialVault() {
         ))}
         <span className="ml-auto text-sm text-gray-400 self-center">
           {filtered.length} {filtered.length === 1 ? 'material' : 'materials'}
+          {selectedDate && <span className="ml-1 text-blue-400">· {formatDateLabel(selectedDate)}</span>}
         </span>
       </div>
 
-      {/* Empty state */}
-      {filtered.length === 0 && (
-        <div className="text-center py-16 text-gray-400">
-          <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <p className="text-sm">
-            {search || selectedCategory !== 'all' ? 'No materials match your filters.' : 'No materials yet. Create your first one!'}
-          </p>
-          {!search && selectedCategory === 'all' && (
-            <button
-              onClick={handleOpenCreate}
-              className="mt-3 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              + New Material
-            </button>
+      {/* Active date filter pill (mobile) */}
+      {selectedDate && (
+        <div className="flex items-center gap-2 mb-4 lg:hidden">
+          <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-full flex items-center gap-1">
+            📅 {formatDateLabel(selectedDate)}
+            <button onClick={() => setSelectedDate(null)} className="ml-1 hover:text-blue-800">✕</button>
+          </span>
+        </div>
+      )}
+
+      {/* Main layout: content + timeline */}
+      <div className="flex gap-6">
+        {/* Content area */}
+        <div className="flex-1 min-w-0">
+          {/* Empty state */}
+          {filtered.length === 0 && (
+            <div className="text-center py-16 text-gray-400">
+              <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p className="text-sm">
+                {search || selectedCategory !== 'all' || selectedDate
+                  ? 'No materials match your filters.'
+                  : 'No materials yet. Create your first one!'}
+              </p>
+              {!search && selectedCategory === 'all' && !selectedDate && (
+                <button
+                  onClick={handleOpenCreate}
+                  className="mt-3 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  + New Material
+                </button>
+              )}
+            </div>
           )}
-        </div>
-      )}
 
-      {/* Grid view */}
-      {view === 'grid' && filtered.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(material => (
-            <MaterialCard
-              key={material.id}
-              material={material}
-              onView={handleView}
-              onEdit={handleOpenEdit}
-              onDelete={handleDeleteRequest}
-            />
+          {/* Materials grouped by date */}
+          {groupedByDate.map(([dateKey, dayMaterials]) => (
+            <div key={dateKey} className="mb-8">
+              {/* Date group header */}
+              <div className="flex items-center gap-3 mb-3">
+                <h2 className="text-sm font-semibold text-gray-600 whitespace-nowrap">{formatDateLabel(dateKey)}</h2>
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-xs text-gray-400 whitespace-nowrap">
+                  {dayMaterials.length} {dayMaterials.length === 1 ? 'item' : 'items'}
+                </span>
+              </div>
+
+              {/* Grid view */}
+              {view === 'grid' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {dayMaterials.map(material => (
+                    <MaterialCard
+                      key={material.id}
+                      material={material}
+                      onView={handleView}
+                      onEdit={handleOpenEdit}
+                      onDelete={handleDeleteRequest}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* List view */}
+              {view === 'list' && (
+                <div className="space-y-2">
+                  {dayMaterials.map(material => (
+                    <ListRow
+                      key={material.id}
+                      material={material}
+                      onView={handleView}
+                      onEdit={handleOpenEdit}
+                      onDelete={handleDeleteRequest}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
-      )}
 
-      {/* List view */}
-      {view === 'list' && filtered.length > 0 && (
-        <div className="space-y-3">
-          {filtered.map(material => (
-            <ListRow
-              key={material.id}
-              material={material}
-              onView={handleView}
-              onEdit={handleOpenEdit}
-              onDelete={handleDeleteRequest}
-            />
-          ))}
-        </div>
-      )}
+        {/* Timeline sidebar */}
+        {uniqueDates.length > 0 && (
+          <TimelineSidebar
+            dates={uniqueDates}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+          />
+        )}
+      </div>
 
       {/* Form modal */}
       <MaterialFormModal
@@ -271,8 +398,8 @@ function ListRow({ material, onView, onEdit, onDelete }) {
     grammar: 'Grammar', vocab: 'Vocab', kanji: 'Kanji', general: 'General',
   }
 
-  const date = new Date(material.created_at).toLocaleDateString('vi-VN', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
+  const date = new Date(material.created_at).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
   })
   const preview = (() => {
     if (!material.content) return ''
