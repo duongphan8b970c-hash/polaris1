@@ -145,7 +145,6 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         {
           name: 'Kanji Study',
           path: '/study/kanji',
-          badge: 'New',
           icon: <span className="text-base leading-none">🎌</span>
         }
       ]
@@ -257,11 +256,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
                               >
                                 {item.icon}
                                 <span>{item.name}</span>
-                                {item.badge && (
-                                  <span className="ml-auto text-xs bg-blue-100 text-blue-700 font-semibold px-1.5 py-0.5 rounded-full">
-                                    {item.badge}
-                                  </span>
-                                )}
+                                )
                               </Link>
                             </li>
                           ))}
