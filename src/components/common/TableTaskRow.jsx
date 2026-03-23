@@ -19,7 +19,29 @@ const PRIORITY_CONFIG = {
   low:    { label: 'Thấp',      bg: 'bg-blue-100',   text: 'text-blue-700' },
 }
 
-// Chevron icon
+// Mini subtask progress indicator
+function SubtaskProgress({ completed, total }) {
+  const pct = Math.round((completed / total) * 100)
+  const allDone = completed === total
+  return (
+    <div className="flex flex-col gap-1 min-w-[80px]">
+      <div className="flex items-center justify-between text-xs">
+        <span className={allDone ? 'text-green-600 font-medium' : 'text-gray-600'}>
+          {completed}/{total}
+        </span>
+        <span className={`font-semibold ${allDone ? 'text-green-600' : 'text-gray-500'}`}>
+          {pct}%
+        </span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${allDone ? 'bg-green-500' : pct >= 50 ? 'bg-blue-500' : 'bg-yellow-500'}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
 function ChevronIcon({ expanded }) {
   return (
     <svg
@@ -252,13 +274,16 @@ export default function TableTaskRow({
           ) : <span className="text-gray-400 text-xs">—</span>}
         </td>
 
-        {/* Subtasks count */}
-        <td className="px-3 py-2.5 text-xs">
+        {/* Subtasks progress */}
+        <td className="px-3 py-2.5">
           {task.total_subtasks > 0 ? (
-            <span className={task.completed_subtasks === task.total_subtasks ? 'text-green-600 font-medium' : 'text-gray-600'}>
-              {task.completed_subtasks}/{task.total_subtasks}
-            </span>
-          ) : <span className="text-gray-400">—</span>}
+            <SubtaskProgress
+              completed={task.completed_subtasks}
+              total={task.total_subtasks}
+            />
+          ) : (
+            <span className="text-gray-400 text-xs">—</span>
+          )}
         </td>
 
         {/* Deadline */}

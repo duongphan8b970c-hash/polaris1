@@ -47,7 +47,7 @@ export default function TableGoalList({
                 Tiến độ
               </th>
               <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                Hạn chót
+                Thời lượng
               </th>
               <th className="px-3 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 Thao tác

@@ -26,45 +26,81 @@ function ChevronIcon({ expanded }) {
   )
 }
 
-// Inline goal detail panel
+// Duration cell: shows start_date → target_date range
+function DurationCell({ goal, timeRemaining }) {
+  if (!goal.start_date && !goal.target_date) {
+    return <span className="text-gray-400">—</span>
+  }
+  return (
+    <div className="flex flex-col gap-0.5 text-xs">
+      <div className="flex items-center gap-1 text-gray-600">
+        {goal.start_date ? (
+          <span>{new Date(goal.start_date).toLocaleDateString('vi-VN')}</span>
+        ) : (
+          <span className="text-gray-400">?</span>
+        )}
+        <span className="text-gray-400">→</span>
+        {goal.target_date ? (
+          <span className={`font-medium ${
+            timeRemaining?.type === 'overdue' ? 'text-red-600' :
+            timeRemaining?.type === 'today'   ? 'text-yellow-600' :
+            timeRemaining?.type === 'soon'    ? 'text-orange-600' :
+            'text-gray-700'
+          }`}>
+            {new Date(goal.target_date).toLocaleDateString('vi-VN')}
+          </span>
+        ) : (
+          <span className="text-gray-400">?</span>
+        )}
+      </div>
+      {timeRemaining?.type === 'overdue' && (
+        <span className="text-red-500">(quá hạn {timeRemaining.days} ngày)</span>
+      )}
+      {timeRemaining?.type === 'today' && (
+        <span className="text-yellow-600">(hôm nay)</span>
+      )}
+      {timeRemaining?.type === 'soon' && (
+        <span className="text-orange-500">(còn {timeRemaining.days} ngày)</span>
+      )}
+    </div>
+  )
+}
+
+// Inline goal detail panel – shows ONLY info not already visible in the main row
 function GoalInlineDetail({ goal, onEdit, onClose }) {
-  const progress = parseFloat(goal.progress) || 0
+  const hasExtra = goal.description || goal.start_date || (goal.tags && goal.tags.length > 0)
+
   return (
     <tr>
       <td colSpan={6} className="p-0">
-        <div className="bg-blue-50 border-l-4 border-blue-400 px-6 py-4">
+        <div className="bg-blue-50 border-l-4 border-blue-400 px-6 py-3">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 min-w-0 flex-1">
-              <span className="text-3xl flex-shrink-0">{goal.icon}</span>
-              <div className="min-w-0">
-                <h3 className="text-base font-bold text-gray-900">{goal.name}</h3>
-                {goal.category && (
-                  <span className="text-xs text-gray-500">{goal.category}</span>
+            <div className="min-w-0 flex-1 space-y-1.5">
+              {goal.description ? (
+                <p className="text-sm text-gray-700">{goal.description}</p>
+              ) : (
+                <p className="text-xs text-gray-400 italic">Chưa có mô tả</p>
+              )}
+              <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                {goal.start_date && (
+                  <span>🚀 Bắt đầu: {new Date(goal.start_date).toLocaleDateString('vi-VN')}</span>
                 )}
-                {goal.description && (
-                  <p className="text-sm text-gray-700 mt-1">{goal.description}</p>
+                {goal.end_date && (
+                  <span>✅ Kết thúc: {new Date(goal.end_date).toLocaleDateString('vi-VN')}</span>
                 )}
-                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs">
-                  {goal.target_date && (
-                    <span className="text-gray-600">
-                      🎯 Hạn: {new Date(goal.target_date).toLocaleDateString('vi-VN')}
-                    </span>
-                  )}
-                  <span className="text-gray-600">
-                    📋 {goal.completed_tasks || 0}/{goal.total_tasks || 0} tasks
-                  </span>
-                  <span className="text-gray-600">
-                    📊 {progress.toFixed(1)}%
-                  </span>
-                </div>
-                {/* Progress bar */}
-                <div className="mt-2 w-48 bg-gray-200 rounded-full h-1.5">
-                  <div
-                    className="bg-blue-500 h-1.5 rounded-full"
-                    style={{ width: `${Math.min(progress, 100)}%` }}
-                  />
-                </div>
+                {goal.assigned_to && goal.assigned_to.length > 0 && (
+                  <span>👥 {goal.assigned_to.length} thành viên</span>
+                )}
               </div>
+              {goal.tags && goal.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {goal.tags.map((tag) => (
+                    <span key={tag} className="px-2 py-0.5 text-xs bg-white border border-blue-200 rounded-full text-blue-700">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
               <button
@@ -319,21 +355,9 @@ export default function TableGoalRow({
           </div>
         </td>
 
-        {/* Deadline */}
-        <td className="px-3 py-3 whitespace-nowrap text-xs">
-          {timeRemaining ? (
-            <span className={`font-medium ${
-              timeRemaining.type === 'overdue' ? 'text-red-600' :
-              timeRemaining.type === 'today'   ? 'text-yellow-600' :
-              timeRemaining.type === 'soon'    ? 'text-orange-600' :
-              'text-gray-600'
-            }`}>
-              {new Date(goal.target_date).toLocaleDateString('vi-VN')}
-              {timeRemaining.type === 'overdue' && <span className="ml-1">(quá hạn)</span>}
-              {timeRemaining.type === 'today'   && <span className="ml-1">(hôm nay)</span>}
-              {timeRemaining.type === 'soon'    && <span className="ml-1">(còn {timeRemaining.days} ngày)</span>}
-            </span>
-          ) : <span className="text-gray-400">—</span>}
+        {/* Duration: start_date → target_date */}
+        <td className="px-3 py-3 whitespace-nowrap">
+          <DurationCell goal={goal} timeRemaining={timeRemaining} />
         </td>
 
         {/* Actions - ALWAYS VISIBLE */}
