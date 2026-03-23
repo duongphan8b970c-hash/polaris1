@@ -68,7 +68,6 @@ export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) 
       ...prev,
       [name]: value
     }))
-    if (name === 'description') resizeTextarea()
   }
 
   const handleAddTag = () => {
