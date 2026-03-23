@@ -23,9 +23,9 @@ export default function MaterialCard({ material, onView, onEdit, onDelete }) {
   const { title, content, category, tags, images, created_at } = material
 
   const preview = stripHtml(content).slice(0, 120)
-  const date = new Date(created_at).toLocaleDateString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
+  const date = new Date(created_at).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
     year: 'numeric',
   })
 

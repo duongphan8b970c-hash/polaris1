@@ -148,7 +148,7 @@ function GoalRow({ goal, onEdit, onDelete, onComplete, onGoalClick }) {
 
       {/* Actions */}
       <td className="px-4 py-3 whitespace-nowrap text-right">
-        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center justify-end gap-1 transition-opacity">
           {!isCompleted && progress >= 100 && (
             <button
               onClick={(e) => { e.stopPropagation(); onComplete(goal, new Date().toISOString().split('T')[0]) }}
