@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import UserSelector from './UserSelector'
 import { PRIORITY_OPTIONS } from '../../constants'
 import SmartEndDateInput from './SmartEndDateInput'
@@ -28,6 +28,15 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
     assigned_to: [],
   })
 
+  const descriptionRef = useRef(null)
+
+  const resizeTextarea = () => {
+    if (descriptionRef.current) {
+      descriptionRef.current.style.height = 'auto'
+      descriptionRef.current.style.height = descriptionRef.current.scrollHeight + 'px'
+    }
+  }
+
   useEffect(() => {
     if (goal) {
       setFormData({
@@ -43,6 +52,11 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
       })
     }
   }, [goal])
+
+  // Auto-resize description textarea whenever its value changes
+  useEffect(() => {
+    resizeTextarea()
+  }, [formData.description])
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -153,13 +167,14 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
           Mô tả
         </label>
         <textarea
+          ref={descriptionRef}
           name="description"
           value={formData.description}
           onChange={handleChange}
-          rows="3"
           className="input"
           placeholder="Mô tả chi tiết về mục tiêu..."
           disabled={loading}
+          style={{ overflow: 'hidden', resize: 'none', minHeight: '80px' }}
         />
       </div>
 

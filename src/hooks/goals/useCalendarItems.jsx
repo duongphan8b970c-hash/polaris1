@@ -51,7 +51,6 @@ export function useCalendarItems(startDate, endDate, options = {}) {
             is_calendar_visible,
             assigned_to,
             goal_id,
-            duration_days,
             goal:goals(id, name, icon, color)
           `)
           .eq('is_calendar_visible', true)
