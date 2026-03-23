@@ -66,59 +66,30 @@ function DurationCell({ goal, timeRemaining }) {
   )
 }
 
-// Inline goal detail panel – shows ONLY info not already visible in the main row
-function GoalInlineDetail({ goal, onEdit, onClose }) {
-  const hasExtra = goal.description || goal.start_date || (goal.tags && goal.tags.length > 0)
+// Compact goal info strip shown at the top of the expanded task area
+function GoalInfoStrip({ goal }) {
+  const hasInfo =
+    goal.description ||
+    goal.assigned_to?.length > 0 ||
+    (goal.tags && goal.tags.length > 0)
+
+  if (!hasInfo) return null
 
   return (
     <tr>
       <td colSpan={6} className="p-0">
-        <div className="bg-blue-50 border-l-4 border-blue-400 px-6 py-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1 space-y-1.5">
-              {goal.description ? (
-                <p className="text-sm text-gray-700">{goal.description}</p>
-              ) : (
-                <p className="text-xs text-gray-400 italic">Chưa có mô tả</p>
-              )}
-              <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                {goal.start_date && (
-                  <span>🚀 Bắt đầu: {new Date(goal.start_date).toLocaleDateString('vi-VN')}</span>
-                )}
-                {goal.end_date && (
-                  <span>✅ Kết thúc: {new Date(goal.end_date).toLocaleDateString('vi-VN')}</span>
-                )}
-                {goal.assigned_to && goal.assigned_to.length > 0 && (
-                  <span>👥 {goal.assigned_to.length} thành viên</span>
-                )}
-              </div>
-              {goal.tags && goal.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {goal.tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-xs bg-white border border-blue-200 rounded-full text-blue-700">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <button
-                onClick={onEdit}
-                className="text-xs px-2 py-1 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-              >
-                ✏️ Sửa
-              </button>
-              <button
-                onClick={onClose}
-                className="p-1 text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
+        <div className="bg-blue-50/60 border-b border-blue-100 px-12 py-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+          {goal.description && (
+            <span className="text-xs text-gray-600 italic">{goal.description}</span>
+          )}
+          {goal.assigned_to?.length > 0 && (
+            <span className="text-xs text-gray-500">👥 {goal.assigned_to.length} thành viên</span>
+          )}
+          {goal.tags?.map((tag) => (
+            <span key={tag} className="px-2 py-0.5 text-xs bg-white border border-blue-200 rounded-full text-blue-700">
+              {tag}
+            </span>
+          ))}
         </div>
       </td>
     </tr>
@@ -126,7 +97,8 @@ function GoalInlineDetail({ goal, onEdit, onClose }) {
 }
 
 // Lazy-loaded task rows for an expanded goal
-function TaskLoader({ goalId, depth, onCreateTask }) {
+function TaskLoader({ goal, depth }) {
+  const goalId = goal.id
   const {
     tasks,
     loading,
@@ -166,19 +138,23 @@ function TaskLoader({ goalId, depth, onCreateTask }) {
 
   if (loading) {
     return (
-      <tr>
-        <td colSpan={6} className="py-2">
-          <div className="flex items-center gap-1.5 text-xs text-gray-400 pl-12">
-            <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-            Đang tải tasks...
-          </div>
-        </td>
-      </tr>
+      <>
+        <GoalInfoStrip goal={goal} />
+        <tr>
+          <td colSpan={6} className="py-2">
+            <div className="flex items-center gap-1.5 text-xs text-gray-400 pl-12">
+              <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              Đang tải tasks...
+            </div>
+          </td>
+        </tr>
+      </>
     )
   }
 
   return (
     <>
+      <GoalInfoStrip goal={goal} />
       {tasks.length === 0 ? (
         <tr>
           <td colSpan={6} className="py-1">
@@ -248,7 +224,6 @@ export default function TableGoalRow({
   onComplete,
 }) {
   const [expanded, setExpanded] = useState(false)
-  const [showDetail, setShowDetail] = useState(false)
 
   const isCompleted = goal.status === 'completed'
   const progress = parseFloat(goal.progress) || 0
@@ -267,7 +242,7 @@ export default function TableGoalRow({
 
   const timeRemaining = getTimeRemaining()
 
-  const handleRowClick = () => setShowDetail((v) => !v)
+  const handleRowClick = () => setExpanded((v) => !v)
   const handleExpandClick = (e) => { e.stopPropagation(); setExpanded((v) => !v) }
 
   return (
@@ -402,18 +377,9 @@ export default function TableGoalRow({
         </td>
       </tr>
 
-      {/* Inline Goal Details */}
-      {showDetail && (
-        <GoalInlineDetail
-          goal={goal}
-          onEdit={() => { setShowDetail(false); onEdit(goal) }}
-          onClose={() => setShowDetail(false)}
-        />
-      )}
-
-      {/* Expanded Tasks (lazy loaded) */}
+      {/* Expanded Tasks + goal info strip (lazy loaded) */}
       {expanded && (
-        <TaskLoader goalId={goal.id} depth={0} />
+        <TaskLoader goal={goal} depth={0} />
       )}
     </>
   )
