@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useCalendarItemsForMonth } from '../../hooks/goals/useCalendarItems'
 import { useAnalytics } from '../../hooks/analytics/useAnalytics'
 import { getItemsForDate } from '../../utils/calendar'
 import CalendarMonthNav from '../../components/calendar/CalendarMonthNav'
 import CalendarStatsSection from '../../components/calendar/CalendarStatsSection'
 import CalendarGrid from '../../components/calendar/CalendarGrid'
+import CalendarFilter from '../../components/calendar/CalendarFilter'
 import TodayTasksPanel from '../../components/calendar/TodayTasksPanel'
 import StatsCard from '../../components/analytics/StatsCard'
 import Loading from '../../components/common/Loading'
@@ -18,6 +19,7 @@ export default function GoalsCalendarDashboard() {
   const [viewMode, setViewMode] = useState('team')
   const [activeTab, setActiveTab] = useState('calendar') 
   const [dateRange, setDateRange] = useState('month') 
+  const [calendarFilter, setCalendarFilter] = useState({ type: 'all', goalId: 'all' })
 
   const { items, loading, error, refetch } = useCalendarItemsForMonth(
     currentYear,
@@ -26,6 +28,29 @@ export default function GoalsCalendarDashboard() {
   )
 
   const { analytics, loading: analyticsLoading } = useAnalytics(dateRange)
+
+  // Derive unique goals from loaded calendar items (no extra API call needed)
+  const availableGoals = useMemo(() => {
+    const goalsMap = new Map()
+    items.forEach(item => {
+      if (item.goal && item.goal.id && !goalsMap.has(item.goal.id)) {
+        goalsMap.set(item.goal.id, item.goal)
+      }
+    })
+    return Array.from(goalsMap.values())
+  }, [items])
+
+  // Apply filters client-side
+  const filteredItems = useMemo(() => {
+    let result = items
+    if (calendarFilter.type !== 'all') {
+      result = result.filter(item => item.type === calendarFilter.type)
+    }
+    if (calendarFilter.goalId !== 'all') {
+      result = result.filter(item => item.goal?.id === calendarFilter.goalId)
+    }
+    return result
+  }, [items, calendarFilter])
 
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
@@ -58,11 +83,11 @@ export default function GoalsCalendarDashboard() {
     console.log('📅 Clicked date:', {
     date: date,
     formatted: formatDateString(date),
-    items: getItemsForDate(items, date)
+    items: getItemsForDate(filteredItems, date)
   })
   }
 
-  const todayItems = getItemsForDate(items, selectedDate)
+  const todayItems = getItemsForDate(filteredItems, selectedDate)
 
   if (loading) {
     return <Loading message="Đang tải calendar..." />
@@ -180,11 +205,18 @@ export default function GoalsCalendarDashboard() {
             onToday={handleToday}
           />
 
+          {/* Calendar Filter */}
+          <CalendarFilter
+            filter={calendarFilter}
+            onChange={setCalendarFilter}
+            goals={availableGoals}
+          />
+
           {/* Calendar Grid */}
           <CalendarGrid
             year={currentYear}
             month={currentMonth}
-            items={items}
+            items={filteredItems}
             selectedDate={selectedDate}
             onDateClick={handleDateClick}
           />
