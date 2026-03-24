@@ -53,7 +53,7 @@ function ChevronIcon({ expanded }) {
 }
 
 // Inline task detail panel – compact strip (like GoalInfoStrip)
-function TaskInlineDetail({ task, onEdit, onClose, indentPx }) {
+function TaskInlineDetail({ task, indentPx }) {
   const hasInfo = task.description || (task.tags && task.tags.length > 0)
 
   return (
@@ -74,22 +74,6 @@ function TaskInlineDetail({ task, onEdit, onClose, indentPx }) {
           {!hasInfo && (
             <span className="text-xs text-gray-400 italic">Không có mô tả</span>
           )}
-          <div className="ml-auto flex items-center gap-1 flex-shrink-0">
-            <button
-              onClick={(e) => { e.stopPropagation(); onEdit() }}
-              className="text-xs px-2 py-0.5 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-            >
-              ✏️ Sửa
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onClose() }}
-              className="p-1 text-gray-400 hover:text-gray-600"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
         </div>
       </td>
     </tr>
@@ -238,7 +222,7 @@ export default function TableTaskRow({
   const status = STATUS_CONFIG[task.status] || STATUS_CONFIG.todo
   const priority = PRIORITY_CONFIG[task.priority]
 
-  const handleRowClick = () => setShowDetail(true)
+  const handleRowClick = () => setShowDetail((v) => !v)
 
   const handleExpandClick = (e) => {
     e.stopPropagation()
@@ -367,8 +351,6 @@ export default function TableTaskRow({
       {showDetail && (
         <TaskInlineDetail
           task={task}
-          onEdit={() => { setShowDetail(false); onEdit(task) }}
-          onClose={() => setShowDetail(false)}
           indentPx={detailIndentPx}
         />
       )}

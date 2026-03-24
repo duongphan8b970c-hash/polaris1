@@ -54,7 +54,7 @@ function SubtaskEditModal({ subtask, onSave, onClose }) {
   )
 }
 
-function SubtaskInlineDetail({ subtask, onEdit, onClose, indentPx }) {
+function SubtaskInlineDetail({ subtask, indentPx }) {
   const hasInfo = subtask.description
   return (
     <tr>
@@ -68,22 +68,6 @@ function SubtaskInlineDetail({ subtask, onEdit, onClose, indentPx }) {
           ) : (
             <span className="text-xs text-gray-400 italic">Không có mô tả</span>
           )}
-          <div className="ml-auto flex items-center gap-1 flex-shrink-0">
-            <button
-              onClick={(e) => { e.stopPropagation(); onEdit() }}
-              className="text-xs px-2 py-0.5 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-            >
-              ✏️ Sửa
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onClose() }}
-              className="p-1 text-gray-400 hover:text-gray-600"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
         </div>
       </td>
     </tr>
@@ -145,7 +129,7 @@ export default function TableSubTaskRow({
       <tr
         className="hover:bg-purple-50 border-b border-gray-100 transition-colors cursor-pointer"
         aria-label={`Subtask: ${subtask.title}`}
-        onClick={() => setShowDetail(true)}
+        onClick={() => setShowDetail((v) => !v)}
       >
         {/* Name */}
         <td className="py-2 pr-3" style={{ paddingLeft: `${indentPx}px` }}>
@@ -286,8 +270,6 @@ export default function TableSubTaskRow({
       {showDetail && (
         <SubtaskInlineDetail
           subtask={subtask}
-          onEdit={() => { setShowDetail(false); setShowEdit(true) }}
-          onClose={() => setShowDetail(false)}
           indentPx={indentPx + 20}
         />
       )}
