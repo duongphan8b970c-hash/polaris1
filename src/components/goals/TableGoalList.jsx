@@ -2,13 +2,23 @@ import TableGoalRow from '../common/TableGoalRow'
 
 export default function TableGoalList({
   goals,
+  statusFilter = 'all',
   onEdit,
   onDelete,
   onComplete,
 }) {
   const safeGoals = Array.isArray(goals) ? goals : []
 
-  if (safeGoals.length === 0) {
+  let filteredGoals
+  if (statusFilter === 'completed') {
+    filteredGoals = safeGoals.filter((g) => g.status === 'completed')
+  } else if (statusFilter === 'active') {
+    filteredGoals = safeGoals.filter((g) => g.status !== 'completed')
+  } else {
+    filteredGoals = safeGoals
+  }
+
+  if (filteredGoals.length === 0) {
     return (
       <div className="card text-center py-16">
         <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -24,8 +34,8 @@ export default function TableGoalList({
     )
   }
 
-  const activeGoals = safeGoals.filter((g) => g.status !== 'completed')
-  const completedGoals = safeGoals.filter((g) => g.status === 'completed')
+  const activeGoals = filteredGoals.filter((g) => g.status !== 'completed')
+  const completedGoals = filteredGoals.filter((g) => g.status === 'completed')
 
   return (
     <div className="card overflow-hidden">

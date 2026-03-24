@@ -139,16 +139,22 @@ function SubtaskLoader({ taskId, depth }) {
           </td>
         </tr>
       ) : (
-        subtasks.map((st) => (
-          <TableSubTaskRow
-            key={st.id}
-            subtask={st}
-            depth={depth + 1}
-            onToggle={(id, current) => toggleSubtask(id, current)}
-            onUpdate={updateSubtask}
-            onDelete={(id) => deleteSubtask(id)}
-          />
-        ))
+        [...subtasks]
+          .sort((a, b) => {
+            if (a.is_completed && !b.is_completed) return 1
+            if (!a.is_completed && b.is_completed) return -1
+            return 0
+          })
+          .map((st) => (
+            <TableSubTaskRow
+              key={st.id}
+              subtask={st}
+              depth={depth + 1}
+              onToggle={(id, current) => toggleSubtask(id, current)}
+              onUpdate={updateSubtask}
+              onDelete={(id) => deleteSubtask(id)}
+            />
+          ))
       )}
 
       {/* Add subtask row */}

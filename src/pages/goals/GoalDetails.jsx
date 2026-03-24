@@ -464,17 +464,23 @@ export default function GoalDetails() {
                       </tr>
                     </thead>
                     <tbody>
-                      {tasks.map((task) => (
-                        <TableTaskRow
-                          key={task.id}
-                          task={task}
-                          depth={0}
-                          goalId={goalId}
-                          onEdit={handleEditTask}
-                          onDelete={(task) => deleteTask(task.id)}
-                          onToggle={handleToggleTask}
-                        />
-                      ))}
+                      {[...tasks]
+                        .sort((a, b) => {
+                          if (a.status === 'completed' && b.status !== 'completed') return 1
+                          if (a.status !== 'completed' && b.status === 'completed') return -1
+                          return 0
+                        })
+                        .map((task) => (
+                          <TableTaskRow
+                            key={task.id}
+                            task={task}
+                            depth={0}
+                            goalId={goalId}
+                            onEdit={handleEditTask}
+                            onDelete={(task) => deleteTask(task.id)}
+                            onToggle={handleToggleTask}
+                          />
+                        ))}
                     </tbody>
                   </table>
                 </div>
