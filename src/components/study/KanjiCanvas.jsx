@@ -29,89 +29,6 @@ function drawUserPath(ctx, points, color, lineWidth) {
   ctx.restore()
 }
 
-function buildPath2D(pathStr, scale) {
-  const path = new Path2D()
-  const commands = pathStr.match(/[MLCSQTAZmlcsqtaz][^MLCSQTAZmlcsqtaz]*/g)
-  if (!commands) return path
-
-  let cx = 0, cy = 0
-
-  commands.forEach(cmd => {
-    const type = cmd[0]
-    const isRel = type === type.toLowerCase() && type.toLowerCase() !== 'z'
-    const args = cmd.slice(1).trim().split(/[\s,]+/).filter(Boolean).map(Number)
-
-    switch (type.toUpperCase()) {
-      case 'M':
-        for (let i = 0; i < args.length; i += 2) {
-          cx = isRel ? cx + args[i] : args[i]
-          cy = isRel ? cy + args[i + 1] : args[i + 1]
-          if (i === 0) path.moveTo(cx * scale, cy * scale)
-          else path.lineTo(cx * scale, cy * scale)
-        }
-        break
-      case 'L':
-        for (let i = 0; i < args.length; i += 2) {
-          cx = isRel ? cx + args[i] : args[i]
-          cy = isRel ? cy + args[i + 1] : args[i + 1]
-          path.lineTo(cx * scale, cy * scale)
-        }
-        break
-      case 'C':
-        for (let i = 0; i < args.length; i += 6) {
-          const cp1x = isRel ? cx + args[i] : args[i]
-          const cp1y = isRel ? cy + args[i + 1] : args[i + 1]
-          const cp2x = isRel ? cx + args[i + 2] : args[i + 2]
-          const cp2y = isRel ? cy + args[i + 3] : args[i + 3]
-          const ex = isRel ? cx + args[i + 4] : args[i + 4]
-          const ey = isRel ? cy + args[i + 5] : args[i + 5]
-          path.bezierCurveTo(cp1x * scale, cp1y * scale, cp2x * scale, cp2y * scale, ex * scale, ey * scale)
-          cx = ex; cy = ey
-        }
-        break
-      case 'S':
-        for (let i = 0; i < args.length; i += 4) {
-          const cp2x = isRel ? cx + args[i] : args[i]
-          const cp2y = isRel ? cy + args[i + 1] : args[i + 1]
-          const ex = isRel ? cx + args[i + 2] : args[i + 2]
-          const ey = isRel ? cy + args[i + 3] : args[i + 3]
-          path.bezierCurveTo(cx * scale, cy * scale, cp2x * scale, cp2y * scale, ex * scale, ey * scale)
-          cx = ex; cy = ey
-        }
-        break
-      case 'Q':
-        for (let i = 0; i < args.length; i += 4) {
-          const cpx = isRel ? cx + args[i] : args[i]
-          const cpy = isRel ? cy + args[i + 1] : args[i + 1]
-          const ex = isRel ? cx + args[i + 2] : args[i + 2]
-          const ey = isRel ? cy + args[i + 3] : args[i + 3]
-          path.quadraticCurveTo(cpx * scale, cpy * scale, ex * scale, ey * scale)
-          cx = ex; cy = ey
-        }
-        break
-      case 'Z':
-        path.closePath()
-        break
-      default:
-        break
-    }
-  })
-  return path
-}
-
-function drawSVGPath(ctx, pathStr, canvasSize, color, lineWidth) {
-  if (!pathStr) return
-  ctx.save()
-  ctx.strokeStyle = color
-  ctx.lineWidth = lineWidth
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-  const scale = canvasSize / 109
-  const path2D = buildPath2D(pathStr, scale)
-  ctx.stroke(path2D)
-  ctx.restore()
-}
-
 // ─── Component ────────────────────────────────────────────────────────────
 
 /**
@@ -139,13 +56,16 @@ const KanjiCanvas = forwardRef(function KanjiCanvas(
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    // Draw guide strokes
+    // Draw guide strokes using pre-computed points (avoids SVG path re-parsing bugs)
     if (guided && referenceStrokes && referenceStrokes.length > 0) {
       referenceStrokes.forEach((stroke, idx) => {
-        drawSVGPath(ctx, stroke.path, size, '#9CA3AF', 5)
+        if (stroke.points && stroke.points.length >= 2) {
+          drawUserPath(ctx, stroke.points, '#9CA3AF', 5)
+        }
 
         // Draw stroke order number at start point
-        if (stroke.startPoint) {
+        const labelPt = stroke.startPoint || (stroke.points && stroke.points[0])
+        if (labelPt) {
           const numSize = Math.max(11, size * 0.038)
           ctx.save()
           // White halo for readability
@@ -154,10 +74,10 @@ const KanjiCanvas = forwardRef(function KanjiCanvas(
           ctx.lineWidth = 3
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
-          ctx.strokeText(String(idx + 1), stroke.startPoint.x, stroke.startPoint.y - size * 0.03)
+          ctx.strokeText(String(idx + 1), labelPt.x, labelPt.y - size * 0.03)
           // Colored number
           ctx.fillStyle = '#374151'
-          ctx.fillText(String(idx + 1), stroke.startPoint.x, stroke.startPoint.y - size * 0.03)
+          ctx.fillText(String(idx + 1), labelPt.x, labelPt.y - size * 0.03)
           ctx.restore()
         }
       })
@@ -264,10 +184,12 @@ const KanjiCanvas = forwardRef(function KanjiCanvas(
       const ctx = canvas.getContext('2d')
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      // Draw guide strokes first (background layer)
+      // Draw guide strokes first (background layer) using pre-computed points
       if (guided && referenceStrokes && referenceStrokes.length > 0) {
         referenceStrokes.forEach(stroke => {
-          drawSVGPath(ctx, stroke.path, size, '#9CA3AF', 5)
+          if (stroke.points && stroke.points.length >= 2) {
+            drawUserPath(ctx, stroke.points, '#9CA3AF', 5)
+          }
         })
       }
 

@@ -17,6 +17,10 @@ export function parseSVGPath(pathStr) {
 
   let currentX = 0
   let currentY = 0
+  // Track the last bezier control point for S/T reflection
+  let lastCp2x = 0
+  let lastCp2y = 0
+  let lastCmdType = ''
 
   for (const cmd of commands) {
     const type = cmd[0]
@@ -77,13 +81,15 @@ export function parseSVGPath(pathStr) {
           // Sample 8 points along the bezier curve
           const samples = sampleCubicBezier(currentX, currentY, cp1x, cp1y, cp2x, cp2y, ex, ey, 8)
           points.push(...samples)
+          lastCp2x = cp2x
+          lastCp2y = cp2y
           currentX = ex
           currentY = ey
         }
         break
       }
       case 'S': {
-        // Smooth cubic bezier
+        // Smooth cubic bezier — first control point is reflection of previous C/S cp2
         for (let i = 0; i < args.length; i += 4) {
           let cp2x, cp2y, ex, ey
           if (isRelative) {
@@ -97,9 +103,17 @@ export function parseSVGPath(pathStr) {
             ex = args[i + 2]
             ey = args[i + 3]
           }
-          // Use current point as first control point (simplified)
-          const samples = sampleCubicBezier(currentX, currentY, currentX, currentY, cp2x, cp2y, ex, ey, 8)
+          // Reflect the last cp2 across the current point when previous cmd was C or S
+          const cp1x = (lastCmdType === 'C' || lastCmdType === 'S')
+            ? 2 * currentX - lastCp2x
+            : currentX
+          const cp1y = (lastCmdType === 'C' || lastCmdType === 'S')
+            ? 2 * currentY - lastCp2y
+            : currentY
+          const samples = sampleCubicBezier(currentX, currentY, cp1x, cp1y, cp2x, cp2y, ex, ey, 8)
           points.push(...samples)
+          lastCp2x = cp2x
+          lastCp2y = cp2y
           currentX = ex
           currentY = ey
         }
@@ -134,6 +148,7 @@ export function parseSVGPath(pathStr) {
       default:
         break
     }
+    lastCmdType = type.toUpperCase()
   }
 
   return points
