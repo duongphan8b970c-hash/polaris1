@@ -36,6 +36,11 @@ function SubtaskInlineDetail({ subtask, onClose, indentPx }) {
                 >
                   {subtask.is_completed ? '✅ Hoàn thành' : '📝 Chưa xong'}
                 </span>
+                {subtask.is_calendar_visible && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                    📅 Trên Calendar
+                  </span>
+                )}
               </div>
             </div>
             <button
@@ -56,13 +61,20 @@ function SubtaskInlineDetail({ subtask, onClose, indentPx }) {
 function SubtaskEditModal({ subtask, onSave, onClose }) {
   const [title, setTitle] = useState(subtask?.title || '')
   const [description, setDescription] = useState(subtask?.description || '')
+  const [scheduledDate, setScheduledDate] = useState(subtask?.scheduled_date || '')
+  const [isCalendarVisible, setIsCalendarVisible] = useState(subtask?.is_calendar_visible || false)
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!title.trim()) return
     setSubmitting(true)
-    await onSave({ title: title.trim(), description: description.trim() })
+    await onSave({
+      title: title.trim(),
+      description: description.trim(),
+      scheduled_date: scheduledDate || null,
+      is_calendar_visible: isCalendarVisible,
+    })
     setSubmitting(false)
   }
 
@@ -90,6 +102,29 @@ function SubtaskEditModal({ subtask, onSave, onClose }) {
             rows={3}
             placeholder="Mô tả thêm (tuỳ chọn)..."
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Ngày dự kiến hoàn thành</label>
+          <input
+            type="date"
+            value={scheduledDate}
+            onChange={(e) => setScheduledDate(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="border-t pt-3">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-700">📅 Hiển thị trên Calendar</label>
+            <input
+              type="checkbox"
+              checked={isCalendarVisible}
+              onChange={(e) => setIsCalendarVisible(e.target.checked)}
+              className="w-4 h-4 text-blue-600 rounded"
+            />
+          </div>
+          {isCalendarVisible && !scheduledDate && (
+            <p className="text-xs text-amber-600 mt-1">Hãy chọn ngày dự kiến để hiển thị trên calendar.</p>
+          )}
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" onClick={onClose} className="btn btn-outline btn-sm">
@@ -126,6 +161,11 @@ export default function TableSubTaskRow({
       is_completed: subtask.is_completed,
     })
     if (result?.success) setShowEdit(false)
+  }
+
+  const handleCalendarToggle = async (e) => {
+    e.stopPropagation()
+    await onUpdate(subtask.id, { ...subtask, is_calendar_visible: !subtask.is_calendar_visible })
   }
 
   return (
@@ -193,9 +233,14 @@ export default function TableSubTaskRow({
 
         {/* Deadline */}
         <td className="px-3 py-2 text-xs text-gray-600">
-          {subtask.scheduled_date
-            ? new Date(subtask.scheduled_date).toLocaleDateString('vi-VN')
-            : <span className="text-gray-400">—</span>}
+          <div className="flex items-center gap-1">
+            {subtask.scheduled_date
+              ? <span>{new Date(subtask.scheduled_date).toLocaleDateString('vi-VN')}</span>
+              : <span className="text-gray-400">—</span>}
+            {subtask.is_calendar_visible && (
+              <span title="Hiển thị trên Calendar" className="text-blue-500">📅</span>
+            )}
+          </div>
         </td>
 
         {/* Actions - ALWAYS VISIBLE */}
