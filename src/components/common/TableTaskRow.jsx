@@ -53,7 +53,7 @@ function ChevronIcon({ expanded }) {
 }
 
 // Inline task detail panel – compact strip (like GoalInfoStrip)
-function TaskInlineDetail({ task, onEdit, onClose, indentPx }) {
+function TaskInlineDetail({ task, indentPx }) {
   const hasInfo = task.description || (task.tags && task.tags.length > 0)
 
   return (
@@ -74,22 +74,6 @@ function TaskInlineDetail({ task, onEdit, onClose, indentPx }) {
           {!hasInfo && (
             <span className="text-xs text-gray-400 italic">Không có mô tả</span>
           )}
-          <div className="ml-auto flex items-center gap-1 flex-shrink-0">
-            <button
-              onClick={onEdit}
-              className="text-xs px-2 py-0.5 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-            >
-              ✏️ Sửa
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1 text-gray-400 hover:text-gray-600"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
         </div>
       </td>
     </tr>
@@ -228,8 +212,7 @@ export default function TableTaskRow({
   onDelete,
   onToggle,
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const [showDetail, setShowDetail] = useState(false)
+  const [open, setOpen] = useState(false)
 
   const indentPx = depth * 28 + 8
   const detailIndentPx = depth * 28 + 28
@@ -238,11 +221,11 @@ export default function TableTaskRow({
   const status = STATUS_CONFIG[task.status] || STATUS_CONFIG.todo
   const priority = PRIORITY_CONFIG[task.priority]
 
-  const handleRowClick = () => setShowDetail((v) => !v)
+  const handleRowClick = () => setOpen((v) => !v)
 
   const handleExpandClick = (e) => {
     e.stopPropagation()
-    setExpanded((v) => !v)
+    setOpen((v) => !v)
   }
 
   const handleToggleClick = (e) => {
@@ -255,16 +238,16 @@ export default function TableTaskRow({
       <tr
         className={`border-b border-gray-100 transition-colors cursor-pointer ${
           isCompleted ? 'bg-gray-50/60 hover:bg-gray-100' : 'hover:bg-blue-50/60'
-        } ${expanded ? 'bg-blue-50/30' : ''}`}
+        } ${open ? 'bg-blue-50/30' : ''}`}
         onClick={handleRowClick}
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleRowClick()
-          if (e.key === 'ArrowRight' && !expanded) { e.stopPropagation(); setExpanded(true) }
-          if (e.key === 'ArrowLeft' && expanded)  { e.stopPropagation(); setExpanded(false) }
+          if (e.key === 'ArrowRight' && !open) { e.stopPropagation(); setOpen(true) }
+          if (e.key === 'ArrowLeft' && open)  { e.stopPropagation(); setOpen(false) }
         }}
         aria-label={`Task: ${task.title}`}
-        aria-expanded={expanded}
+        aria-expanded={open}
       >
         {/* Name */}
         <td className="py-2.5 pr-3" style={{ paddingLeft: `${indentPx}px` }}>
@@ -278,7 +261,7 @@ export default function TableTaskRow({
               title={task.total_subtasks > 0 ? 'Mở/đóng subtasks' : 'Không có subtask'}
               tabIndex={-1}
             >
-              <ChevronIcon expanded={expanded} />
+              <ChevronIcon expanded={open} />
             </button>
             {/* Status toggle checkbox */}
             <button
@@ -364,17 +347,15 @@ export default function TableTaskRow({
       </tr>
 
       {/* Inline Task Detail */}
-      {showDetail && (
+      {open && (
         <TaskInlineDetail
           task={task}
-          onEdit={() => { setShowDetail(false); onEdit(task) }}
-          onClose={() => setShowDetail(false)}
           indentPx={detailIndentPx}
         />
       )}
 
       {/* Expanded Subtasks (lazy loaded) */}
-      {expanded && (
+      {open && (
         <SubtaskLoader taskId={task.id} depth={depth} />
       )}
     </>
