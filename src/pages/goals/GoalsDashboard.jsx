@@ -13,6 +13,7 @@ export default function GoalsDashboard() {
   const [showForm, setShowForm] = useState(false)
   const [editingGoal, setEditingGoal] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [statusFilter, setStatusFilter] = useState('all')
 
   // Calculate summary stats
   const stats = {
@@ -153,8 +154,48 @@ export default function GoalsDashboard() {
       </div>
 
       {/* Toggle Table Goal List */}
+      {/* Status Filter */}
+      <div className="flex items-center gap-3 mb-4">
+        <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+          Trạng thái:
+        </label>
+        <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5 shadow-sm">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
+              statusFilter === 'all'
+                ? 'bg-gray-900 text-white shadow-sm'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            Tất cả ({stats.total})
+          </button>
+          <button
+            onClick={() => setStatusFilter('active')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
+              statusFilter === 'active'
+                ? 'bg-gray-900 text-white shadow-sm'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            ⚡ Đang thực hiện ({stats.active})
+          </button>
+          <button
+            onClick={() => setStatusFilter('completed')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
+              statusFilter === 'completed'
+                ? 'bg-gray-900 text-white shadow-sm'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            ✅ Hoàn thành ({stats.completed})
+          </button>
+        </div>
+      </div>
+
       <TableGoalList
         goals={goals}
+        statusFilter={statusFilter}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onComplete={handleComplete}

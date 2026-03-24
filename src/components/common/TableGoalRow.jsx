@@ -164,19 +164,25 @@ function TaskLoader({ goal, depth }) {
           </td>
         </tr>
       ) : (
-        tasks.map((task) => (
-          <TableTaskRow
-            key={task.id}
-            task={task}
-            depth={depth + 1}
-            goalId={goalId}
-            onEdit={handleEdit}
-            onDelete={(t) => {
-              if (confirm(`Xóa task "${t.title}"?`)) deleteTask(t.id)
-            }}
-            onToggle={(t) => toggleTaskStatus(t.id, t.status)}
-          />
-        ))
+        [...tasks]
+          .sort((a, b) => {
+            if (a.status === 'completed' && b.status !== 'completed') return 1
+            if (a.status !== 'completed' && b.status === 'completed') return -1
+            return 0
+          })
+          .map((task) => (
+            <TableTaskRow
+              key={task.id}
+              task={task}
+              depth={depth + 1}
+              goalId={goalId}
+              onEdit={handleEdit}
+              onDelete={(t) => {
+                if (confirm(`Xóa task "${t.title}"?`)) deleteTask(t.id)
+              }}
+              onToggle={(t) => toggleTaskStatus(t.id, t.status)}
+            />
+          ))
       )}
 
       {/* Add task button row */}
@@ -231,6 +237,7 @@ export default function TableGoalRow({
 
   const getTimeRemaining = () => {
     if (!goal.target_date) return null
+    if (isCompleted) return null
     const diffDays = Math.ceil(
       (new Date(goal.target_date) - new Date()) / (1000 * 60 * 60 * 24)
     )

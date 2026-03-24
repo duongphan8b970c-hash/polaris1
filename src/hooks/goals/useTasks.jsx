@@ -199,7 +199,20 @@ export function useTasks(goalId = null, filters = {}) {
 
   const toggleTaskStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 'completed' ? 'todo' : 'completed'
-    return updateTask(id, { status: newStatus })
+    try {
+      const { error: updateError } = await supabase
+        .from('tasks')
+        .update({ status: newStatus })
+        .eq('id', id)
+
+      if (updateError) throw updateError
+
+      await fetchTasks()
+      return { success: true }
+    } catch (err) {
+      console.error('Error toggling task status:', err)
+      return { success: false, error: err.message }
+    }
   }
 
   useEffect(() => {

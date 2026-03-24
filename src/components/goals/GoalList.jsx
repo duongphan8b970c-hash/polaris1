@@ -13,6 +13,7 @@ function GoalRow({ goal, onEdit, onDelete, onComplete, onGoalClick }) {
 
   const getTimeRemaining = () => {
     if (!goal.target_date) return null
+    if (isCompleted) return null
     const today = new Date()
     const target = new Date(goal.target_date)
     const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24))
