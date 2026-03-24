@@ -25,12 +25,12 @@ export function parseSVGPath(pathStr) {
   for (const cmd of commands) {
     const type = cmd[0]
     const isRelative = type === type.toLowerCase() && type !== 'z' && type !== 'Z'
-    const args = cmd
-      .slice(1)
-      .trim()
-      .split(/[\s,]+/)
-      .filter(Boolean)
-      .map(Number)
+    // SVG allows numbers to be separated by a sign character alone (e.g. "6.56-1.04").
+    // A plain whitespace/comma split would produce NaN for those tokens, so we use
+    // a proper SVG number tokenizer that recognises each number individually.
+    const args = (
+      cmd.slice(1).trim().match(/-?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?/g) || []
+    ).map(Number)
 
     switch (type.toUpperCase()) {
       case 'M': {
