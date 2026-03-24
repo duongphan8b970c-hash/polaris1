@@ -76,13 +76,13 @@ function TaskInlineDetail({ task, onEdit, onClose, indentPx }) {
           )}
           <div className="ml-auto flex items-center gap-1 flex-shrink-0">
             <button
-              onClick={onEdit}
+              onClick={(e) => { e.stopPropagation(); onEdit() }}
               className="text-xs px-2 py-0.5 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
             >
               ✏️ Sửa
             </button>
             <button
-              onClick={onClose}
+              onClick={(e) => { e.stopPropagation(); onClose() }}
               className="p-1 text-gray-400 hover:text-gray-600"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -238,7 +238,7 @@ export default function TableTaskRow({
   const status = STATUS_CONFIG[task.status] || STATUS_CONFIG.todo
   const priority = PRIORITY_CONFIG[task.priority]
 
-  const handleRowClick = () => setShowDetail((v) => !v)
+  const handleRowClick = () => setShowDetail(true)
 
   const handleExpandClick = (e) => {
     e.stopPropagation()
