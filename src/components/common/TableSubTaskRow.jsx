@@ -1,57 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Modal from './Modal'
-
-const SUBTASK_STATUS_CONFIG = {
-  completed: { label: 'Xong', bg: 'bg-green-100', text: 'text-green-700', icon: '✅' },
-  todo: { label: 'Chưa', bg: 'bg-gray-100', text: 'text-gray-600', icon: '📝' },
-}
-
-function SubtaskInlineDetail({ subtask, onClose, indentPx }) {
-  return (
-    <tr>
-      <td colSpan={6} className="p-0">
-        <div
-          className="bg-purple-50 border-l-4 border-purple-300 py-3 pr-4"
-          style={{ paddingLeft: `${indentPx}px` }}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="font-semibold text-gray-900 text-sm">{subtask.title}</p>
-              {subtask.description && (
-                <p className="text-xs text-gray-600 mt-1">{subtask.description}</p>
-              )}
-              {subtask.scheduled_date && (
-                <p className="text-xs text-gray-500 mt-1">
-                  📅 {new Date(subtask.scheduled_date).toLocaleDateString('vi-VN')}
-                </p>
-              )}
-              <div className="flex items-center gap-2 mt-2">
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    subtask.is_completed
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  {subtask.is_completed ? '✅ Hoàn thành' : '📝 Chưa xong'}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 flex-shrink-0 mt-0.5"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </td>
-    </tr>
-  )
-}
 
 function SubtaskEditModal({ subtask, onSave, onClose }) {
   const [title, setTitle] = useState(subtask?.title || '')
@@ -67,7 +16,7 @@ function SubtaskEditModal({ subtask, onSave, onClose }) {
   }
 
   return createPortal(
-    <Modal isOpen title={subtask ? 'Sửa Subtask' : 'Thêm Subtask'} onClose={onClose}>
+    <Modal isOpen title="Sửa Subtask" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Tiêu đề *</label>
@@ -112,29 +61,52 @@ export default function TableSubTaskRow({
   onUpdate,
   onDelete,
 }) {
-  const [showDetail, setShowDetail] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
+  const dateInputRef = useRef(null)
 
   const indentPx = depth * 28 + 8
-  const detailIndentPx = depth * 28 + 28
 
-  const handleRowClick = () => setShowDetail((v) => !v)
+  // Shared helper: merge partial changes into a full update call
+  const updateField = useCallback((changes) => {
+    return onUpdate(subtask.id, {
+      title: subtask.title,
+      description: subtask.description,
+      is_completed: subtask.is_completed,
+      scheduled_date: subtask.scheduled_date,
+      is_calendar_visible: subtask.is_calendar_visible,
+      ...changes,
+    })
+  }, [subtask, onUpdate])
 
   const handleSave = async (data) => {
-    const result = await onUpdate(subtask.id, {
-      ...data,
-      is_completed: subtask.is_completed,
-    })
+    const result = await updateField(data)
     if (result?.success) setShowEdit(false)
+  }
+
+  const handleDateChange = useCallback(async (e) => {
+    await updateField({ scheduled_date: e.target.value || null })
+  }, [updateField])
+
+  const handleCalendarToggle = useCallback(async (e) => {
+    e.stopPropagation()
+    await updateField({ is_calendar_visible: !subtask.is_calendar_visible })
+  }, [updateField, subtask.is_calendar_visible])
+
+  const handleDateClick = (e) => {
+    e.stopPropagation()
+    if (dateInputRef.current) {
+      if (typeof dateInputRef.current.showPicker === 'function') {
+        try { dateInputRef.current.showPicker() } catch { dateInputRef.current.click() }
+      } else {
+        dateInputRef.current.click()
+      }
+    }
   }
 
   return (
     <>
       <tr
-        className="hover:bg-purple-50 border-b border-gray-100 transition-colors cursor-pointer"
-        onClick={handleRowClick}
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && handleRowClick()}
+        className="hover:bg-purple-50 border-b border-gray-100 transition-colors"
         aria-label={`Subtask: ${subtask.title}`}
       >
         {/* Name */}
@@ -191,14 +163,48 @@ export default function TableSubTaskRow({
         {/* Count - N/A */}
         <td className="px-3 py-2 text-gray-400 text-xs">—</td>
 
-        {/* Deadline */}
+        {/* Deadline — inline date picker + calendar toggle */}
         <td className="px-3 py-2 text-xs text-gray-600">
-          {subtask.scheduled_date
-            ? new Date(subtask.scheduled_date).toLocaleDateString('vi-VN')
-            : <span className="text-gray-400">—</span>}
+          <div className="flex items-center gap-1">
+            {/* Inline date picker trigger */}
+            <div className="relative">
+              <button
+                onClick={handleDateClick}
+                className="hover:text-blue-600 hover:underline transition-colors"
+                title="Chọn ngày"
+              >
+                {subtask.scheduled_date
+                  ? new Date(subtask.scheduled_date).toLocaleDateString('vi-VN')
+                  : <span className="text-gray-400">—</span>}
+              </button>
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={subtask.scheduled_date || ''}
+                onChange={handleDateChange}
+                className="absolute opacity-0 w-0 h-0 pointer-events-none"
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+            </div>
+            {/* Calendar visibility toggle */}
+            <button
+              onClick={handleCalendarToggle}
+              title={subtask.is_calendar_visible ? 'Bỏ khỏi Calendar' : 'Thêm vào Calendar'}
+              className={`p-0.5 rounded transition-colors ${
+                subtask.is_calendar_visible
+                  ? 'text-blue-500 hover:text-blue-700'
+                  : 'text-gray-300 hover:text-blue-400'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </button>
+          </div>
         </td>
 
-        {/* Actions - ALWAYS VISIBLE */}
+        {/* Actions */}
         <td className="px-3 py-2">
           <div className="flex items-center justify-end gap-1">
             <button
@@ -207,7 +213,7 @@ export default function TableSubTaskRow({
                 setShowEdit(true)
               }}
               className="p-1 text-blue-500 hover:bg-blue-50 rounded transition-colors"
-              title="Sửa"
+              title="Sửa tiêu đề / mô tả"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -229,16 +235,7 @@ export default function TableSubTaskRow({
         </td>
       </tr>
 
-      {/* Inline Detail */}
-      {showDetail && (
-        <SubtaskInlineDetail
-          subtask={subtask}
-          onClose={() => setShowDetail(false)}
-          indentPx={detailIndentPx}
-        />
-      )}
-
-      {/* Edit Modal (portaled to body) */}
+      {/* Edit Modal for title/description only (portaled to body) */}
       {showEdit && (
         <SubtaskEditModal
           subtask={subtask}
