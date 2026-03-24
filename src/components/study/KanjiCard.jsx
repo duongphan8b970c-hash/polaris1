@@ -1,8 +1,11 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
+
+const KanjiWritingPractice = lazy(() => import('./KanjiWritingPractice'))
 
 export default function KanjiCard({ card, onUpdate, onDelete }) {
   const [isEditing, setIsEditing] = useState(false)
   const [notes, setNotes] = useState(card.notes || '')
+  const [showPractice, setShowPractice] = useState(false)
 
   const handleSaveNotes = async () => {
     const result = await onUpdate(card.id, { notes })
@@ -16,16 +19,40 @@ export default function KanjiCard({ card, onUpdate, onDelete }) {
       {/* Header with Delete Button */}
       <div className="flex items-start justify-between mb-4">
         <div className="text-8xl font-serif leading-none">{card.kanji}</div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onDelete(card.id)}
+            className="text-gray-400 hover:text-red-500 transition-colors"
+            title="Remove card"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Practice Writing Button */}
+      <div className="mb-4">
         <button
-          onClick={() => onDelete(card.id)}
-          className="text-gray-400 hover:text-red-500 transition-colors"
-          title="Remove card"
+          onClick={() => setShowPractice(true)}
+          className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
           </svg>
+          ✍️ Practice Writing
         </button>
       </div>
+
+      {showPractice && (
+        <Suspense fallback={null}>
+          <KanjiWritingPractice
+            kanji={card.kanji}
+            onClose={() => setShowPractice(false)}
+          />
+        </Suspense>
+      )}
 
       {/* Radical */}
       {card.radical && (
