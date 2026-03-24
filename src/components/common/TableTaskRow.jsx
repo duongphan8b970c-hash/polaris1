@@ -212,8 +212,7 @@ export default function TableTaskRow({
   onDelete,
   onToggle,
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const [showDetail, setShowDetail] = useState(false)
+  const [open, setOpen] = useState(false)
 
   const indentPx = depth * 28 + 8
   const detailIndentPx = depth * 28 + 28
@@ -222,11 +221,11 @@ export default function TableTaskRow({
   const status = STATUS_CONFIG[task.status] || STATUS_CONFIG.todo
   const priority = PRIORITY_CONFIG[task.priority]
 
-  const handleRowClick = () => setShowDetail((v) => !v)
+  const handleRowClick = () => setOpen((v) => !v)
 
   const handleExpandClick = (e) => {
     e.stopPropagation()
-    setExpanded((v) => !v)
+    setOpen((v) => !v)
   }
 
   const handleToggleClick = (e) => {
@@ -239,16 +238,16 @@ export default function TableTaskRow({
       <tr
         className={`border-b border-gray-100 transition-colors cursor-pointer ${
           isCompleted ? 'bg-gray-50/60 hover:bg-gray-100' : 'hover:bg-blue-50/60'
-        } ${expanded || showDetail ? 'bg-blue-50/30' : ''}`}
+        } ${open ? 'bg-blue-50/30' : ''}`}
         onClick={handleRowClick}
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleRowClick()
-          if (e.key === 'ArrowRight' && !expanded) { e.stopPropagation(); setExpanded(true) }
-          if (e.key === 'ArrowLeft' && expanded)  { e.stopPropagation(); setExpanded(false) }
+          if (e.key === 'ArrowRight' && !open) { e.stopPropagation(); setOpen(true) }
+          if (e.key === 'ArrowLeft' && open)  { e.stopPropagation(); setOpen(false) }
         }}
         aria-label={`Task: ${task.title}`}
-        aria-expanded={expanded}
+        aria-expanded={open}
       >
         {/* Name */}
         <td className="py-2.5 pr-3" style={{ paddingLeft: `${indentPx}px` }}>
@@ -262,7 +261,7 @@ export default function TableTaskRow({
               title={task.total_subtasks > 0 ? 'Mở/đóng subtasks' : 'Không có subtask'}
               tabIndex={-1}
             >
-              <ChevronIcon expanded={expanded} />
+              <ChevronIcon expanded={open} />
             </button>
             {/* Status toggle checkbox */}
             <button
@@ -348,7 +347,7 @@ export default function TableTaskRow({
       </tr>
 
       {/* Inline Task Detail */}
-      {showDetail && (
+      {open && (
         <TaskInlineDetail
           task={task}
           indentPx={detailIndentPx}
@@ -356,7 +355,7 @@ export default function TableTaskRow({
       )}
 
       {/* Expanded Subtasks (lazy loaded) */}
-      {expanded && (
+      {open && (
         <SubtaskLoader taskId={task.id} depth={depth} />
       )}
     </>
