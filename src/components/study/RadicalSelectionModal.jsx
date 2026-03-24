@@ -37,8 +37,8 @@ export default function RadicalSelectionModal({ isOpen, onClose, onSelectRadical
   }
 
   const handleSkip = () => {
-    resetState()
     onSelectRadical(null)
+    resetState()
   }
 
   const handleClose = () => {
