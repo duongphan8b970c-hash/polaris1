@@ -142,16 +142,22 @@ const KanjiCanvas = forwardRef(function KanjiCanvas(
     // Draw guide strokes
     if (guided && referenceStrokes && referenceStrokes.length > 0) {
       referenceStrokes.forEach((stroke, idx) => {
-        drawSVGPath(ctx, stroke.path, size, '#E5E7EB', 3)
+        drawSVGPath(ctx, stroke.path, size, '#9CA3AF', 5)
 
         // Draw stroke order number at start point
         if (stroke.startPoint) {
+          const numSize = Math.max(11, size * 0.038)
           ctx.save()
-          ctx.font = `bold ${Math.max(10, size * 0.035)}px sans-serif`
-          ctx.fillStyle = '#9CA3AF'
+          // White halo for readability
+          ctx.font = `bold ${numSize}px sans-serif`
+          ctx.strokeStyle = '#ffffff'
+          ctx.lineWidth = 3
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
-          ctx.fillText(String(idx + 1), stroke.startPoint.x, stroke.startPoint.y - size * 0.025)
+          ctx.strokeText(String(idx + 1), stroke.startPoint.x, stroke.startPoint.y - size * 0.03)
+          // Colored number
+          ctx.fillStyle = '#374151'
+          ctx.fillText(String(idx + 1), stroke.startPoint.x, stroke.startPoint.y - size * 0.03)
           ctx.restore()
         }
       })
@@ -245,6 +251,7 @@ const KanjiCanvas = forwardRef(function KanjiCanvas(
     },
 
     playAnimation(strokesData, onDone) {
+      // Cancel any leftover timers from a previous call
       if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current)
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
 
@@ -257,64 +264,39 @@ const KanjiCanvas = forwardRef(function KanjiCanvas(
       const ctx = canvas.getContext('2d')
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      // Draw guides behind animation
+      // Draw guide strokes first (background layer)
       if (guided && referenceStrokes && referenceStrokes.length > 0) {
         referenceStrokes.forEach(stroke => {
-          drawSVGPath(ctx, stroke.path, size, '#E5E7EB', 3)
+          drawSVGPath(ctx, stroke.path, size, '#9CA3AF', 5)
         })
       }
 
-      let strokeIdx = 0
-      const DURATION = 1000 // 1 second per stroke
-
-      function animateStroke() {
-        if (strokeIdx >= strokesData.length) {
-          onDone && onDone()
-          return
-        }
-
-        const stroke = strokesData[strokeIdx]
+      // Draw all reference strokes instantly in a clear highlight colour
+      strokesData.forEach((stroke, idx) => {
         const points = stroke.points || []
-        if (points.length < 2) {
-          strokeIdx++
-          animTimeoutRef.current = setTimeout(animateStroke, 200)
-          return
+        if (points.length >= 2) {
+          drawUserPath(ctx, points, '#EF4444', 6)
         }
 
-        let ptIdx = 0
-        const stepCount = points.length
-        const interval = DURATION / stepCount
-
-        function drawNextPoint() {
-          if (ptIdx >= stepCount) {
-            strokeIdx++
-            animTimeoutRef.current = setTimeout(animateStroke, 200)
-            return
-          }
-
-          if (ptIdx > 0) {
-            ctx.save()
-            ctx.strokeStyle = '#EF4444'
-            ctx.lineWidth = 10
-            ctx.lineCap = 'round'
-            ctx.lineJoin = 'round'
-            ctx.beginPath()
-            ctx.moveTo(points[ptIdx - 1].x, points[ptIdx - 1].y)
-            ctx.lineTo(points[ptIdx].x, points[ptIdx].y)
-            ctx.stroke()
-            ctx.restore()
-          }
-
-          ptIdx++
-          animFrameRef.current = requestAnimationFrame(() => {
-            animTimeoutRef.current = setTimeout(drawNextPoint, interval)
-          })
+        // Stroke-order number with white halo
+        const start = stroke.startPoint || points[0]
+        if (start) {
+          const numSize = Math.max(11, size * 0.038)
+          ctx.save()
+          ctx.font = `bold ${numSize}px sans-serif`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          const labelY = start.y - size * 0.03
+          ctx.strokeStyle = '#ffffff'
+          ctx.lineWidth = 3
+          ctx.strokeText(String(idx + 1), start.x, labelY)
+          ctx.fillStyle = '#B91C1C'
+          ctx.fillText(String(idx + 1), start.x, labelY)
+          ctx.restore()
         }
+      })
 
-        drawNextPoint()
-      }
-
-      animateStroke()
+      onDone && onDone()
     },
   }), [redrawAll, guided, referenceStrokes, size])
 

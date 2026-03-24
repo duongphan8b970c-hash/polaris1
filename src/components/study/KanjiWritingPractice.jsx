@@ -77,7 +77,6 @@ export default function KanjiWritingPractice({ kanji, onClose }) {
   const [feedbackColor, setFeedbackColor] = useState('text-gray-600')
   const [correctCount, setCorrectCount] = useState(0)
   const [scoreResult, setScoreResult] = useState(null)
-  const [isAnimating, setIsAnimating] = useState(false)
 
   const canvasRef = useRef(null)
   const startTimeRef = useRef(Date.now())
@@ -150,9 +149,8 @@ export default function KanjiWritingPractice({ kanji, onClose }) {
 
   const handleShowAnimation = useCallback(() => {
     if (!strokes || strokes.length === 0) return
-    setIsAnimating(true)
     canvasRef.current?.clear()
-    canvasRef.current?.playAnimation(strokes, () => setIsAnimating(false))
+    canvasRef.current?.playAnimation(strokes, null)
   }, [strokes])
 
   const handleCheck = useCallback(() => {
@@ -308,17 +306,13 @@ export default function KanjiWritingPractice({ kanji, onClose }) {
 
             <button
               onClick={handleShowAnimation}
-              disabled={isAnimating || loading || !!error || totalStrokes === 0}
+              disabled={loading || !!error || totalStrokes === 0}
               className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-600 transition-colors text-xs font-medium min-h-[52px] disabled:opacity-50"
             >
-              {isAnimating ? (
-                <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              )}
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               Xem nét
             </button>
 
