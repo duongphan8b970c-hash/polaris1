@@ -24,17 +24,25 @@ export default function RadicalSelectionModal({ isOpen, onClose, onSelectRadical
     )
   })
 
+  const resetState = () => {
+    setSelectedRadical(null)
+    setSearchTerm('')
+  }
+
   const handleSubmit = () => {
     if (selectedRadical) {
       onSelectRadical(selectedRadical)
-      setSelectedRadical(null)
-      setSearchTerm('')
+      resetState()
     }
   }
 
+  const handleSkip = () => {
+    resetState()
+    onSelectRadical(null)
+  }
+
   const handleClose = () => {
-    setSelectedRadical(null)
-    setSearchTerm('')
+    resetState()
     onClose()
   }
 
@@ -46,7 +54,7 @@ export default function RadicalSelectionModal({ isOpen, onClose, onSelectRadical
             Select Radical for: <span className="text-4xl">{kanji}</span>
           </h3>
           <p className="text-sm text-gray-600 mb-3">
-            Couldn't auto-detect radical. Please select manually from 214 Kangxi radicals:
+            Couldn't auto-detect radical. Optionally select from 214 Kangxi radicals, or skip:
           </p>
 
           {/* Search */}
@@ -100,6 +108,12 @@ export default function RadicalSelectionModal({ isOpen, onClose, onSelectRadical
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
           >
             Cancel
+          </button>
+          <button
+            onClick={handleSkip}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
+          >
+            Skip
           </button>
           <button
             onClick={handleSubmit}
