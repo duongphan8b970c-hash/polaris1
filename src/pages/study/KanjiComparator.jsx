@@ -8,6 +8,7 @@ import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { fetchKanjiFromJisho } from '../../utils/jishoAPI'
+import { CUSTOM_GROUP_RADICAL } from '../../constants/kanjiGroups'
 
 export default function KanjiComparator() {
   const { cards, loading, error, addKanjiCard, updateKanjiCard, deleteKanjiCard, moveCardToGroup, refetch } = useKanjiCards()
@@ -92,6 +93,28 @@ export default function KanjiComparator() {
       setInputValue('')
       setPendingKanji(null)
       setShowGroupModal(false)
+    }
+  }
+
+  const handleSkipCustomGroup = async (customGroupName) => {
+    if (!pendingKanji) return
+    setAdding(true)
+    try {
+      if (customGroupName) {
+        // Create a standalone custom group (regardless of whether radical exists)
+        const result = await createGroup(CUSTOM_GROUP_RADICAL, customGroupName)
+        if (result.success) {
+          await addKanjiCard(pendingKanji.kanji, result.data.id, pendingKanji.radical)
+        }
+      } else {
+        // Truly skip — add card without a group (goes to No Radical)
+        await addKanjiCard(pendingKanji.kanji, null, null)
+      }
+      setInputValue('')
+      setPendingKanji(null)
+      setShowGroupModal(false)
+    } finally {
+      setAdding(false)
     }
   }
 
@@ -188,23 +211,27 @@ export default function KanjiComparator() {
     }
   }
 
-  // Build nested structure: { [radical]: { [groupId]: card[] } }
+  // Build nested structure: { [section]: { [groupId]: card[] } }
+  // 'Custom' section for user-defined standalone groups, radical or 'No Radical' otherwise
   const groupedCards = cards.reduce((acc, card) => {
-    const radical = card.radical || 'No Radical'
-    if (!acc[radical]) acc[radical] = {}
+    const group = groups.find(g => g.id === card.group_id)
+    const section = group?.radical === CUSTOM_GROUP_RADICAL ? CUSTOM_GROUP_RADICAL : (card.radical || 'No Radical')
+    if (!acc[section]) acc[section] = {}
     const gid = card.group_id || 'ungrouped'
-    if (!acc[radical][gid]) acc[radical][gid] = []
-    acc[radical][gid].push(card)
+    if (!acc[section][gid]) acc[section][gid] = []
+    acc[section][gid].push(card)
     return acc
   }, {})
 
-  // Total card count per radical
-  const radicalCardCount = (radical) =>
-    Object.values(groupedCards[radical] || {}).reduce((sum, arr) => sum + arr.length, 0)
+  // Total card count per section
+  const sectionCardCount = (section) =>
+    Object.values(groupedCards[section] || {}).reduce((sum, arr) => sum + arr.length, 0)
 
   // Existing groups for the pending kanji's radical (derived from pre-fetched data)
   const pendingRadical = pendingKanji?.radical || null
   const groupsForModal = groups.filter(g => g.radical === (pendingRadical || 'No Radical'))
+  // All custom (theme) groups available for the Skip panel
+  const existingCustomGroups = groups.filter(g => g.radical === CUSTOM_GROUP_RADICAL)
 
   if (loading) {
     return <Loading message="Loading Kanji cards..." />
@@ -218,8 +245,8 @@ export default function KanjiComparator() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="🎌 Kanji Comparator"
-        subtitle="Compare multiple Kanji side-by-side to spot patterns"
+        title="🎌 Kanji Group & Comparator"
+        subtitle="Gom nhóm và so sánh Kanji — theo Radical hoặc chủ đề tùy chọn"
       />
 
       {/* Add Kanji Form */}
@@ -276,26 +303,36 @@ export default function KanjiComparator() {
           <p className="text-gray-400">Add your first Kanji to start comparing!</p>
         </div>
       ) : (
-        /* Grouped display: Radical → Subgroups → Cards */
+        /* Grouped display: Section (Radical / Custom) → Subgroups → Cards */
         <div className="space-y-6">
-          {Object.entries(groupedCards).map(([radical, groupsInRadical]) => (
-            <div key={radical} className="card p-6 border border-gray-200">
-              {/* Radical header */}
+          {Object.entries(groupedCards).map(([section, groupsInSection]) => {
+            const isCustom = section === CUSTOM_GROUP_RADICAL
+            const count = sectionCardCount(section)
+            return (
+            <div key={section} className={`card p-6 border ${isCustom ? 'border-purple-200' : 'border-gray-200'}`}>
+              {/* Section header */}
               <div className="flex items-center gap-3 mb-5">
-                <span className="text-4xl">{radical !== 'No Radical' ? radical : '🔤'}</span>
+                <span className="text-4xl">
+                  {isCustom ? '🏷️' : section !== 'No Radical' ? section : '🔤'}
+                </span>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">
-                    Radical: {radical}
+                    {isCustom ? 'Nhóm tùy chọn' : `Radical: ${section}`}
                   </h2>
                   <p className="text-sm text-gray-500">
-                    {radicalCardCount(radical)} {radicalCardCount(radical) === 1 ? 'card' : 'cards'}
+                    {count} {count === 1 ? 'card' : 'cards'}
+                    {isCustom && (
+                      <span className="ml-2 text-purple-600 text-xs font-medium">
+                        (nhóm chủ đề)
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
 
               {/* Subgroups */}
               <div className="space-y-4">
-                {Object.entries(groupsInRadical).map(([groupId, cardsInGroup]) => {
+                {Object.entries(groupsInSection).map(([groupId, cardsInGroup]) => {
                   const group = groups.find(g => g.id === groupId)
                   const groupName = group?.name || 'Ungrouped'
                   const isDragOver = dragOverGroupId === groupId
@@ -389,7 +426,8 @@ export default function KanjiComparator() {
                 })}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -402,8 +440,10 @@ export default function KanjiComparator() {
         }}
         radical={pendingRadical}
         existingGroups={groupsForModal}
+        existingCustomGroups={existingCustomGroups}
         onSelectGroup={handleGroupSelected}
         onCreateGroup={handleCreateGroup}
+        onSkipCustomGroup={handleSkipCustomGroup}
       />
 
       {/* Radical Selection Modal */}

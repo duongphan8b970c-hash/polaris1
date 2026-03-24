@@ -143,7 +143,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
       ),
       submenu: [
         {
-          name: 'Kanji Study',
+          name: 'Kanji Group & Comparator',
           path: '/study/kanji',
           icon: <span className="text-base leading-none">🎌</span>
         },
