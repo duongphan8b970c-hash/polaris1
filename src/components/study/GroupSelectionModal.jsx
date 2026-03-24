@@ -5,6 +5,7 @@ export default function GroupSelectionModal({
   onClose,
   radical,
   existingGroups = [],
+  existingCustomGroups = [],
   onSelectGroup,
   onCreateGroup,
   onSkipCustomGroup
@@ -14,6 +15,7 @@ export default function GroupSelectionModal({
   const [submitting, setSubmitting] = useState(false)
   const [showSkipInput, setShowSkipInput] = useState(false)
   const [skipGroupName, setSkipGroupName] = useState('')
+  const [selectedCustomGroupId, setSelectedCustomGroupId] = useState(null)
 
   if (!isOpen) return null
 
@@ -28,25 +30,38 @@ export default function GroupSelectionModal({
   }
 
   const handleSkip = () => {
-    if (!radical) {
-      // No radical: add to No Radical without a custom group
-      onSkipCustomGroup(null)
-      handleClose()
-    } else {
-      // Has radical: show custom group name input
-      setSkipGroupName('')
-      setShowSkipInput(true)
-      setSelectedGroupId(null)
-      setNewGroupName('')
-    }
+    // Always show the custom group panel — whether radical exists or not
+    setSkipGroupName('')
+    setSelectedCustomGroupId(null)
+    setShowSkipInput(true)
+    setSelectedGroupId(null)
+    setNewGroupName('')
   }
 
   const handleSkipSubmit = async () => {
-    if (!skipGroupName.trim()) return
     setSubmitting(true)
-    await onSkipCustomGroup(skipGroupName.trim())
-    setSubmitting(false)
-    handleClose()
+    try {
+      if (selectedCustomGroupId) {
+        // Add to existing custom group
+        await onSelectGroup(selectedCustomGroupId)
+      } else if (skipGroupName.trim()) {
+        // Create new custom group
+        await onSkipCustomGroup(skipGroupName.trim())
+      }
+    } finally {
+      setSubmitting(false)
+      handleClose()
+    }
+  }
+
+  const handleSkipToNoRadical = async () => {
+    setSubmitting(true)
+    try {
+      await onSkipCustomGroup(null)
+    } finally {
+      setSubmitting(false)
+      handleClose()
+    }
   }
 
   const handleClose = () => {
@@ -54,6 +69,7 @@ export default function GroupSelectionModal({
     setSelectedGroupId(null)
     setShowSkipInput(false)
     setSkipGroupName('')
+    setSelectedCustomGroupId(null)
     onClose()
   }
 
@@ -62,37 +78,81 @@ export default function GroupSelectionModal({
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
         {showSkipInput ? (
           <>
-            <h3 className="text-lg font-semibold mb-1">Tạo nhóm tùy chọn</h3>
+            <h3 className="text-lg font-semibold mb-1">Nhóm tùy chọn</h3>
             <p className="text-sm text-gray-500 mb-4">
-              Đặt tên nhóm để gom các kanji cùng chủ đề (ví dụ: Bốn mùa, Thiên nhiên…)
+              Chọn nhóm có sẵn hoặc tạo nhóm mới để gom các kanji cùng chủ đề
             </p>
-            <div className="mb-5">
+
+            {/* Existing custom groups */}
+            {existingCustomGroups.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Chọn nhóm tùy chọn đã tạo:
+                </label>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {existingCustomGroups.map(group => (
+                    <label
+                      key={group.id}
+                      className="flex items-center gap-2 p-2 border rounded-lg hover:bg-purple-50 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="customGroup"
+                        value={group.id}
+                        checked={selectedCustomGroupId === group.id}
+                        onChange={() => {
+                          setSelectedCustomGroupId(group.id)
+                          setSkipGroupName('')
+                        }}
+                      />
+                      <span className="text-sm">🏷️ {group.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Create new custom group */}
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tên nhóm:
+                {existingCustomGroups.length > 0 ? 'Hoặc tạo nhóm mới:' : 'Tên nhóm mới:'}
               </label>
               <input
                 type="text"
                 value={skipGroupName}
-                onChange={(e) => setSkipGroupName(e.target.value)}
+                onChange={(e) => {
+                  setSkipGroupName(e.target.value)
+                  setSelectedCustomGroupId(null)
+                }}
                 placeholder="e.g., Bốn mùa, Thiên nhiên, Màu sắc…"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 onKeyDown={(e) => e.key === 'Enter' && handleSkipSubmit()}
-                autoFocus
+                autoFocus={existingCustomGroups.length === 0}
               />
             </div>
-            <div className="flex gap-3">
+
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowSkipInput(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"
+                >
+                  Quay lại
+                </button>
+                <button
+                  onClick={handleSkipSubmit}
+                  disabled={(!selectedCustomGroupId && !skipGroupName.trim()) || submitting}
+                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                >
+                  {submitting ? 'Đang xử lý...' : selectedCustomGroupId ? 'Thêm vào nhóm' : 'Tạo nhóm'}
+                </button>
+              </div>
               <button
-                onClick={() => setShowSkipInput(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"
+                onClick={handleSkipToNoRadical}
+                disabled={submitting}
+                className="w-full px-4 py-2 text-gray-400 hover:text-gray-600 text-xs hover:bg-gray-50 rounded-lg transition-colors"
               >
-                Quay lại
-              </button>
-              <button
-                onClick={handleSkipSubmit}
-                disabled={!skipGroupName.trim() || submitting}
-                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-              >
-                {submitting ? 'Đang tạo...' : 'Tạo nhóm'}
+                Bỏ qua — thêm vào No Radical
               </button>
             </div>
           </>
@@ -163,9 +223,9 @@ export default function GroupSelectionModal({
               <button
                 onClick={handleSkip}
                 className="flex-1 px-4 py-2 border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 text-sm font-medium transition-colors"
-                title={radical ? 'Tạo nhóm tùy chọn (không theo radical)' : 'Bỏ qua, thêm vào No Radical'}
+                title="Tạo hoặc chọn nhóm tùy chọn"
               >
-                🏷️ Skip
+                🏷️ Bỏ qua
               </button>
               <button
                 onClick={handleSubmit}

@@ -100,14 +100,14 @@ export default function KanjiComparator() {
     if (!pendingKanji) return
     setAdding(true)
     try {
-      if (customGroupName && pendingKanji.radical) {
-        // Has radical + custom name: create a standalone custom group
+      if (customGroupName) {
+        // Create a standalone custom group (regardless of whether radical exists)
         const result = await createGroup(CUSTOM_GROUP_RADICAL, customGroupName)
         if (result.success) {
           await addKanjiCard(pendingKanji.kanji, result.data.id, pendingKanji.radical)
         }
       } else {
-        // No radical (or no name): add card without a custom group (goes to No Radical)
+        // Truly skip — add card without a group (goes to No Radical)
         await addKanjiCard(pendingKanji.kanji, null, null)
       }
       setInputValue('')
@@ -230,6 +230,8 @@ export default function KanjiComparator() {
   // Existing groups for the pending kanji's radical (derived from pre-fetched data)
   const pendingRadical = pendingKanji?.radical || null
   const groupsForModal = groups.filter(g => g.radical === (pendingRadical || 'No Radical'))
+  // All custom (theme) groups available for the Skip panel
+  const existingCustomGroups = groups.filter(g => g.radical === CUSTOM_GROUP_RADICAL)
 
   if (loading) {
     return <Loading message="Loading Kanji cards..." />
@@ -438,6 +440,7 @@ export default function KanjiComparator() {
         }}
         radical={pendingRadical}
         existingGroups={groupsForModal}
+        existingCustomGroups={existingCustomGroups}
         onSelectGroup={handleGroupSelected}
         onCreateGroup={handleCreateGroup}
         onSkipCustomGroup={handleSkipCustomGroup}
