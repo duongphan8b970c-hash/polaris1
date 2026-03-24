@@ -127,7 +127,7 @@ export default function TableSubTaskRow({
   return (
     <>
       <tr
-        className="hover:bg-purple-50 border-b border-gray-100 transition-colors cursor-pointer"
+        className={`border-b border-gray-100 transition-colors cursor-pointer ${showDetail ? 'bg-purple-50/40' : 'hover:bg-purple-50'}`}
         aria-label={`Subtask: ${subtask.title}`}
         onClick={() => setShowDetail((v) => !v)}
       >

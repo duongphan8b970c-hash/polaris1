@@ -239,7 +239,7 @@ export default function TableTaskRow({
       <tr
         className={`border-b border-gray-100 transition-colors cursor-pointer ${
           isCompleted ? 'bg-gray-50/60 hover:bg-gray-100' : 'hover:bg-blue-50/60'
-        } ${expanded ? 'bg-blue-50/30' : ''}`}
+        } ${expanded || showDetail ? 'bg-blue-50/30' : ''}`}
         onClick={handleRowClick}
         tabIndex={0}
         onKeyDown={(e) => {
