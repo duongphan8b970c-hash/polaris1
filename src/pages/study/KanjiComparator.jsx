@@ -204,9 +204,7 @@ export default function KanjiComparator() {
 
   // Existing groups for the pending kanji's radical (derived from pre-fetched data)
   const pendingRadical = pendingKanji?.radical || null
-  const groupsForModal = pendingRadical
-    ? groups.filter(g => g.radical === pendingRadical)
-    : []
+  const groupsForModal = groups.filter(g => g.radical === (pendingRadical || 'No Radical'))
 
   if (loading) {
     return <Loading message="Loading Kanji cards..." />
