@@ -7,6 +7,13 @@ export default function KanjiCard({ card, onUpdate, onDelete }) {
   const [notes, setNotes] = useState(card.notes || '')
   const [showPractice, setShowPractice] = useState(false)
 
+  const kanjiLen = (card.kanji || '').length
+  const kanjiFontSize =
+    kanjiLen <= 1 ? '5rem'
+    : kanjiLen <= 2 ? '4rem'
+    : kanjiLen <= 4 ? '2.5rem'
+    : `${Math.max(1.5, 8 / kanjiLen)}rem`
+
   const handleSaveNotes = async () => {
     const result = await onUpdate(card.id, { notes })
     if (result.success) {
@@ -15,10 +22,12 @@ export default function KanjiCard({ card, onUpdate, onDelete }) {
   }
 
   return (
-    <div className="card p-6 min-w-[280px] max-w-[320px] flex-shrink-0">
+    <div className="card p-6 min-w-[280px] max-w-[320px] flex-shrink-0 flex flex-col">
       {/* Header with Delete Button */}
       <div className="flex items-start justify-between mb-4">
-        <div className="text-8xl font-serif leading-none">{card.kanji}</div>
+        <div className="h-24 flex items-center overflow-hidden">
+          <div style={{ fontSize: kanjiFontSize }} className="font-serif leading-none whitespace-nowrap">{card.kanji}</div>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => onDelete(card.id)}
