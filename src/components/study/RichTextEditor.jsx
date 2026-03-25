@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react'
+import { useEffect } from 'react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
@@ -172,6 +173,16 @@ export default function RichTextEditor({ content, onChange, placeholder = 'Write
       },
     },
   })
+
+  // Sync editor content when the content prop changes externally (e.g. opening edit modal).
+  // The getHTML() comparison prevents setContent from firing when the change originated
+  // from user typing (onUpdate already keeps both sides in sync).
+  useEffect(() => {
+    if (!editor) return
+    if (content !== editor.getHTML()) {
+      editor.commands.setContent(content || '')
+    }
+  }, [editor, content])
 
   return (
     <div className="border border-gray-300 rounded-lg overflow-hidden">
