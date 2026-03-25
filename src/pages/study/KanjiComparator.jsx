@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useKanjiCards } from '../../hooks/study/useKanjiCards'
 import { useKanjiGroups } from '../../hooks/study/useKanjiGroups'
 import KanjiCard from '../../components/study/KanjiCard'
@@ -30,6 +30,9 @@ export default function KanjiComparator() {
 
   // Drag & drop state
   const [dragOverGroupId, setDragOverGroupId] = useState(null)
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
 
   const handleAddKanji = async (e) => {
     e.preventDefault()
@@ -211,9 +214,20 @@ export default function KanjiComparator() {
     }
   }
 
+  // Filtered cards based on search query
+  const filteredCards = useMemo(() => {
+    if (!searchQuery.trim()) return cards
+    const q = searchQuery.trim().toLowerCase()
+    return cards.filter(card =>
+      (card.kanji && card.kanji.includes(q)) ||
+      (card.meanings && card.meanings.some(m => m.toLowerCase().includes(q))) ||
+      (card.readings_on && card.readings_on.some(r => r.toLowerCase().includes(q)))
+    )
+  }, [cards, searchQuery])
+
   // Build nested structure: { [section]: { [groupId]: card[] } }
   // 'Custom' section for user-defined standalone groups, radical or 'No Radical' otherwise
-  const groupedCards = cards.reduce((acc, card) => {
+  const groupedCards = filteredCards.reduce((acc, card) => {
     const group = groups.find(g => g.id === card.group_id)
     const section = group?.radical === CUSTOM_GROUP_RADICAL ? CUSTOM_GROUP_RADICAL : (card.radical || 'No Radical')
     if (!acc[section]) acc[section] = {}
@@ -295,12 +309,52 @@ export default function KanjiComparator() {
         </form>
       </div>
 
+      {/* Search Bar */}
+      {cards.length > 0 && (
+        <div className="card p-4">
+          <div className="relative">
+            <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Tìm kiếm Kanji đã thêm (kanji, nghĩa, cách đọc...)"
+              className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Xóa tìm kiếm"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="text-sm text-gray-500 mt-2">
+              {filteredCards.length} kết quả cho &ldquo;{searchQuery}&rdquo;
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Cards — empty state */}
       {cards.length === 0 ? (
         <div className="card text-center py-16">
           <div className="text-7xl mb-4">🎌</div>
           <p className="text-gray-500 font-medium text-lg mb-2">No Kanji cards yet</p>
           <p className="text-gray-400">Add your first Kanji to start comparing!</p>
+        </div>
+      ) : filteredCards.length === 0 ? (
+        <div className="card text-center py-16">
+          <div className="text-5xl mb-4">🔍</div>
+          <p className="text-gray-500 font-medium text-lg mb-2">Không tìm thấy kết quả</p>
+          <p className="text-gray-400">Thử tìm kiếm với từ khóa khác.</p>
         </div>
       ) : (
         /* Grouped display: Section (Radical / Custom) → Subgroups → Cards */
@@ -411,7 +465,7 @@ export default function KanjiComparator() {
                             key={card.id}
                             draggable
                             onDragStart={(e) => handleDragStart(e, card.id)}
-                            className="cursor-grab active:cursor-grabbing"
+                            className="cursor-grab active:cursor-grabbing h-full"
                           >
                             <KanjiCard
                               card={card}

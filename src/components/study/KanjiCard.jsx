@@ -22,7 +22,7 @@ export default function KanjiCard({ card, onUpdate, onDelete }) {
   }
 
   return (
-    <div className="card p-6 min-w-[280px] max-w-[320px] flex-shrink-0 flex flex-col">
+    <div className="card p-6 h-full flex flex-col">
       {/* Header with Delete Button */}
       <div className="flex items-start justify-between mb-4">
         <div className="h-24 flex items-center overflow-hidden">
@@ -100,7 +100,7 @@ export default function KanjiCard({ card, onUpdate, onDelete }) {
       )}
 
       {/* Notes Section */}
-      <div className="mt-4">
+      <div className="mt-auto pt-4">
         <div className="text-xs text-gray-500 uppercase font-semibold mb-2">Personal Notes</div>
         {isEditing ? (
           <div className="space-y-2">
