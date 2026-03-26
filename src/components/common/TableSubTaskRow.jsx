@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Modal from './Modal'
 
@@ -83,8 +83,6 @@ export default function TableSubTaskRow({
 }) {
   const [showEdit, setShowEdit] = useState(false)
   const [showDetail, setShowDetail] = useState(false)
-  const dateInputRef = useRef(null)
-
   const indentPx = depth * 28 + 8
 
   // Shared helper: merge partial changes into a full update call
@@ -112,17 +110,6 @@ export default function TableSubTaskRow({
     e.stopPropagation()
     await updateField({ is_calendar_visible: !subtask.is_calendar_visible })
   }, [updateField, subtask.is_calendar_visible])
-
-  const handleDateClick = (e) => {
-    e.stopPropagation()
-    if (dateInputRef.current) {
-      if (typeof dateInputRef.current.showPicker === 'function') {
-        try { dateInputRef.current.showPicker() } catch { dateInputRef.current.click() }
-      } else {
-        dateInputRef.current.click()
-      }
-    }
-  }
 
   return (
     <>
@@ -190,23 +177,21 @@ export default function TableSubTaskRow({
           <div className="flex items-center gap-1">
             {/* Inline date picker trigger */}
             <div className="relative">
-              <button
-                onClick={handleDateClick}
-                className="hover:text-blue-600 hover:underline transition-colors"
+              <span
+                className="hover:text-blue-600 hover:underline transition-colors cursor-pointer select-none"
                 title="Chọn ngày"
               >
                 {subtask.scheduled_date
                   ? new Date(subtask.scheduled_date).toLocaleDateString('vi-VN')
                   : <span className="text-gray-400">—</span>}
-              </button>
+              </span>
               <input
-                ref={dateInputRef}
                 type="date"
                 value={subtask.scheduled_date || ''}
                 onChange={handleDateChange}
-                className="absolute opacity-0 w-0 h-0 pointer-events-none"
+                onClick={(e) => e.stopPropagation()}
+                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
                 tabIndex={-1}
-                aria-hidden="true"
               />
             </div>
             {/* Calendar visibility toggle */}
