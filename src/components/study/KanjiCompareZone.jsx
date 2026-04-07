@@ -7,6 +7,7 @@ export default function KanjiCompareZone({ onAddToGroup }) {
   const [inputValue, setInputValue] = useState('')
   const [adding, setAdding] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [errorMsg, setErrorMsg] = useState(null)
 
   const handleAdd = async (e) => {
     e.preventDefault()
@@ -21,6 +22,7 @@ export default function KanjiCompareZone({ onAddToGroup }) {
     }
 
     setAdding(true)
+    setErrorMsg(null)
     try {
       const kanjiData = await fetchKanjiFromJisho(kanji)
       setCompareCards(prev => [...prev, {
@@ -30,7 +32,7 @@ export default function KanjiCompareZone({ onAddToGroup }) {
       setInputValue('')
     } catch (err) {
       console.error('Error fetching Kanji:', err)
-      alert('Không tìm thấy Kanji. Hãy thử lại.')
+      setErrorMsg('Không tìm thấy Kanji. Hãy thử lại.')
     } finally {
       setAdding(false)
     }
@@ -111,6 +113,24 @@ export default function KanjiCompareZone({ onAddToGroup }) {
               )}
             </button>
           </form>
+
+          {/* Inline error message */}
+          {errorMsg && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 mb-3">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{errorMsg}</span>
+              <button
+                onClick={() => setErrorMsg(null)}
+                className="ml-auto text-red-400 hover:text-red-600"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
 
           {/* Compare Cards Grid */}
           {compareCards.length > 0 ? (
