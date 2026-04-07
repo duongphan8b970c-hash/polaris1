@@ -1,5 +1,16 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { formatNumber, formatDate, formatDateTime } from '../../utils'
+import { useMonthlyAnalytics } from '../../hooks/analytics/useMonthlyAnalytics'
+import MonthlyKPICards from '../analytics/MonthlyKPICards'
+import IncomeExpenseChart from '../analytics/IncomeExpenseChart'
+import ExpenseCategoryPieChart from '../analytics/ExpenseCategoryPieChart'
+import CumulativeBalanceChart from '../analytics/CumulativeBalanceChart'
+import TopIncomeSourcesChart from '../analytics/TopIncomeSourcesChart'
+import TransactionFrequencyChart from '../analytics/TransactionFrequencyChart'
+import ExpenseHeatMap from '../analytics/ExpenseHeatMap'
+import WeeklyCategoryChart from '../analytics/WeeklyCategoryChart'
+import ThreeMonthComparisonChart from '../analytics/ThreeMonthComparisonChart'
+import TopTransactionsTable from '../analytics/TopTransactionsTable'
 
 export default function FinanceTab({ 
   wallets, 
@@ -12,7 +23,21 @@ export default function FinanceTab({
   formatLastUpdated,
   handleManualUpdate 
 }) {
-  
+  // Month/year selector state
+  const now = new Date()
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear())
+
+  // Monthly analytics hook
+  const analytics = useMonthlyAnalytics(transactions, selectedMonth, selectedYear)
+
+  // Available years (current year and last 3 years)
+  const availableYears = Array.from({ length: 4 }, (_, i) => now.getFullYear() - i)
+  const monthNames = [
+    'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+    'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
+  ]
+
   // Calculate stats
   const stats = useMemo(() => {
     const now = new Date()
@@ -276,6 +301,70 @@ export default function FinanceTab({
           <p className="text-amber-100 text-sm font-medium">
             {displayStats.income > 0 ? 'của thu nhập' : 'Chưa có dữ liệu'}
           </p>
+        </div>
+      </div>
+
+      {/* ── MONTHLY ANALYTICS SECTION ── */}
+      <div className="mt-8">
+        {/* Section Header with Month/Year Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">📊 Phân Tích Tài Chính Chi Tiết</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Biểu đồ chuyên sâu theo tháng (bỏ qua giao dịch chuyển khoản và điều chỉnh số dư)</p>
+          </div>
+          {/* Month & Year Selectors */}
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(Number(e.target.value))}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              {monthNames.map((name, i) => (
+                <option key={i} value={i}>{name}</option>
+              ))}
+            </select>
+            <select
+              value={selectedYear}
+              onChange={e => setSelectedYear(Number(e.target.value))}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              {availableYears.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* KPI Cards */}
+        <MonthlyKPICards kpiData={analytics.kpiData} />
+
+        {/* Row 1: Income/Expense Bar + Category Pie */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <IncomeExpenseChart data={analytics.yearlyMonthlyData} />
+          <ExpenseCategoryPieChart data={analytics.categoryBreakdown} />
+        </div>
+
+        {/* Row 2: Cumulative Balance + Top Income Sources */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <CumulativeBalanceChart data={analytics.dailyBalance} />
+          <TopIncomeSourcesChart data={analytics.topIncomes} />
+        </div>
+
+        {/* Row 3: Transaction Frequency + Expense Heat Map */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <TransactionFrequencyChart data={analytics.weeklyTransactions} />
+          <ExpenseHeatMap data={analytics.dailyExpenseHeatmap} />
+        </div>
+
+        {/* Row 4: Weekly Category Stacked + 3-Month Comparison */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <WeeklyCategoryChart data={analytics.weeklyCategories} />
+          <ThreeMonthComparisonChart data={analytics.threeMonthComparison} />
+        </div>
+
+        {/* Row 5: Top Transactions Table (full width) */}
+        <div className="mt-6">
+          <TopTransactionsTable data={analytics.topTransactions} />
         </div>
       </div>
 
