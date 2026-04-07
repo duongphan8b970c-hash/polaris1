@@ -7,7 +7,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  ReferenceDot,
 } from 'recharts'
 
 const CustomTooltip = ({ active, payload, label }) => {

@@ -80,7 +80,10 @@ export default function WeeklyCategoryChart({ data, loading }) {
             <Tooltip content={<CustomTooltip />} />
             <Legend
               wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-              formatter={v => v.length > 14 ? v.slice(0, 14) + '…' : v}
+              formatter={v => {
+                const str = String(v ?? '')
+                return str.length > 14 ? str.slice(0, 14) + '…' : str
+              }}
             />
             {categories.map((cat, i) => (
               <Bar
