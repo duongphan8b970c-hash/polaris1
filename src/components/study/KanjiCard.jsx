@@ -2,17 +2,15 @@ import { useState, lazy, Suspense } from 'react'
 
 const KanjiWritingPractice = lazy(() => import('./KanjiWritingPractice'))
 
-export default function KanjiCard({ card, onUpdate, onDelete }) {
+export default function KanjiCard({ card, onUpdate, onDelete, compact = false }) {
   const [isEditing, setIsEditing] = useState(false)
   const [notes, setNotes] = useState(card.notes || '')
   const [showPractice, setShowPractice] = useState(false)
 
   const kanjiLen = (card.kanji || '').length
-  const kanjiFontSize =
-    kanjiLen <= 1 ? '5rem'
-    : kanjiLen <= 2 ? '4rem'
-    : kanjiLen <= 4 ? '2.5rem'
-    : `${Math.max(1.5, 8 / kanjiLen)}rem`
+  const kanjiFontSize = compact
+    ? (kanjiLen <= 1 ? '3.5rem' : kanjiLen <= 2 ? '2.5rem' : `${Math.max(1.5, 6 / kanjiLen)}rem`)
+    : (kanjiLen <= 1 ? '6rem' : kanjiLen <= 2 ? '4.5rem' : kanjiLen <= 4 ? '3rem' : `${Math.max(1.5, 9 / kanjiLen)}rem`)
 
   const handleSaveNotes = async () => {
     const result = await onUpdate(card.id, { notes })
@@ -21,11 +19,54 @@ export default function KanjiCard({ card, onUpdate, onDelete }) {
     }
   }
 
+  if (compact) {
+    // Compact view: condensed layout, better for scanning many cards
+    return (
+      <div className="card p-3 h-full flex flex-col">
+        {/* Header: Kanji + Delete */}
+        <div className="flex items-start justify-between mb-2">
+          <div style={{ fontSize: kanjiFontSize }} className="font-serif leading-none">
+            {card.kanji}
+          </div>
+          <button
+            onClick={() => onDelete(card.id)}
+            className="text-gray-400 hover:text-red-500 transition-colors p-0.5 flex-shrink-0"
+            title="Remove card"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Radical + Strokes inline */}
+        <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
+          {card.radical && <span className="text-base">{card.radical}</span>}
+          {card.stroke_count && <span>{card.stroke_count} strokes</span>}
+        </div>
+
+        {/* Meanings */}
+        {card.meanings && card.meanings.length > 0 && (
+          <div className="text-xs text-gray-700 leading-snug mb-1">
+            {card.meanings.slice(0, 3).join(', ')}
+          </div>
+        )}
+
+        {/* Readings */}
+        {card.readings_on && card.readings_on.length > 0 && (
+          <div className="text-xs font-mono text-gray-500 mt-auto">
+            {card.readings_on.slice(0, 2).join(', ')}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="card p-6 h-full flex flex-col">
       {/* Header with Delete Button */}
       <div className="flex items-start justify-between mb-4">
-        <div className="h-24 flex items-center overflow-hidden">
+        <div className="h-28 flex items-center overflow-hidden">
           <div style={{ fontSize: kanjiFontSize }} className="font-serif leading-none whitespace-nowrap">{card.kanji}</div>
         </div>
         <div className="flex items-center gap-2">

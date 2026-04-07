@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useKanjiCards } from '../../hooks/study/useKanjiCards'
 import { useKanjiGroups } from '../../hooks/study/useKanjiGroups'
 import KanjiCard from '../../components/study/KanjiCard'
+import KanjiCompareZone from '../../components/study/KanjiCompareZone'
 import GroupSelectionModal from '../../components/study/GroupSelectionModal'
 import RadicalSelectionModal from '../../components/study/RadicalSelectionModal'
 import PageHeader from '../../components/layout/PageHeader'
@@ -9,6 +10,10 @@ import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { fetchKanjiFromJisho } from '../../utils/jishoAPI'
 import { CUSTOM_GROUP_RADICAL } from '../../constants/kanjiGroups'
+
+// View density modes
+const VIEW_NORMAL = 'normal'
+const VIEW_COMPACT = 'compact'
 
 export default function KanjiComparator() {
   const { cards, loading, error, addKanjiCard, updateKanjiCard, deleteKanjiCard, moveCardToGroup, refetch } = useKanjiCards()
@@ -33,6 +38,19 @@ export default function KanjiComparator() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
+
+  // View mode state
+  const [viewMode, setViewMode] = useState(VIEW_NORMAL)
+
+  // Compare zone: handle "Add to group" from compare card
+  const handleCompareAddToGroup = (card) => {
+    setPendingKanji({ kanji: card.kanji, radical: card.radical || null, data: card })
+    if (!card.radical) {
+      setShowRadicalModal(true)
+    } else {
+      setShowGroupModal(true)
+    }
+  }
 
   const handleAddKanji = async (e) => {
     e.preventDefault()
@@ -255,6 +273,8 @@ export default function KanjiComparator() {
     return <ErrorMessage message={error} onRetry={refetch} />
   }
 
+  const isCompact = viewMode === VIEW_COMPACT
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -263,8 +283,15 @@ export default function KanjiComparator() {
         subtitle="Gom nhóm và so sánh Kanji — theo Radical hoặc chủ đề tùy chọn"
       />
 
-      {/* Add Kanji Form */}
+      {/* ── Quick Compare Zone (Task 1) ── */}
+      <KanjiCompareZone onAddToGroup={handleCompareAddToGroup} />
+
+      {/* ── Add Kanji to Group Form ── */}
       <div className="card p-6">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xl">📁</span>
+          <h2 className="text-base font-bold text-gray-900">Thêm Kanji vào nhóm</h2>
+        </div>
         <form onSubmit={handleAddKanji} className="space-y-3">
           <div className="flex gap-3">
             <input
@@ -274,7 +301,6 @@ export default function KanjiComparator() {
               placeholder="Paste Kanji from Jisho.org (e.g., 話, 語, 読)"
               className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
               disabled={adding}
-              autoFocus
             />
             <button
               type="submit"
@@ -309,31 +335,64 @@ export default function KanjiComparator() {
         </form>
       </div>
 
-      {/* Search Bar */}
+      {/* ── Search Bar + View Toggle ── */}
       {cards.length > 0 && (
         <div className="card p-4">
-          <div className="relative">
-            <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm Kanji đã thêm (kanji, nghĩa, cách đọc...)"
-              className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            {searchQuery && (
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1">
+              <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Tìm kiếm Kanji đã thêm (kanji, nghĩa, cách đọc...)"
+                className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Xóa tìm kiếm"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* View mode toggle */}
+            <div className="flex items-center bg-gray-100 rounded-lg p-0.5 flex-shrink-0">
               <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                title="Xóa tìm kiếm"
+                onClick={() => setViewMode(VIEW_NORMAL)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  viewMode === VIEW_NORMAL
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                title="Normal view"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
               </button>
-            )}
+              <button
+                onClick={() => setViewMode(VIEW_COMPACT)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  viewMode === VIEW_COMPACT
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                title="Compact view — xem nhiều card hơn"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
           </div>
           {searchQuery && (
             <p className="text-sm text-gray-500 mt-2">
@@ -363,14 +422,14 @@ export default function KanjiComparator() {
             const isCustom = section === CUSTOM_GROUP_RADICAL
             const count = sectionCardCount(section)
             return (
-            <div key={section} className={`card p-6 border ${isCustom ? 'border-purple-200' : 'border-gray-200'}`}>
-              {/* Section header */}
+            <div key={section} className={`card ${isCompact ? 'p-4' : 'p-6'} border ${isCustom ? 'border-purple-200' : 'border-gray-200'}`}>
+              {/* Section header — larger for better zoom-out readability */}
               <div className="flex items-center gap-3 mb-5">
-                <span className="text-4xl">
+                <span className={isCompact ? 'text-3xl' : 'text-5xl'}>
                   {isCustom ? '🏷️' : section !== 'No Radical' ? section : '🔤'}
                 </span>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">
+                  <h2 className={`${isCompact ? 'text-lg' : 'text-2xl'} font-bold text-gray-900`}>
                     {isCustom ? 'Nhóm tùy chọn' : `Radical: ${section}`}
                   </h2>
                   <p className="text-sm text-gray-500">
@@ -385,7 +444,7 @@ export default function KanjiComparator() {
               </div>
 
               {/* Subgroups */}
-              <div className="space-y-4">
+              <div className={isCompact ? 'space-y-3' : 'space-y-4'}>
                 {Object.entries(groupsInSection).map(([groupId, cardsInGroup]) => {
                   const group = groups.find(g => g.id === groupId)
                   const groupName = group?.name || 'Ungrouped'
@@ -394,7 +453,7 @@ export default function KanjiComparator() {
                   return (
                     <div
                       key={groupId}
-                      className={`border rounded-lg p-4 transition-colors ${
+                      className={`border rounded-lg ${isCompact ? 'p-3' : 'p-4'} transition-colors ${
                         isDragOver
                           ? 'border-blue-400 bg-blue-50'
                           : 'border-gray-200 bg-gray-50'
@@ -433,7 +492,7 @@ export default function KanjiComparator() {
                           </div>
                         ) : (
                           <>
-                            <h3 className="text-base font-semibold text-gray-800 flex-1">
+                            <h3 className={`${isCompact ? 'text-sm' : 'text-lg'} font-semibold text-gray-800 flex-1`}>
                               {groupName}
                             </h3>
                             {group && (
@@ -458,8 +517,12 @@ export default function KanjiComparator() {
                         )}
                       </div>
 
-                      {/* Cards grid — responsive, wraps to new rows */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {/* Cards grid — responsive, more columns in compact mode */}
+                      <div className={
+                        isCompact
+                          ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3'
+                          : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+                      }>
                         {cardsInGroup.map(card => (
                           <div
                             key={card.id}
@@ -471,6 +534,7 @@ export default function KanjiComparator() {
                               card={card}
                               onUpdate={updateKanjiCard}
                               onDelete={(id) => handleDelete(id, card.group_id)}
+                              compact={isCompact}
                             />
                           </div>
                         ))}
