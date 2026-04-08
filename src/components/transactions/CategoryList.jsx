@@ -1,8 +1,9 @@
 export default function CategoryList({ 
-  categories = [], // ✅ Default prop
-  onEdit 
+  categories = [],
+  budgets = [],
+  onEdit,
+  onSetBudget,
 }) {
-  // ✅ Safe check
   const safeCategories = Array.isArray(categories) ? categories : []
 
   if (safeCategories.length === 0) {
@@ -19,52 +20,82 @@ export default function CategoryList({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {safeCategories.map((category) => (
-        <div
-          key={category.id}
-          className="card hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => onEdit && onEdit(category)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{category.icon}</span>
-              <div>
-                <h3 className="font-semibold text-gray-900">{category.name}</h3>
-                <p className="text-sm text-gray-500">
-                  {category.type === 'income' ? (
-                    <span className="inline-flex items-center gap-1 text-green-600">
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
-                      Thu nhập
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-red-600">
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                      </svg>
-                      Chi tiêu
-                    </span>
-                  )}
-                </p>
+      {safeCategories.map((category) => {
+        const budget = budgets.find(b => b.category_id === category.id)
+
+        return (
+          <div
+            key={category.id}
+            className="card hover:shadow-lg transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{category.icon}</span>
+                <div>
+                  <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                  <p className="text-sm text-gray-500">
+                    {category.type === 'income' ? (
+                      <span className="inline-flex items-center gap-1 text-green-600">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        Thu nhập
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-red-600">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                        </svg>
+                        Chi tiêu
+                      </span>
+                    )}
+                  </p>
+                </div>
               </div>
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEdit && onEdit(category)
+                }}
+                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Sửa danh mục"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
             </div>
-            
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onEdit && onEdit(category)
-              }}
-              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title="Sửa"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
+
+            {/* Budget section (expense categories only) */}
+            {category.type === 'expense' && (
+              <div className="border-t border-gray-100 pt-3 mt-1">
+                {budget ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-500 font-medium">Hạn mức tháng</span>
+                      <button
+                        onClick={() => onSetBudget && onSetBudget(category, budget)}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Sửa
+                      </button>
+                    </div>
+                    <p className="text-sm font-bold text-gray-800">{budget.amount.toLocaleString('vi-VN')} ₫</p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => onSetBudget && onSetBudget(category, null)}
+                    className="w-full text-xs text-center py-1.5 border border-dashed border-gray-300 rounded-lg text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
+                  >
+                    + Đặt hạn mức
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

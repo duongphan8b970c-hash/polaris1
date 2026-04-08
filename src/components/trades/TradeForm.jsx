@@ -15,6 +15,7 @@ export default function TradeForm({ trade, onSubmit, onCancel, loading }) {
     exit_price: '',
     profit_loss: '',
     notes: '',
+    plan_note: '',
   })
 
   const [isClosing, setIsClosing] = useState(false)
@@ -34,6 +35,7 @@ export default function TradeForm({ trade, onSubmit, onCancel, loading }) {
         exit_price: trade.exit_price || '',
         profit_loss: trade.profit_loss || '',
         notes: trade.notes || '',
+        plan_note: trade.plan_note || '',
       })
       setIsClosing(trade.status === 'closed')
     }
@@ -339,6 +341,20 @@ export default function TradeForm({ trade, onSubmit, onCancel, loading }) {
           )}
         </div>
       )}
+
+      <div>
+        <label className="label">📋 Kế hoạch trade</label>
+        <textarea
+          name="plan_note"
+          value={formData.plan_note}
+          onChange={handleChange}
+          className="input"
+          rows="3"
+          placeholder="Ghi chú kế hoạch trade sắp tới, chiến lược, điều kiện vào lệnh..."
+          disabled={loading}
+        />
+        <p className="text-xs text-gray-500 mt-1">💡 Dùng để lên kế hoạch & ghi lại chiến lược trước khi vào lệnh</p>
+      </div>
 
       <div>
         <label className="label">Ghi chú</label>

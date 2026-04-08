@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useCategories } from '../../hooks/finance/useCategories'
 
-export default function BudgetForm({ budget, onSubmit, onCancel, loading }) {
+export default function BudgetForm({ budget, presetCategoryId, onSubmit, onCancel, loading }) {
   const { categories } = useCategories('expense') // Only expense categories
   
   const [formData, setFormData] = useState({
-    category_id: '',
+    category_id: presetCategoryId || '',
     amount: '',
     period: 'monthly',
     start_date: new Date().toISOString().split('T')[0],
@@ -19,8 +19,10 @@ export default function BudgetForm({ budget, onSubmit, onCancel, loading }) {
         period: budget.period,
         start_date: budget.start_date,
       })
+    } else if (presetCategoryId) {
+      setFormData(prev => ({ ...prev, category_id: presetCategoryId }))
     }
-  }, [budget])
+  }, [budget, presetCategoryId])
 
   const handleSubmit = (e) => {
     e.preventDefault()
