@@ -20,6 +20,7 @@ import AnalyticsDashboard from './pages/analytics/AnalyticsDashboard'
 import WalletHistory from './pages/finance/WalletHistory'
 import KanjiComparator from './pages/study/KanjiComparator'
 import StudyMaterialVault from './pages/study/StudyMaterialVault'
+import TradePlanning from './pages/finance/TradePlanning'
 
 // ✅ Create ProtectedRoute component
 function ProtectedRoute({ children, session }) {
@@ -96,6 +97,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="transactions" element={<FinancialTracking />} />
           <Route path="trades" element={<TradeTracking />} />
+          <Route path="trades/planning" element={<TradePlanning />} />
           <Route path="wallets" element={<Wallets />} />
           <Route path="wallets/history" element={<WalletHistory />} />
           <Route path="reports" element={<Reports />} />

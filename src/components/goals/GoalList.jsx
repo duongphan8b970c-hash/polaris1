@@ -121,6 +121,7 @@ function GoalRow({ goal, onEdit, onDelete, onComplete, onGoalClick }) {
             {timeRemaining.type === 'overdue' && <span className="ml-1 text-xs">(quá {timeRemaining.days} ngày)</span>}
             {timeRemaining.type === 'today' && <span className="ml-1 text-xs">(hôm nay)</span>}
             {timeRemaining.type === 'soon' && <span className="ml-1 text-xs">(còn {timeRemaining.days} ngày)</span>}
+            {timeRemaining.type === 'normal' && <span className="ml-1 text-xs">(còn {timeRemaining.days} ngày)</span>}
           </span>
         ) : (
           <span className="text-gray-400 text-xs">—</span>
