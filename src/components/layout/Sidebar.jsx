@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 
-export default function Sidebar({ isOpen, onClose, onToggle }) {
+export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false }) {
   const location = useLocation()
   
   // ✅ FIX: Default to null (all collapsed)
@@ -182,18 +182,24 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen bg-white border-r border-gray-200 transition-all duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 z-50 h-screen transition-all duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } w-64`}
+        } w-64 ${
+          darkMode
+            ? 'bg-[#0b0e1a]/95 backdrop-blur-md border-r border-[#1e293b]'
+            : 'bg-white border-r border-gray-200'
+        }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between px-4 py-5 border-b border-gray-200">
+          <div className={`flex items-center justify-between px-4 py-5 border-b ${
+            darkMode ? 'border-[#1e293b]' : 'border-gray-200'
+          }`}>
             <Link to="/" className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                 <span className="text-white text-xl">⭐</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">Polaris</span>
+              <span className={`text-xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Polaris</span>
             </Link>
             
             <button
@@ -203,7 +209,9 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
                   onToggle()
                 }
               }}
-              className="text-gray-500 hover:text-gray-700 transition-colors p-1.5 rounded-md hover:bg-gray-100"
+              className={`p-1.5 rounded-md transition-colors ${
+                darkMode ? 'text-gray-400 hover:text-gray-200 hover:bg-[#1e293b]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+              }`}
               title="Đóng menu"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -224,10 +232,10 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
                         onClick={() => toggleMenu(section.id)}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                           expandedMenu === section.id
-                            ? 'bg-blue-50 text-blue-700'
+                            ? darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-700'
                             : hasActiveChild(section)
-                            ? 'bg-blue-50 text-blue-700' // ✅ Show active if child is active
-                            : 'text-gray-700 hover:bg-gray-100'
+                            ? darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-700'
+                            : darkMode ? 'text-gray-300 hover:bg-[#1e293b]' : 'text-gray-700 hover:bg-gray-100'
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -255,8 +263,8 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
                                 to={item.path}
                                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                                   isActiveRoute(item.path)
-                                    ? 'bg-blue-50 text-blue-700 font-medium'
-                                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                    ? darkMode ? 'bg-blue-500/10 text-blue-400 font-medium' : 'bg-blue-50 text-blue-700 font-medium'
+                                    : darkMode ? 'text-gray-400 hover:bg-[#1e293b] hover:text-gray-200' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                 }`}
                               >
                                 {item.icon}
@@ -273,8 +281,8 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
                       to={section.path}
                       className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                         isActiveRoute(section.path)
-                          ? 'bg-blue-50 text-blue-700 font-medium'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          ? darkMode ? 'bg-blue-500/10 text-blue-400 font-medium' : 'bg-blue-50 text-blue-700 font-medium'
+                          : darkMode ? 'text-gray-300 hover:bg-[#1e293b]' : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
                       {section.icon}

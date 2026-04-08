@@ -181,6 +181,46 @@
 }
 
 /* ===================================
+   NIGHT SKY DARK MODE
+   =================================== */
+
+/* Stars background for night-sky dark mode */
+.night-sky-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.4), transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.2), transparent),
+    radial-gradient(2px 2px at 160px 30px, rgba(255,255,255,0.35), transparent),
+    radial-gradient(1px 1px at 200px 60px, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 250px 20px, rgba(255,255,255,0.25), transparent),
+    radial-gradient(2px 2px at 280px 90px, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 310px 50px, rgba(255,255,255,0.45), transparent),
+    radial-gradient(1px 1px at 350px 70px, rgba(255,255,255,0.2), transparent),
+    radial-gradient(2px 2px at 400px 35px, rgba(255,255,255,0.35), transparent),
+    radial-gradient(1px 1px at 450px 85px, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 500px 25px, rgba(255,255,255,0.4), transparent),
+    radial-gradient(2px 2px at 550px 65px, rgba(255,255,255,0.25), transparent),
+    radial-gradient(1px 1px at 600px 45px, rgba(255,255,255,0.35), transparent),
+    radial-gradient(1px 1px at 700px 30px, rgba(255,255,255,0.3), transparent),
+    radial-gradient(2px 2px at 800px 75px, rgba(255,255,255,0.2), transparent),
+    radial-gradient(1px 1px at 900px 55px, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 1000px 40px, rgba(255,255,255,0.3), transparent),
+    radial-gradient(2px 2px at 1100px 80px, rgba(255,255,255,0.25), transparent);
+  background-size: 100% 100%;
+  background-repeat: repeat;
+  opacity: 0.7;
+  animation: twinkle 4s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.9; }
+}
+
+/* ===================================
    FLOATING WATER EFFECT ANIMATIONS
    =================================== */
 
