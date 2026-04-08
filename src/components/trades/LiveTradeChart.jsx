@@ -103,7 +103,7 @@ export default function LiveTradeChart({ trade }) {
       <div className={`p-3 rounded-lg ${
         unrealizedPL >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
       }`}>
-        <p className="text-xs text-gray-600 mb-1">Unrealized P&amp;L</p>
+        <p className="text-xs text-gray-600 mb-1">Unrealized P&L</p>
         <p className={`text-2xl font-bold ${unrealizedPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
           {unrealizedPL >= 0 ? '+' : ''}{formatCurrency(unrealizedPL, currency)}
         </p>

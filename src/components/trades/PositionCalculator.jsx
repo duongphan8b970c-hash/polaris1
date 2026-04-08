@@ -224,7 +224,7 @@ export default function PositionCalculator({ entryPrice, amount, leverage, side,
             {slLevel.price ? `${slPL.toFixed(2)} ${currency}` : '—'}
           </span>
         </div>
-        {slLevel.price && totalTPPL > 0 && slPL < 0 && (
+        {slLevel.price && totalTPPL > 0 && slPL < 0 && Math.abs(slPL) > 0 && (
           <div className="flex justify-between text-sm mt-1">
             <span className="text-gray-600">Risk/Reward:</span>
             <span className="font-bold text-purple-600">

@@ -34,10 +34,14 @@ export default function MonthlyTarget({ trades, selectedMonth }) {
     return selectedMonth
   }, [selectedMonth])
 
+  const isCurrentMonthView = selectedMonth === 'all'
+
   const monthLabel = useMemo(() => {
     const [year, month] = monthKey.split('-').map(Number)
-    return `Tháng ${month}/${year}`
-  }, [monthKey])
+    return isCurrentMonthView
+      ? `Tháng ${month}/${year} (hiện tại)`
+      : `Tháng ${month}/${year}`
+  }, [monthKey, isCurrentMonthView])
 
   const currentTarget = targets[monthKey] || 0
 
