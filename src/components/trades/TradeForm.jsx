@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
 import { formatCurrency } from '../../utils'
-import PositionCalculator from './PositionCalculator'
 
 export default function TradeForm({ trade, onSubmit, onCancel, loading }) {
   const { wallets } = useWallets()
@@ -268,26 +267,6 @@ export default function TradeForm({ trade, onSubmit, onCancel, loading }) {
           <p className="text-xs text-gray-500 mt-1">🎯 Đòn bẩy giao dịch</p>
         </div>
       </div>
-
-      {formData.entry_price && formData.amount && parseFloat(formData.entry_price) > 0 && parseFloat(formData.amount) > 0 && (
-        <div className="border-t pt-4 mt-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-              🧮 Position Calculator
-              <span className="text-xs font-normal text-gray-500">
-                Ước lượng P&amp;L tại các mức giá
-              </span>
-            </h4>
-            <PositionCalculator
-              entryPrice={parseFloat(formData.entry_price)}
-              amount={parseFloat(formData.amount)}
-              leverage={parseInt(formData.leverage) || 1}
-              side={formData.side}
-              currency={walletCurrency}
-            />
-          </div>
-        </div>
-      )}
 
       {trade && trade.status === 'open' && (
         <div className="border-t pt-4">

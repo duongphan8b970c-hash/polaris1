@@ -3,6 +3,9 @@ import PageHeader from '../../components/layout/PageHeader'
 import TradeList from '../../components/trades/TradeList'
 import TradeForm from '../../components/trades/TradeForm'
 import LiveTradeChart from '../../components/trades/LiveTradeChart'
+import SymbolChart from '../../components/trades/SymbolChart'
+import CalculatorModal from '../../components/trades/CalculatorModal'
+import MonthlyTarget from '../../components/trades/MonthlyTarget'
 import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
@@ -27,7 +30,7 @@ function generateMonthOptions() {
 const MONTH_OPTIONS = generateMonthOptions()
 
 export default function TradeTracking() {
-  const [filters, setFilters] = useState({})
+  const [filters] = useState({})
   const {trades, loading, error, createTrade, updateTrade, quickCloseTrade, refetch} = useTrades(filters)
   const [showForm, setShowForm] = useState(false)
   const [editingTrade, setEditingTrade] = useState(null)
@@ -39,6 +42,8 @@ export default function TradeTracking() {
     resultType: null // 'win' or 'loss'
   })
   const [selectedMonth, setSelectedMonth] = useState('all') // default to all-time
+  const [chartSymbol, setChartSymbol] = useState('BTC/USDT')
+  const [showCalculator, setShowCalculator] = useState(false)
 
   // Filter trades by selected month
   const filteredTrades = useMemo(() => {
@@ -91,7 +96,6 @@ export default function TradeTracking() {
     const s = calcStats(trades)
     s.winRate = s.closedCount > 0 ? (s.winCount / s.closedCount * 100).toFixed(1) : 0
     return s
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trades])
 
   // Filtered stats from filteredTrades
@@ -99,7 +103,6 @@ export default function TradeTracking() {
     const s = calcStats(filteredTrades)
     s.winRate = s.closedCount > 0 ? (s.winCount / s.closedCount * 100).toFixed(1) : 0
     return s
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredTrades])
 
   // Show all-time stats when "all" is selected, filtered stats otherwise
@@ -174,14 +177,28 @@ export default function TradeTracking() {
       <PageHeader 
         title="Quản lý Trade" 
         action={
-          <button onClick={handleCreate} className="btn btn-primary">
-            <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Thêm trade
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCalculator(true)}
+              className="btn btn-secondary text-sm"
+            >
+              🧮 Calculator
+            </button>
+            <button onClick={handleCreate} className="btn btn-primary">
+              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Thêm trade
+            </button>
+          </div>
         }
       />
+
+      {/* Live Chart Area */}
+      <SymbolChart symbol={chartSymbol} onSymbolChange={setChartSymbol} />
+
+      {/* Monthly Target */}
+      <MonthlyTarget trades={trades} selectedMonth={selectedMonth} />
 
       {/* Monthly Filter */}
       <div className="flex items-center gap-3 mb-4">
@@ -332,6 +349,11 @@ export default function TradeTracking() {
         resultType={quickCloseModal.resultType}
         onConfirm={handleQuickCloseConfirm}
         onCancel={() => setQuickCloseModal({ isOpen: false, trade: null, resultType: null })}
+      />
+      {/* Calculator Modal */}
+      <CalculatorModal
+        isOpen={showCalculator}
+        onClose={() => setShowCalculator(false)}
       />
     </div>
   )

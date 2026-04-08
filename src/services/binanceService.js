@@ -1,7 +1,40 @@
 const BINANCE_API = 'https://api.binance.com/api/v3'
 const BINANCE_WS = 'wss://stream.binance.com:9443/ws'
 
+// Cache for symbol list
+let cachedSymbols = null
+let symbolsCacheTime = 0
+const SYMBOLS_CACHE_TTL = 30 * 60 * 1000 // 30 minutes
+
 export const binanceService = {
+  // Get list of trading symbols from Binance (USDT pairs)
+  async getSymbolList() {
+    try {
+      // Return cached if fresh
+      if (cachedSymbols && Date.now() - symbolsCacheTime < SYMBOLS_CACHE_TTL) {
+        return cachedSymbols
+      }
+      const response = await fetch(`${BINANCE_API}/exchangeInfo`)
+      if (!response.ok) throw new Error('Failed to fetch exchange info')
+      const data = await response.json()
+      const symbols = data.symbols
+        .filter(s => s.status === 'TRADING' && s.quoteAsset === 'USDT')
+        .map(s => ({
+          symbol: s.symbol,
+          baseAsset: s.baseAsset,
+          quoteAsset: s.quoteAsset,
+          displayName: `${s.baseAsset}/${s.quoteAsset}`
+        }))
+        .sort((a, b) => a.baseAsset.localeCompare(b.baseAsset))
+      cachedSymbols = symbols
+      symbolsCacheTime = Date.now()
+      return symbols
+    } catch (error) {
+      console.error('Binance symbol list error:', error)
+      return []
+    }
+  },
+
   // Get current price for a symbol
   async getCurrentPrice(symbol) {
     try {
