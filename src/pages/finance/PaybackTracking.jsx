@@ -6,14 +6,13 @@ import PaybackGoalList from '../../components/payback/PaybackGoalList'
 import PaybackGoalForm from '../../components/payback/PaybackGoalForm'
 import PaybackCalendarModal from '../../components/payback/PaybackCalendarModal'
 import Modal from '../../components/common/Modal'
-import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { formatNumber } from '../../utils'
 
-export default function PaybackTracking() {
+export default function PaybackTracking({ goalType = 'payback' }) {
   const navigate = useNavigate()
-  const { goals, loading, error, createGoal, updateGoal, completeGoal, deleteGoal, refetch } = usePaybackGoals()
+  const { goals, loading, error, createGoal, updateGoal, completeGoal, deleteGoal, refetch } = usePaybackGoals(goalType)
   const { priorities } = usePaybackPriorities()
   
   const [showForm, setShowForm] = useState(false)
@@ -129,40 +128,36 @@ export default function PaybackTracking() {
 
   return (
     <div>
-      <PageHeader 
-        title="Theo Dõi Payback" 
-        action={
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowCalendar(true)}
-              className="btn btn-secondary bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
-            >
-              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Watchout 📅
-            </button>
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button
+          onClick={() => setShowCalendar(true)}
+          className="btn btn-secondary bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+        >
+          <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Watchout 📅
+        </button>
 
-            <button 
-              onClick={() => navigate('/payback/priorities')}
-              className="btn btn-secondary"
-            >
-              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Quản lý Priorities
-            </button>
+        <button 
+          onClick={() => navigate('/a-better-day/priorities')}
+          className="btn btn-secondary"
+        >
+          <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Quản lý Priorities
+        </button>
 
-            <button onClick={handleCreate} className="btn btn-primary">
-              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Tạo mục tiêu mới
-            </button>
-          </div>
-        }
-      />
+        <button onClick={handleCreate} className="btn btn-primary">
+          <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Tạo mục tiêu mới
+        </button>
+      </div>
 
       {/* Summary Stats */}
       {stats.active > 0 && (
@@ -352,7 +347,7 @@ export default function PaybackTracking() {
             </svg>
           </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">Chưa có mục tiêu nào</h3>
-          <p className="text-gray-600 mb-6">Tạo mục tiêu đầu tiên để bắt đầu theo dõi payback</p>
+          <p className="text-gray-600 mb-6">Tạo mục tiêu đầu tiên để bắt đầu theo dõi</p>
           <button onClick={handleCreate} className="btn btn-primary">
             + Tạo mục tiêu mới
           </button>

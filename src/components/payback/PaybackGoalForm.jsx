@@ -136,7 +136,7 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
       {priorities.length === 0 && (
         <p className="text-sm text-amber-600 mt-2">
           ⚠️ Chưa có priority nào. 
-          <a href="/payback/priorities" className="underline ml-1">Tạo priority</a>
+          <a href="/a-better-day/priorities" className="underline ml-1">Tạo priority</a>
         </p>
       )}
     </div>
