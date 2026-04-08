@@ -20,7 +20,7 @@ function storeTargets(targets) {
   }
 }
 
-export default function MonthlyTarget({ trades, selectedMonth }) {
+export default function MonthlyTarget({ trades, selectedMonth, darkMode = false }) {
   const [targets, setTargets] = useState(getStoredTargets)
   const [editingTarget, setEditingTarget] = useState(false)
   const [targetInput, setTargetInput] = useState('')
@@ -97,15 +97,17 @@ export default function MonthlyTarget({ trades, selectedMonth }) {
   }
 
   return (
-    <div className="card mb-6">
+    <div className={`rounded-xl shadow-md p-6 mb-6 ${
+      darkMode ? 'bg-[#111827]/80 backdrop-blur-sm border border-[#1e293b]' : 'bg-white'
+    }`}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+        <h3 className={`text-base font-bold flex items-center gap-2 ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
           🎯 Mục tiêu {monthLabel}
         </h3>
         <button
           type="button"
           onClick={() => editingTarget ? setEditingTarget(false) : handleStartEditing()}
-          className="text-xs text-primary-600 hover:text-primary-800 font-medium"
+          className={`text-xs font-medium ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-primary-600 hover:text-primary-800'}`}
         >
           {editingTarget ? 'Hủy' : (currentTarget > 0 ? 'Sửa mục tiêu' : '+ Đặt mục tiêu')}
         </button>
@@ -117,7 +119,9 @@ export default function MonthlyTarget({ trades, selectedMonth }) {
             type="number"
             value={targetInput}
             onChange={(e) => setTargetInput(e.target.value)}
-            className="input text-sm flex-1"
+            className={`text-sm flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              darkMode ? 'bg-[#0f172a] border-[#334155] text-gray-100' : 'border-gray-300'
+            }`}
             placeholder="Nhập mục tiêu P&L (USDT)..."
             step="0.01"
             min="0"
@@ -136,16 +140,16 @@ export default function MonthlyTarget({ trades, selectedMonth }) {
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3 mb-3">
         <div className="text-center">
-          <p className="text-xs text-gray-400">Trades</p>
-          <p className="text-lg font-bold text-gray-800">{monthTradeCount}</p>
+          <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Trades</p>
+          <p className={`text-lg font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{monthTradeCount}</p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-gray-400">Wins</p>
-          <p className="text-lg font-bold text-green-600">{monthWinCount}</p>
+          <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Wins</p>
+          <p className="text-lg font-bold text-green-500">{monthWinCount}</p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-gray-400">P&L</p>
-          <p className={`text-lg font-bold ${monthPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>P&L</p>
+          <p className={`text-lg font-bold ${monthPL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
             {monthPL >= 0 ? '+' : ''}{formatCurrency(monthPL, 'USDT')}
           </p>
         </div>
@@ -155,14 +159,14 @@ export default function MonthlyTarget({ trades, selectedMonth }) {
       {currentTarget > 0 && (
         <div>
           <div className="flex justify-between items-center mb-1">
-            <span className="text-xs text-gray-500">
+            <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               Tiến độ: {progress.toFixed(1)}%
             </span>
-            <span className="text-xs text-gray-500">
+            <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               Mục tiêu: {formatCurrency(currentTarget, 'USDT')}
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div className={`w-full rounded-full h-3 overflow-hidden ${darkMode ? 'bg-[#1e293b]' : 'bg-gray-200'}`}>
             <div
               className={`h-full rounded-full transition-all duration-500 ${
                 isOnTarget
@@ -175,12 +179,12 @@ export default function MonthlyTarget({ trades, selectedMonth }) {
             />
           </div>
           {isOnTarget && (
-            <p className="text-xs text-green-600 font-medium mt-1 text-center">
+            <p className="text-xs text-green-500 font-medium mt-1 text-center">
               🎉 Đã đạt mục tiêu!
             </p>
           )}
           {!isOnTarget && currentTarget > 0 && monthPL >= 0 && (
-            <p className="text-xs text-gray-400 mt-1 text-center">
+            <p className={`text-xs mt-1 text-center ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
               Còn {formatCurrency(currentTarget - monthPL, 'USDT')} nữa
             </p>
           )}
@@ -188,7 +192,7 @@ export default function MonthlyTarget({ trades, selectedMonth }) {
       )}
 
       {currentTarget === 0 && !editingTarget && (
-        <p className="text-xs text-gray-400 text-center py-2">
+        <p className={`text-xs text-center py-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
           Chưa đặt mục tiêu cho tháng này
         </p>
       )}

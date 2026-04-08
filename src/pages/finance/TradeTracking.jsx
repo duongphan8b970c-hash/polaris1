@@ -13,6 +13,7 @@ import { useTrades } from '../../hooks/finance/useTrades'
 import { formatCurrency } from '../../utils'
 import ErrorModal from '../../components/common/ErrorModal'
 import QuickCloseModal from '../../components/trades/QuickCloseModal'
+import { useTradeDarkMode } from '../../hooks/useTradeDarkMode'
 
 // Generate month options: current month + past 11 months
 function generateMonthOptions() {
@@ -44,9 +45,16 @@ export default function TradeTracking() {
   const [selectedMonth, setSelectedMonth] = useState('all') // default to all-time
   const [chartSymbol, setChartSymbol] = useState('BTC/USDT')
   const [showCalculator, setShowCalculator] = useState(false)
-  const [darkMode, setDarkMode] = useState(() => {
-    try { return localStorage.getItem('trade_dark_mode') === 'true' } catch { return false }
-  })
+  const { darkMode, setDarkMode } = useTradeDarkMode()
+
+  // Restore dark mode preference on mount, reset on unmount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('trade_dark_mode')
+      if (saved === 'true') setDarkMode(true)
+    } catch { /* ignore */ }
+    return () => setDarkMode(false)
+  }, [setDarkMode])
 
   useEffect(() => {
     try { localStorage.setItem('trade_dark_mode', darkMode) } catch { /* ignore */ }
@@ -179,23 +187,23 @@ export default function TradeTracking() {
     return <ErrorMessage message={error} onRetry={refetch} />
   }
 
-  // Dark mode helper classes
+  // Dark mode helper classes — night sky theme
   const dm = {
-    bg: darkMode ? 'bg-[#0f0f23]' : '',
-    text: darkMode ? 'text-gray-200' : 'text-gray-900',
+    text: darkMode ? 'text-gray-100' : 'text-gray-900',
     subtext: darkMode ? 'text-gray-400' : 'text-gray-500',
-    card: darkMode ? 'bg-[#16213e] border border-[#2B2B43]' : 'bg-white',
-    statCard: darkMode ? 'bg-[#16213e] border-l-4' : 'bg-white rounded-xl shadow-md p-6 border-l-4',
+    card: darkMode ? 'bg-[#111827]/80 backdrop-blur-sm border border-[#1e293b] rounded-xl shadow-md p-6' : 'card',
+    statCard: darkMode ? 'bg-[#111827]/80 backdrop-blur-sm border-l-4 rounded-xl shadow-md p-6' : 'stat-card',
     input: darkMode
-      ? 'bg-[#1a1a2e] border-[#363C4E] text-gray-200 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500'
+      ? 'bg-[#0f172a] border-[#334155] text-gray-100 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
       : 'input',
     label: darkMode ? 'text-sm font-medium text-gray-400 whitespace-nowrap' : 'text-sm font-medium text-gray-700 whitespace-nowrap',
   }
 
   return (
-    <div className={`${dm.bg} ${dm.text} min-h-screen ${darkMode ? 'p-2 -m-2 rounded-2xl' : ''}`}>
+    <div className={dm.text}>
       <PageHeader 
         title="Quản lý Trade" 
+        darkMode={darkMode} 
         action={
           <div className="flex items-center gap-2">
             {/* Dark mode toggle */}
@@ -230,7 +238,7 @@ export default function TradeTracking() {
       <SymbolChart symbol={chartSymbol} onSymbolChange={setChartSymbol} darkMode={darkMode} />
 
       {/* Monthly Target */}
-      <MonthlyTarget trades={trades} selectedMonth={selectedMonth} />
+      <MonthlyTarget trades={trades} selectedMonth={selectedMonth} darkMode={darkMode} />
 
       {/* Monthly Filter */}
       <div className="flex items-center gap-3 mb-4">
@@ -258,13 +266,13 @@ export default function TradeTracking() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
         {/* Open Trades */}
-        <div className={`${dm.statCard} ${!darkMode ? '' : 'rounded-xl shadow-md p-6'} border-blue-500`}>
+        <div className={`${dm.statCard} border-blue-500`}>
           <p className={`text-sm ${dm.subtext}`}>Đang mở {isAllTime && <span className="text-purple-500 text-xs">(All-Time)</span>}</p>
           <p className="text-2xl font-bold text-blue-500 mt-1">{stats.openCount}</p>
         </div>
         
         {/* Win / Loss */}
-        <div className={`${dm.statCard} ${!darkMode ? '' : 'rounded-xl shadow-md p-6'} border-green-500`}>
+        <div className={`${dm.statCard} border-green-500`}>
           <p className={`text-sm ${dm.subtext}`}>Win / Loss {isAllTime && <span className="text-purple-500 text-xs">(All-Time)</span>}</p>
           <p className={`text-2xl font-bold mt-1 ${dm.text}`}>
             <span className="text-green-500">{stats.winCount}</span>
@@ -274,13 +282,13 @@ export default function TradeTracking() {
         </div>
         
         {/* Win Rate */}
-        <div className={`${dm.statCard} ${!darkMode ? '' : 'rounded-xl shadow-md p-6'} border-purple-500`}>
+        <div className={`${dm.statCard} border-purple-500`}>
           <p className={`text-sm ${dm.subtext}`}>Win Rate {isAllTime && <span className="text-purple-500 text-xs">(All-Time)</span>}</p>
           <p className="text-2xl font-bold text-purple-500 mt-1">{stats.winRate}%</p>
         </div>
         
         {/* Total P&L */}
-        <div className={`${dm.statCard} ${!darkMode ? '' : 'rounded-xl shadow-md p-6'} border-primary-500`}>
+        <div className={`${dm.statCard} border-primary-500`}>
           <p className={`text-sm ${dm.subtext} mb-1`}>Total P&L {isAllTime && <span className="text-purple-500 text-xs">(All-Time)</span>}</p>
           <div className="space-y-1">
             {Object.keys(stats.plByCurrency).length > 0 ? (
@@ -300,7 +308,7 @@ export default function TradeTracking() {
       {(stats.bestTrade || stats.worstTrade) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {stats.bestTrade && (
-            <div className={`${dm.statCard} ${!darkMode ? '' : 'rounded-xl shadow-md p-6'} border-green-400`}>
+            <div className={`${dm.statCard} border-green-400`}>
               <p className={`text-sm ${dm.subtext}`}>Best Trade</p>
               <p className="text-base font-bold text-green-500 mt-1">
                 {stats.bestTrade.symbol} &nbsp;
@@ -312,7 +320,7 @@ export default function TradeTracking() {
             </div>
           )}
           {stats.worstTrade && (
-            <div className={`${dm.statCard} ${!darkMode ? '' : 'rounded-xl shadow-md p-6'} border-red-400`}>
+            <div className={`${dm.statCard} border-red-400`}>
               <p className={`text-sm ${dm.subtext}`}>Worst Trade</p>
               <p className="text-base font-bold text-red-500 mt-1">
                 {stats.worstTrade.symbol} &nbsp;
@@ -351,6 +359,7 @@ export default function TradeTracking() {
         onEdit={handleEdit}
         onClose={handleCloseTrade}
         onQuickClose={handleQuickClose}
+        darkMode={darkMode}
       />
 
       {/* Form Modal */}

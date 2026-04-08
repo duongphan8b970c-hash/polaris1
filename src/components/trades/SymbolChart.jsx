@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createChart, ColorType, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts'
 import { binanceService } from '../../services/binanceService'
 import { useBinancePrice } from '../../hooks/useBinancePrice'
@@ -22,6 +22,7 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
   const [showDropdown, setShowDropdown] = useState(false)
   const [interval, setInterval] = useState('1h')
   const [chartLoading, setChartLoading] = useState(false)
+  const [rawData, setRawData] = useState([])
   const { price: livePrice, ticker, loading: priceLoading } = useBinancePrice(symbol, true)
 
   // Chart refs
@@ -29,8 +30,6 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
   const rsiChartRef = useRef(null)
   const chartInstanceRef = useRef(null)
   const rsiChartInstanceRef = useRef(null)
-  const seriesRef = useRef({})
-  const rsiSeriesRef = useRef(null)
 
   // Fetch Binance symbol list
   useEffect(() => {
@@ -40,18 +39,18 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
   // Theme colors
   const theme = useMemo(() => darkMode
     ? {
-        bg: '#1a1a2e',
-        text: '#d1d4dc',
-        grid: '#2B2B43',
-        border: '#363C4E',
-        upColor: '#26a69a',
-        downColor: '#ef5350',
-        ma7Color: '#f5c842',
-        ma25Color: '#2962FF',
-        volUpColor: 'rgba(38,166,154,0.5)',
-        volDownColor: 'rgba(239,83,80,0.5)',
-        rsiColor: '#b39ddb',
-        crosshair: '#758696',
+        bg: '#0d1117',
+        text: '#c9d1d9',
+        grid: 'rgba(30, 41, 59, 0.5)',
+        border: '#1e293b',
+        upColor: '#22c55e',
+        downColor: '#ef4444',
+        ma7Color: '#fbbf24',
+        ma25Color: '#60a5fa',
+        volUpColor: 'rgba(34,197,94,0.35)',
+        volDownColor: 'rgba(239,68,68,0.35)',
+        rsiColor: '#a78bfa',
+        crosshair: '#475569',
       }
     : {
         bg: '#ffffff',
@@ -68,8 +67,29 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
         crosshair: '#9ca3af',
       }, [darkMode])
 
-  // Create / update charts
-  const buildCharts = useCallback((rawData) => {
+  // Fetch klines when symbol or interval changes (NOT when theme changes)
+  useEffect(() => {
+    if (!symbol) return
+    let cancelled = false
+
+    const fetchData = async () => {
+      setChartLoading(true)
+      try {
+        const data = await binanceService.getKlineData(symbol, interval, 120)
+        if (!cancelled) setRawData(data)
+      } catch {
+        if (!cancelled) setRawData([])
+      } finally {
+        if (!cancelled) setChartLoading(false)
+      }
+    }
+
+    fetchData()
+    return () => { cancelled = true }
+  }, [symbol, interval])
+
+  // Build/rebuild charts when rawData or theme changes
+  useEffect(() => {
     if (!mainChartRef.current || !rsiChartRef.current || rawData.length === 0) return
 
     // Dispose previous chart instances
@@ -82,190 +102,167 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
       rsiChartInstanceRef.current = null
     }
 
-    // ---- Data transformation ----
-    const candleData = rawData.map(k => ({
-      time: toChartTime(k.time),
-      open: k.open,
-      high: k.high,
-      low: k.low,
-      close: k.close,
-    }))
+    // Small delay to ensure DOM is ready after potential loading state change
+    const timerId = setTimeout(() => {
+      if (!mainChartRef.current || !rsiChartRef.current) return
 
-    const volumeData = rawData.map(k => ({
-      time: toChartTime(k.time),
-      value: k.volume,
-      color: k.close >= k.open ? theme.volUpColor : theme.volDownColor,
-    }))
+      // ---- Data transformation ----
+      const candleData = rawData.map(k => ({
+        time: toChartTime(k.time),
+        open: k.open,
+        high: k.high,
+        low: k.low,
+        close: k.close,
+      }))
 
-    const ma7Data = calculateMA(
-      rawData.map(k => ({ time: toChartTime(k.time), close: k.close })),
-      7
-    )
-    const ma25Data = calculateMA(
-      rawData.map(k => ({ time: toChartTime(k.time), close: k.close })),
-      25
-    )
-    const rsiData = calculateRSI(
-      rawData.map(k => ({ time: toChartTime(k.time), close: k.close })),
-      14
-    )
+      const volumeData = rawData.map(k => ({
+        time: toChartTime(k.time),
+        value: k.volume,
+        color: k.close >= k.open ? theme.volUpColor : theme.volDownColor,
+      }))
 
-    // ---- Main chart (candlestick + volume + MA) ----
-    const chart = createChart(mainChartRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: theme.bg },
-        textColor: theme.text,
-      },
-      grid: {
-        vertLines: { color: theme.grid },
-        horzLines: { color: theme.grid },
-      },
-      crosshair: { mode: 0 },
-      rightPriceScale: { borderColor: theme.border },
-      timeScale: {
-        borderColor: theme.border,
-        timeVisible: true,
-        secondsVisible: false,
-      },
-      width: mainChartRef.current.clientWidth,
-      height: 340,
-    })
-    chartInstanceRef.current = chart
+      const maInput = rawData.map(k => ({ time: toChartTime(k.time), close: k.close }))
+      const ma7Data = calculateMA(maInput, 7)
+      const ma25Data = calculateMA(maInput, 25)
+      const rsiData = calculateRSI(maInput, 14)
 
-    // Candlestick series
-    const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: theme.upColor,
-      downColor: theme.downColor,
-      borderVisible: false,
-      wickUpColor: theme.upColor,
-      wickDownColor: theme.downColor,
-    })
-    candleSeries.setData(candleData)
-    seriesRef.current.candle = candleSeries
+      // ---- Main chart (candlestick + volume + MA) ----
+      const chart = createChart(mainChartRef.current, {
+        layout: {
+          background: { type: ColorType.Solid, color: theme.bg },
+          textColor: theme.text,
+        },
+        grid: {
+          vertLines: { color: theme.grid },
+          horzLines: { color: theme.grid },
+        },
+        crosshair: { mode: 0 },
+        rightPriceScale: { borderColor: theme.border },
+        timeScale: {
+          borderColor: theme.border,
+          timeVisible: true,
+          secondsVisible: false,
+        },
+        width: mainChartRef.current.clientWidth,
+        height: 340,
+      })
+      chartInstanceRef.current = chart
 
-    // Volume series (overlay at bottom 25%)
-    const volSeries = chart.addSeries(HistogramSeries, {
-      priceFormat: { type: 'volume' },
-      priceScaleId: 'vol',
-    })
-    volSeries.setData(volumeData)
-    chart.priceScale('vol').applyOptions({
-      scaleMargins: { top: 0.75, bottom: 0 },
-    })
+      // Candlestick series
+      const candleSeries = chart.addSeries(CandlestickSeries, {
+        upColor: theme.upColor,
+        downColor: theme.downColor,
+        borderVisible: false,
+        wickUpColor: theme.upColor,
+        wickDownColor: theme.downColor,
+      })
+      candleSeries.setData(candleData)
 
-    // MA7 line
-    const ma7Series = chart.addSeries(LineSeries, {
-      color: theme.ma7Color,
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: false,
-      crosshairMarkerVisible: false,
-    })
-    ma7Series.setData(ma7Data)
+      // Volume series (overlay at bottom 25%)
+      const volSeries = chart.addSeries(HistogramSeries, {
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'vol',
+      })
+      volSeries.setData(volumeData)
+      chart.priceScale('vol').applyOptions({
+        scaleMargins: { top: 0.75, bottom: 0 },
+      })
 
-    // MA25 line
-    const ma25Series = chart.addSeries(LineSeries, {
-      color: theme.ma25Color,
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: false,
-      crosshairMarkerVisible: false,
-    })
-    ma25Series.setData(ma25Data)
+      // MA7 line
+      const ma7Series = chart.addSeries(LineSeries, {
+        color: theme.ma7Color,
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+      })
+      ma7Series.setData(ma7Data)
 
-    chart.timeScale().fitContent()
+      // MA25 line
+      const ma25Series = chart.addSeries(LineSeries, {
+        color: theme.ma25Color,
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+      })
+      ma25Series.setData(ma25Data)
 
-    // ---- RSI chart (separate) ----
-    const rsiChart = createChart(rsiChartRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: theme.bg },
-        textColor: theme.text,
-      },
-      grid: {
-        vertLines: { color: theme.grid },
-        horzLines: { color: theme.grid },
-      },
-      rightPriceScale: {
-        borderColor: theme.border,
-        scaleMargins: { top: 0.1, bottom: 0.1 },
-      },
-      timeScale: {
-        borderColor: theme.border,
-        timeVisible: true,
-        secondsVisible: false,
-        visible: false,
-      },
-      crosshair: { mode: 0 },
-      width: rsiChartRef.current.clientWidth,
-      height: 100,
-    })
-    rsiChartInstanceRef.current = rsiChart
+      chart.timeScale().fitContent()
 
-    const rsiSeries = rsiChart.addSeries(LineSeries, {
-      color: theme.rsiColor,
-      lineWidth: 1.5,
-      priceLineVisible: false,
-      lastValueVisible: true,
-    })
-    rsiSeries.setData(rsiData)
-    rsiSeriesRef.current = rsiSeries
+      // ---- RSI chart (separate) ----
+      const rsiChart = createChart(rsiChartRef.current, {
+        layout: {
+          background: { type: ColorType.Solid, color: theme.bg },
+          textColor: theme.text,
+        },
+        grid: {
+          vertLines: { color: theme.grid },
+          horzLines: { color: theme.grid },
+        },
+        rightPriceScale: {
+          borderColor: theme.border,
+          scaleMargins: { top: 0.1, bottom: 0.1 },
+        },
+        timeScale: {
+          borderColor: theme.border,
+          timeVisible: true,
+          secondsVisible: false,
+          visible: false,
+        },
+        crosshair: { mode: 0 },
+        width: rsiChartRef.current.clientWidth,
+        height: 100,
+      })
+      rsiChartInstanceRef.current = rsiChart
 
-    // RSI reference lines (30 and 70)
-    rsiSeries.createPriceLine({ price: 70, color: theme.downColor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' })
-    rsiSeries.createPriceLine({ price: 30, color: theme.upColor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' })
+      const rsiSeries = rsiChart.addSeries(LineSeries, {
+        color: theme.rsiColor,
+        lineWidth: 1.5,
+        priceLineVisible: false,
+        lastValueVisible: true,
+      })
+      rsiSeries.setData(rsiData)
 
-    rsiChart.timeScale().fitContent()
+      // RSI reference lines (30 and 70)
+      rsiSeries.createPriceLine({ price: 70, color: theme.downColor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' })
+      rsiSeries.createPriceLine({ price: 30, color: theme.upColor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' })
 
-    // Sync time scales
-    chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-      if (range) rsiChart.timeScale().setVisibleLogicalRange(range)
-    })
-    rsiChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-      if (range) chart.timeScale().setVisibleLogicalRange(range)
-    })
+      rsiChart.timeScale().fitContent()
+
+      // Sync time scales
+      chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+        if (range) rsiChart.timeScale().setVisibleLogicalRange(range)
+      })
+      rsiChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+        if (range) chart.timeScale().setVisibleLogicalRange(range)
+      })
+    }, 50)
 
     // Resize handler
     const handleResize = () => {
-      if (mainChartRef.current) chart.applyOptions({ width: mainChartRef.current.clientWidth })
-      if (rsiChartRef.current) rsiChart.applyOptions({ width: rsiChartRef.current.clientWidth })
+      if (mainChartRef.current && chartInstanceRef.current) {
+        chartInstanceRef.current.applyOptions({ width: mainChartRef.current.clientWidth })
+      }
+      if (rsiChartRef.current && rsiChartInstanceRef.current) {
+        rsiChartInstanceRef.current.applyOptions({ width: rsiChartRef.current.clientWidth })
+      }
     }
     window.addEventListener('resize', handleResize)
 
     return () => {
+      clearTimeout(timerId)
       window.removeEventListener('resize', handleResize)
-    }
-  }, [theme])
-
-  // Fetch klines and build chart
-  useEffect(() => {
-    if (!symbol) return
-    let cancelled = false
-
-    const fetchAndBuild = async () => {
-      setChartLoading(true)
-      try {
-        const data = await binanceService.getKlineData(symbol, interval, 120)
-        if (!cancelled && data.length > 0) {
-          buildCharts(data)
-        }
-      } catch {
-        // ignore
-      } finally {
-        if (!cancelled) setChartLoading(false)
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.remove()
+        chartInstanceRef.current = null
+      }
+      if (rsiChartInstanceRef.current) {
+        rsiChartInstanceRef.current.remove()
+        rsiChartInstanceRef.current = null
       }
     }
-
-    fetchAndBuild()
-    return () => { cancelled = true }
-  }, [symbol, interval, buildCharts])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (chartInstanceRef.current) chartInstanceRef.current.remove()
-      if (rsiChartInstanceRef.current) rsiChartInstanceRef.current.remove()
-    }
-  }, [])
+  }, [rawData, theme])
 
   // Filter symbols for search
   const filteredSymbols = symbolSearch
@@ -283,8 +280,8 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
 
   const displaySymbol = symbol || 'Chọn symbol'
 
-  const cardBg = darkMode ? 'bg-[#16213e] border border-[#2B2B43]' : 'bg-white'
-  const textColor = darkMode ? 'text-gray-200' : 'text-gray-900'
+  const cardBg = darkMode ? 'bg-[#111827]/80 backdrop-blur-sm border border-[#1e293b]' : 'bg-white'
+  const textColor = darkMode ? 'text-gray-100' : 'text-gray-900'
   const subtextColor = darkMode ? 'text-gray-400' : 'text-gray-500'
 
   return (
@@ -301,7 +298,7 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
               onClick={() => setShowDropdown(!showDropdown)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
                 darkMode
-                  ? 'bg-[#1a1a2e] text-gray-200 hover:bg-[#2B2B43] border border-[#363C4E]'
+                  ? 'bg-[#0f172a] text-gray-200 hover:bg-[#1e293b] border border-[#334155]'
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
               }`}
             >
@@ -312,7 +309,7 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
             </button>
             {showDropdown && (
               <div className={`absolute z-50 mt-1 rounded-lg shadow-lg w-64 max-h-72 overflow-hidden ${
-                darkMode ? 'bg-[#1a1a2e] border border-[#363C4E]' : 'bg-white border border-gray-200'
+                darkMode ? 'bg-[#111827] border border-[#1e293b]' : 'bg-white border border-gray-200'
               }`}>
                 <div className="p-2 border-b border-inherit">
                   <input
@@ -320,9 +317,9 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
                     placeholder="Tìm symbol... VD: BTC"
                     value={symbolSearch}
                     onChange={(e) => setSymbolSearch(e.target.value)}
-                    className={`w-full px-2 py-1.5 text-sm rounded focus:ring-1 focus:ring-primary-500 ${
+                    className={`w-full px-2 py-1.5 text-sm rounded focus:ring-1 focus:ring-blue-500 ${
                       darkMode
-                        ? 'bg-[#16213e] border-[#363C4E] text-gray-200 placeholder-gray-500 border'
+                        ? 'bg-[#0f172a] border-[#334155] text-gray-200 placeholder-gray-500 border'
                         : 'border border-gray-200'
                     }`}
                     autoFocus
@@ -334,7 +331,7 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
                       key={s.symbol}
                       onClick={() => handleSelectSymbol(s)}
                       className={`w-full text-left px-3 py-2 text-sm transition-colors flex justify-between items-center ${
-                        darkMode ? 'hover:bg-[#2B2B43] text-gray-200' : 'hover:bg-primary-50'
+                        darkMode ? 'hover:bg-[#1e293b] text-gray-200' : 'hover:bg-primary-50'
                       }`}
                     >
                       <span className="font-medium">{s.baseAsset}</span>
@@ -353,7 +350,7 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
         <div className="flex items-center gap-2">
           {/* Interval selector */}
           <div className={`flex rounded-lg overflow-hidden border ${
-            darkMode ? 'border-[#363C4E]' : 'border-gray-200'
+            darkMode ? 'border-[#334155]' : 'border-gray-200'
           }`}>
             {INTERVAL_OPTIONS.map(opt => (
               <button
@@ -361,9 +358,9 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
                 onClick={() => setInterval(opt.value)}
                 className={`px-3 py-1 text-xs font-medium transition-colors ${
                   interval === opt.value
-                    ? 'bg-primary-500 text-white'
+                    ? 'bg-blue-500 text-white'
                     : darkMode
-                      ? 'bg-[#1a1a2e] text-gray-400 hover:bg-[#2B2B43]'
+                      ? 'bg-[#0f172a] text-gray-400 hover:bg-[#1e293b]'
                       : 'bg-white text-gray-600 hover:bg-gray-50'
                 }`}
               >
@@ -413,13 +410,13 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
       {/* Chart area */}
       {!symbol ? (
         <div className={`flex items-center justify-center h-48 rounded-lg ${
-          darkMode ? 'bg-[#1a1a2e]' : 'bg-gray-50'
+          darkMode ? 'bg-[#0f172a]' : 'bg-gray-50'
         }`}>
           <p className={`text-sm ${subtextColor}`}>Chọn symbol để xem chart</p>
         </div>
       ) : chartLoading ? (
         <div className={`flex items-center justify-center h-48 rounded-lg animate-pulse ${
-          darkMode ? 'bg-[#1a1a2e]' : 'bg-gray-50'
+          darkMode ? 'bg-[#0f172a]' : 'bg-gray-50'
         }`}>
           <p className={`text-sm ${subtextColor}`}>Đang tải chart...</p>
         </div>
