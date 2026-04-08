@@ -10,6 +10,7 @@ import Wallets from './pages/finance/WalletConfig'
 import Reports from './pages/Reports'
 import Login from './pages/Login'
 import PaybackTracking from './pages/finance/PaybackTracking'
+import ABetterDay from './pages/finance/ABetterDay'
 import GoalsDashboard from './pages/goals/GoalsDashboard'
 import GoalDetails from './pages/goals/GoalDetails'
 import TaskDetails from './pages/goals/TaskDetails'
@@ -101,8 +102,10 @@ function App() {
           <Route path="wallets" element={<Wallets />} />
           <Route path="wallets/history" element={<WalletHistory />} />
           <Route path="reports" element={<Reports />} />
-          <Route path="payback" element={<PaybackTracking />} />
-          <Route path="payback/priorities" element={<PaybackPriorityConfig />} />
+          <Route path="a-better-day" element={<ABetterDay />} />
+          <Route path="a-better-day/priorities" element={<PaybackPriorityConfig />} />
+          <Route path="payback" element={<Navigate to="/a-better-day" replace />} />
+          <Route path="payback/priorities" element={<Navigate to="/a-better-day/priorities" replace />} />
           <Route path="goals" element={<Navigate to="/goals/calendar" />} /> {/* ✅ Redirect to calendar */}
           <Route path="goals/calendar" element={<GoalsCalendarDashboard />} /> {/* ✅ NEW: Main calendar */}
           <Route path="goals/list" element={<GoalsDashboard />} /> {/* ✅ Goals list */}

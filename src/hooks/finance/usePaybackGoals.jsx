@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
-export function usePaybackGoals() {
+export function usePaybackGoals(goalType = 'payback') {
   const [goals, setGoals] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -16,8 +16,8 @@ export function usePaybackGoals() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      // Get payback goals
-      const { data: goalsData, error: goalsError } = await supabase
+      // Get payback goals filtered by goal_type
+      let query = supabase
       .from('payback_goals')
       .select(`
         *,
@@ -31,6 +31,13 @@ export function usePaybackGoals() {
       `)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
+
+      // Filter by goal_type if column exists
+      if (goalType) {
+        query = query.eq('goal_type', goalType)
+      }
+
+      const { data: goalsData, error: goalsError } = await query
 
       if (goalsError) throw goalsError
 
@@ -112,7 +119,8 @@ export function usePaybackGoals() {
           start_date: goalData.start_date,
           deadline: goalData.deadline,
           status: 'active',
-          priority_id: goalData.priority_id || null
+          priority_id: goalData.priority_id || null,
+          goal_type: goalType
         }])
         .select()
         .single()
@@ -198,7 +206,7 @@ export function usePaybackGoals() {
 
   useEffect(() => {
     fetchGoals()
-  }, [])
+  }, [goalType])
 
   return {
     goals,

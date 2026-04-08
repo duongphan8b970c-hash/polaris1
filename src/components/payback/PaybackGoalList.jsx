@@ -157,7 +157,7 @@ function PaybackGoalRow({ goal, onEdit, onDelete, onComplete }) {
             {formatDate(goal.deadline)}
             {isOverdue && <span className="ml-1 text-xs">(quá {Math.abs(daysRemaining)} ngày)</span>}
             {!isOverdue && daysRemaining === 0 && <span className="ml-1 text-xs">(hôm nay)</span>}
-            {!isOverdue && daysRemaining > 0 && daysRemaining <= 7 && <span className="ml-1 text-xs">(còn {daysRemaining} ngày)</span>}
+            {!isOverdue && daysRemaining > 0 && <span className="ml-1 text-xs">(còn {daysRemaining} ngày)</span>}
           </span>
         )}
       </td>
