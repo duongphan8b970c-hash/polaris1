@@ -78,7 +78,7 @@ function parseRssXml(xmlText) {
     return {
       title: getText('title'),
       description: getText('description'),
-      author: getText('creator') || getText('author') || getText('dc\\:creator'),
+      author: getText('creator') || getText('author'),
       pubDate: getText('pubDate'),
       link: getText('link'),
       thumbnail,
