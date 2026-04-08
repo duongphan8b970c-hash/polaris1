@@ -220,7 +220,11 @@ export default function TradeTracking() {
             </button>
             <button
               onClick={() => setShowCalculator(true)}
-              className="btn btn-secondary text-sm"
+              className={`text-sm font-bold px-6 py-3 rounded-xl transition-all shadow-sm hover:shadow-md ${
+                darkMode
+                  ? 'bg-[#1e293b] border border-[#334155] text-gray-200 hover:bg-[#334155]'
+                  : 'bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
             >
               🧮 Calculator
             </button>

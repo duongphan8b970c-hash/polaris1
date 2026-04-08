@@ -28,8 +28,10 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
   // Chart refs
   const mainChartRef = useRef(null)
   const rsiChartRef = useRef(null)
+  const volChartRef = useRef(null)
   const chartInstanceRef = useRef(null)
   const rsiChartInstanceRef = useRef(null)
+  const volChartInstanceRef = useRef(null)
 
   // Fetch Binance symbol list
   useEffect(() => {
@@ -49,7 +51,9 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
         ma25Color: '#60a5fa',
         volUpColor: 'rgba(34,197,94,0.35)',
         volDownColor: 'rgba(239,68,68,0.35)',
-        rsiColor: '#a78bfa',
+        rsi14Color: '#a78bfa',
+        rsi99Color: '#f59e0b',
+        rsi200Color: '#ec4899',
         crosshair: '#475569',
       }
     : {
@@ -63,7 +67,9 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
         ma25Color: '#3b82f6',
         volUpColor: 'rgba(34,197,94,0.4)',
         volDownColor: 'rgba(239,68,68,0.4)',
-        rsiColor: '#8b5cf6',
+        rsi14Color: '#8b5cf6',
+        rsi99Color: '#d97706',
+        rsi200Color: '#db2777',
         crosshair: '#9ca3af',
       }, [darkMode])
 
@@ -75,7 +81,7 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
     const fetchData = async () => {
       setChartLoading(true)
       try {
-        const data = await binanceService.getKlineData(symbol, interval, 120)
+        const data = await binanceService.getKlineData(symbol, interval, 300)
         if (!cancelled) setRawData(data)
       } catch {
         if (!cancelled) setRawData([])
@@ -90,7 +96,7 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
 
   // Build/rebuild charts when rawData or theme changes
   useEffect(() => {
-    if (!mainChartRef.current || !rsiChartRef.current || rawData.length === 0) return
+    if (!mainChartRef.current || !rsiChartRef.current || !volChartRef.current || rawData.length === 0) return
 
     // Dispose previous chart instances
     if (chartInstanceRef.current) {
@@ -101,10 +107,14 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
       rsiChartInstanceRef.current.remove()
       rsiChartInstanceRef.current = null
     }
+    if (volChartInstanceRef.current) {
+      volChartInstanceRef.current.remove()
+      volChartInstanceRef.current = null
+    }
 
     // Small delay to ensure DOM is ready after potential loading state change
     const timerId = setTimeout(() => {
-      if (!mainChartRef.current || !rsiChartRef.current) return
+      if (!mainChartRef.current || !rsiChartRef.current || !volChartRef.current) return
 
       // ---- Data transformation ----
       const candleData = rawData.map(k => ({
@@ -124,9 +134,11 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
       const maInput = rawData.map(k => ({ time: toChartTime(k.time), close: k.close }))
       const ma7Data = calculateMA(maInput, 7)
       const ma25Data = calculateMA(maInput, 25)
-      const rsiData = calculateRSI(maInput, 14)
+      const rsi14Data = calculateRSI(maInput, 14)
+      const rsi99Data = calculateRSI(maInput, 99)
+      const rsi200Data = calculateRSI(maInput, 200)
 
-      // ---- Main chart (candlestick + volume + MA) ----
+      // ---- Main chart (candlestick + volume overlay + MA) ----
       const chart = createChart(mainChartRef.current, {
         layout: {
           background: { type: ColorType.Solid, color: theme.bg },
@@ -158,12 +170,12 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
       })
       candleSeries.setData(candleData)
 
-      // Volume series (overlay at bottom 25%)
-      const volSeries = chart.addSeries(HistogramSeries, {
+      // Volume series (overlay at bottom 25% of main chart)
+      const volOverlaySeries = chart.addSeries(HistogramSeries, {
         priceFormat: { type: 'volume' },
         priceScaleId: 'vol',
       })
-      volSeries.setData(volumeData)
+      volOverlaySeries.setData(volumeData)
       chart.priceScale('vol').applyOptions({
         scaleMargins: { top: 0.75, bottom: 0 },
       })
@@ -216,26 +228,90 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
       })
       rsiChartInstanceRef.current = rsiChart
 
-      const rsiSeries = rsiChart.addSeries(LineSeries, {
-        color: theme.rsiColor,
+      // RSI(14) line
+      const rsi14Series = rsiChart.addSeries(LineSeries, {
+        color: theme.rsi14Color,
         lineWidth: 1.5,
         priceLineVisible: false,
         lastValueVisible: true,
+        title: '14',
       })
-      rsiSeries.setData(rsiData)
+      rsi14Series.setData(rsi14Data)
+
+      // RSI(99) line
+      if (rsi99Data.length > 0) {
+        const rsi99Series = rsiChart.addSeries(LineSeries, {
+          color: theme.rsi99Color,
+          lineWidth: 1,
+          priceLineVisible: false,
+          lastValueVisible: true,
+          title: '99',
+        })
+        rsi99Series.setData(rsi99Data)
+      }
+
+      // RSI(200) line
+      if (rsi200Data.length > 0) {
+        const rsi200Series = rsiChart.addSeries(LineSeries, {
+          color: theme.rsi200Color,
+          lineWidth: 1,
+          priceLineVisible: false,
+          lastValueVisible: true,
+          title: '200',
+        })
+        rsi200Series.setData(rsi200Data)
+      }
 
       // RSI reference lines (30 and 70)
-      rsiSeries.createPriceLine({ price: 70, color: theme.downColor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' })
-      rsiSeries.createPriceLine({ price: 30, color: theme.upColor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' })
+      rsi14Series.createPriceLine({ price: 70, color: theme.downColor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' })
+      rsi14Series.createPriceLine({ price: 30, color: theme.upColor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' })
 
       rsiChart.timeScale().fitContent()
 
-      // Sync time scales
-      chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-        if (range) rsiChart.timeScale().setVisibleLogicalRange(range)
+      // ---- Volume chart (separate, below RSI) ----
+      const volChart = createChart(volChartRef.current, {
+        layout: {
+          background: { type: ColorType.Solid, color: theme.bg },
+          textColor: theme.text,
+        },
+        grid: {
+          vertLines: { color: theme.grid },
+          horzLines: { color: theme.grid },
+        },
+        rightPriceScale: {
+          borderColor: theme.border,
+          scaleMargins: { top: 0.1, bottom: 0 },
+        },
+        timeScale: {
+          borderColor: theme.border,
+          timeVisible: true,
+          secondsVisible: false,
+          visible: false,
+        },
+        crosshair: { mode: 0 },
+        width: volChartRef.current.clientWidth,
+        height: 80,
       })
-      rsiChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-        if (range) chart.timeScale().setVisibleLogicalRange(range)
+      volChartInstanceRef.current = volChart
+
+      const volStandaloneSeries = volChart.addSeries(HistogramSeries, {
+        priceFormat: { type: 'volume' },
+      })
+      volStandaloneSeries.setData(volumeData)
+
+      volChart.timeScale().fitContent()
+
+      // Sync all three charts' time scales
+      const syncCharts = [chart, rsiChart, volChart]
+      syncCharts.forEach((src, srcIdx) => {
+        src.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+          if (!range) return
+          syncCharts.forEach((dst, dstIdx) => {
+            if (srcIdx !== dstIdx) {
+              dst.timeScale().setVisibleLogicalRange(range)
+            }
+          })
+        })
       })
     }, 50)
 
@@ -246,6 +322,9 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
       }
       if (rsiChartRef.current && rsiChartInstanceRef.current) {
         rsiChartInstanceRef.current.applyOptions({ width: rsiChartRef.current.clientWidth })
+      }
+      if (volChartRef.current && volChartInstanceRef.current) {
+        volChartInstanceRef.current.applyOptions({ width: volChartRef.current.clientWidth })
       }
     }
     window.addEventListener('resize', handleResize)
@@ -260,6 +339,10 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
       if (rsiChartInstanceRef.current) {
         rsiChartInstanceRef.current.remove()
         rsiChartInstanceRef.current = null
+      }
+      if (volChartInstanceRef.current) {
+        volChartInstanceRef.current.remove()
+        volChartInstanceRef.current = null
       }
     }
   }, [rawData, theme])
@@ -390,18 +473,26 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
             </span>
           )}
           {/* Legend */}
-          <div className="ml-auto flex items-center gap-3 text-xs">
+          <div className="ml-auto flex items-center gap-3 text-xs flex-wrap">
             <span className="flex items-center gap-1">
-              <span className="inline-block w-3 h-0.5 rounded" style={{ background: darkMode ? '#f5c842' : '#f59e0b' }} />
+              <span className="inline-block w-3 h-0.5 rounded" style={{ background: theme.ma7Color }} />
               MA7
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block w-3 h-0.5 rounded" style={{ background: darkMode ? '#2962FF' : '#3b82f6' }} />
+              <span className="inline-block w-3 h-0.5 rounded" style={{ background: theme.ma25Color }} />
               MA25
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block w-3 h-0.5 rounded" style={{ background: darkMode ? '#b39ddb' : '#8b5cf6' }} />
-              RSI
+              <span className="inline-block w-3 h-0.5 rounded" style={{ background: theme.rsi14Color }} />
+              RSI14
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-3 h-0.5 rounded" style={{ background: theme.rsi99Color }} />
+              RSI99
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-3 h-0.5 rounded" style={{ background: theme.rsi200Color }} />
+              RSI200
             </span>
           </div>
         </div>
@@ -426,9 +517,17 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
           <div ref={mainChartRef} className="w-full rounded-lg overflow-hidden" />
           {/* RSI chart */}
           <div className={`flex items-center gap-2 mt-1 px-1 ${subtextColor}`}>
-            <span className="text-xs font-medium">RSI(14)</span>
+            <span className="text-xs font-medium">RSI</span>
+            <span className="text-xs" style={{ color: theme.rsi14Color }}>14</span>
+            <span className="text-xs" style={{ color: theme.rsi99Color }}>99</span>
+            <span className="text-xs" style={{ color: theme.rsi200Color }}>200</span>
           </div>
           <div ref={rsiChartRef} className="w-full rounded-lg overflow-hidden" />
+          {/* Volume chart */}
+          <div className={`flex items-center gap-2 mt-1 px-1 ${subtextColor}`}>
+            <span className="text-xs font-medium">VOL</span>
+          </div>
+          <div ref={volChartRef} className="w-full rounded-lg overflow-hidden" />
         </>
       )}
     </div>
