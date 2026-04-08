@@ -146,7 +146,7 @@ export default function MarketNewsArea() {
       )}
 
       <p className="mt-4 text-xs text-center text-gray-400">
-        Nguồn: CryptoCompare · Tự động cập nhật mỗi 5 phút
+        Nguồn: CoinTelegraph / CoinDesk · Tự động cập nhật mỗi 5 phút
       </p>
     </div>
   )
