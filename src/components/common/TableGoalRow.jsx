@@ -62,6 +62,9 @@ function DurationCell({ goal, timeRemaining }) {
       {timeRemaining?.type === 'soon' && (
         <span className="text-orange-500">(còn {timeRemaining.days} ngày)</span>
       )}
+      {timeRemaining?.type === 'normal' && (
+        <span className="text-blue-500">(còn {timeRemaining.days} ngày)</span>
+      )}
     </div>
   )
 }
