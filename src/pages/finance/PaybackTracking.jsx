@@ -347,7 +347,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
             </svg>
           </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">Chưa có mục tiêu nào</h3>
-          <p className="text-gray-600 mb-6">Tạo mục tiêu đầu tiên để bắt đầu theo dõi payback</p>
+          <p className="text-gray-600 mb-6">Tạo mục tiêu đầu tiên để bắt đầu theo dõi</p>
           <button onClick={handleCreate} className="btn btn-primary">
             + Tạo mục tiêu mới
           </button>
