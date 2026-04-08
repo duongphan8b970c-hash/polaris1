@@ -9,7 +9,6 @@ import TransactionList from '../../components/transactions/TransactionList'
 import TransactionForm from '../../components/transactions/TransactionForm'
 import CategoryList from '../../components/transactions/CategoryList'
 import CategoryForm from '../../components/transactions/CategoryForm'
-import BudgetList from '../../components/budgets/BudgetList' 
 import BudgetForm from '../../components/budgets/BudgetForm' 
 import Modal from '../../components/common/Modal'
 import PageHeader from '../../components/layout/PageHeader'
@@ -830,35 +829,9 @@ const filteredStats = useMemo(() => {
             budgets={budgets}
             onEdit={handleEditCategory}
             onSetBudget={handleSetBudgetForCategory}
+            onEditBudget={handleEditBudget}
+            onDeleteBudget={handleDeleteBudget}
           />
-
-          {/* Budget Status Section (for expense categories) */}
-          {categoryType === 'expense' && budgets.length > 0 && (
-            <div className="mt-8">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  Theo dõi hạn mức
-                </h3>
-                <button onClick={handleCreateBudget} className="btn btn-secondary text-sm">
-                  + Thêm hạn mức
-                </button>
-              </div>
-              {budgetsLoading ? (
-                <Loading />
-              ) : budgetsError ? (
-                <ErrorMessage message={budgetsError} />
-              ) : (
-                <BudgetList
-                  budgets={budgets.filter(b => safeCategories.some(c => c.id === b.category_id) || true)}
-                  onEdit={handleEditBudget}
-                  onDelete={handleDeleteBudget}
-                />
-              )}
-            </div>
-          )}
 
           <Modal
             isOpen={showCategoryForm}

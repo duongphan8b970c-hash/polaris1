@@ -25,7 +25,8 @@ function getPaybacksForMonth(goals, year, month) {
 }
 
 export default function PaybackCalendarModal({ goals = [], onClose }) {
-  const today = new Date()
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()) // Normalized to midnight
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
   const [currentMonth, setCurrentMonth] = useState(today.getMonth())
   const [selectedDate, setSelectedDate] = useState(today)
@@ -157,11 +158,13 @@ export default function PaybackCalendarModal({ goals = [], onClose }) {
 
                 // Determine urgency
                 const hasOverdue = dayPaybacks.some(g => {
-                  const deadline = new Date(g.deadline)
+                  const d = new Date(g.deadline)
+                  const deadline = new Date(d.getFullYear(), d.getMonth(), d.getDate())
                   return deadline < today
                 })
                 const hasDueSoon = dayPaybacks.some(g => {
-                  const deadline = new Date(g.deadline)
+                  const d = new Date(g.deadline)
+                  const deadline = new Date(d.getFullYear(), d.getMonth(), d.getDate())
                   const diff = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24))
                   return diff >= 0 && diff <= 7
                 })
@@ -231,7 +234,8 @@ export default function PaybackCalendarModal({ goals = [], onClose }) {
               </h4>
               <div className="space-y-2">
                 {selectedPaybacks.map(goal => {
-                  const deadline = new Date(goal.deadline)
+                  const d = new Date(goal.deadline)
+                  const deadline = new Date(d.getFullYear(), d.getMonth(), d.getDate())
                   const daysRemaining = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24))
                   const isOverdue = daysRemaining < 0
 
