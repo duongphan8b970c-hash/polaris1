@@ -825,16 +825,6 @@ const filteredStats = useMemo(() => {
             </button>
           </div>
 
-          {/* Budget over-limit alerts */}
-          {categoryType === 'expense' && (() => {
-            const overBudgetCategories = budgets.filter(b => {
-              const cat = safeCategories.find(c => c.id === b.category_id)
-              return cat // only show for currently visible categories
-            })
-            if (overBudgetCategories.length === 0) return null
-            return null // BudgetList handles the visual per-card
-          })()}
-
           <CategoryList
             categories={safeCategories}
             budgets={budgets}

@@ -19,10 +19,8 @@ export default function BudgetForm({ budget, presetCategoryId, onSubmit, onCance
         period: budget.period,
         start_date: budget.start_date,
       })
-    } else if (presetCategoryId) {
-      setFormData(prev => ({ ...prev, category_id: presetCategoryId }))
     }
-  }, [budget, presetCategoryId])
+  }, [budget])
 
   const handleSubmit = (e) => {
     e.preventDefault()
