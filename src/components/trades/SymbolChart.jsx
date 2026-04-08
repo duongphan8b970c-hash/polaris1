@@ -81,6 +81,7 @@ export default function SymbolChart({ symbol, onSymbolChange, darkMode = false }
     const fetchData = async () => {
       setChartLoading(true)
       try {
+        // Fetch 300 klines to have enough data for RSI(200) which needs ≥201 data points
         const data = await binanceService.getKlineData(symbol, interval, 300)
         if (!cancelled) setRawData(data)
       } catch {
