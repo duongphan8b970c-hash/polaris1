@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import PageHeader from '../../components/layout/PageHeader'
 import TradeList from '../../components/trades/TradeList'
 import TradeForm from '../../components/trades/TradeForm'
+import LiveTradeChart from '../../components/trades/LiveTradeChart'
 import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
@@ -37,7 +38,7 @@ export default function TradeTracking() {
     trade: null,
     resultType: null // 'win' or 'loss'
   })
-  const [selectedMonth, setSelectedMonth] = useState(MONTH_OPTIONS[1].value) // index 1 = current month (index 0 is 'Tất cả')
+  const [selectedMonth, setSelectedMonth] = useState('all') // default to all-time
 
   // Filter trades by selected month
   const filteredTrades = useMemo(() => {
@@ -49,17 +50,17 @@ export default function TradeTracking() {
     })
   }, [trades, selectedMonth])
 
-  // Calculate statistics for filtered trades
-  const stats = useMemo(() => filteredTrades.reduce((acc, t) => {
+  // Calculate statistics helper
+  const calcStats = (tradeList) => tradeList.reduce((acc, t) => {
     if (t.status === 'closed') {
       acc.closedCount++
-      
+
       const pl = t.profit_loss || 0
       const currency = t.exit_currency || t.wallet?.currency || 'USDT'
-      
+
       if (!acc.plByCurrency[currency]) acc.plByCurrency[currency] = 0
       acc.plByCurrency[currency] += pl
-      
+
       if (pl > 0) {
         acc.winCount++
         acc.totalWin += pl
@@ -73,19 +74,37 @@ export default function TradeTracking() {
       acc.openCount++
     }
     return acc
-  }, { 
-    openCount: 0, 
-    closedCount: 0, 
-    winCount: 0, 
-    lossCount: 0, 
+  }, {
+    openCount: 0,
+    closedCount: 0,
+    winCount: 0,
+    lossCount: 0,
     totalWin: 0,
     totalLoss: 0,
     plByCurrency: {},
     bestTrade: null,
     worstTrade: null,
-  }), [filteredTrades])
+  })
 
-  stats.winRate = stats.closedCount > 0 ? (stats.winCount / stats.closedCount * 100).toFixed(1) : 0
+  // All-time stats always from full trades list
+  const allTimeStats = useMemo(() => {
+    const s = calcStats(trades)
+    s.winRate = s.closedCount > 0 ? (s.winCount / s.closedCount * 100).toFixed(1) : 0
+    return s
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trades])
+
+  // Filtered stats from filteredTrades
+  const filteredStats = useMemo(() => {
+    const s = calcStats(filteredTrades)
+    s.winRate = s.closedCount > 0 ? (s.winCount / s.closedCount * 100).toFixed(1) : 0
+    return s
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredTrades])
+
+  // Show all-time stats when "all" is selected, filtered stats otherwise
+  const stats = selectedMonth === 'all' ? allTimeStats : filteredStats
+  const isAllTime = selectedMonth === 'all'
 
   const selectedMonthLabel = MONTH_OPTIONS.find(o => o.value === selectedMonth)?.label || ''
 
@@ -181,20 +200,23 @@ export default function TradeTracking() {
       {/* Statistics */}
       <div className="mb-1">
         <p className="text-xs text-gray-400 mb-2">
-          Thống kê: <span className="font-medium text-gray-600">{selectedMonthLabel}</span>
-          {' '}({filteredTrades.length} trades)
+          Thống kê: {isAllTime
+            ? <span className="font-medium text-purple-600">All-Time 🏆</span>
+            : <span className="font-medium text-gray-600">{selectedMonthLabel}</span>
+          }
+          {' '}({(isAllTime ? trades : filteredTrades).length} trades)
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
         {/* Open Trades */}
         <div className="stat-card border-blue-500">
-          <p className="text-sm text-gray-500">Đang mở</p>
+          <p className="text-sm text-gray-500">Đang mở {isAllTime && <span className="text-purple-500 text-xs">(All-Time)</span>}</p>
           <p className="text-2xl font-bold text-blue-600 mt-1">{stats.openCount}</p>
         </div>
         
         {/* Win / Loss */}
         <div className="stat-card border-green-500">
-          <p className="text-sm text-gray-500">Win / Loss</p>
+          <p className="text-sm text-gray-500">Win / Loss {isAllTime && <span className="text-purple-500 text-xs">(All-Time)</span>}</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">
             <span className="text-green-600">{stats.winCount}</span>
             {' / '}
@@ -204,13 +226,13 @@ export default function TradeTracking() {
         
         {/* Win Rate */}
         <div className="stat-card border-purple-500">
-          <p className="text-sm text-gray-500">Win Rate</p>
+          <p className="text-sm text-gray-500">Win Rate {isAllTime && <span className="text-purple-500 text-xs">(All-Time)</span>}</p>
           <p className="text-2xl font-bold text-purple-600 mt-1">{stats.winRate}%</p>
         </div>
         
         {/* Total P&L */}
         <div className="stat-card border-primary-500">
-          <p className="text-sm text-gray-500 mb-1">Total P&L</p>
+          <p className="text-sm text-gray-500 mb-1">Total P&L {isAllTime && <span className="text-purple-500 text-xs">(All-Time)</span>}</p>
           <div className="space-y-1">
             {Object.keys(stats.plByCurrency).length > 0 ? (
               Object.entries(stats.plByCurrency).map(([currency, amount]) => (
@@ -252,6 +274,26 @@ export default function TradeTracking() {
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Live Open Trades Section */}
+      {filteredTrades.filter(t => t.status === 'open').length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            📈 Open Positions - Live Tracking
+            <span className="text-sm font-normal text-gray-500">
+              ({filteredTrades.filter(t => t.status === 'open').length} active)
+            </span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredTrades
+              .filter(t => t.status === 'open')
+              .map(trade => (
+                <LiveTradeChart key={trade.id} trade={trade} />
+              ))
+            }
+          </div>
         </div>
       )}
 
