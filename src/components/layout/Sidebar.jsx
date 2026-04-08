@@ -132,7 +132,7 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
           )
         },
         {
-          name: 'A better day',
+          name: 'A Better Day',
           path: '/a-better-day',
           icon: (
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
