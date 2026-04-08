@@ -9,6 +9,18 @@ import { supabase } from '../lib/supabase' // ✅ ADD THIS
 export const formatCurrency = (amount, currency = 'VND') => {
   if (amount == null || isNaN(amount)) return '0 ₫'
   
+  // Crypto / non-ISO currency codes (e.g. USDT, BTC, ETH) are not supported
+  // by Intl.NumberFormat's "currency" style — format manually for those.
+  const NON_ISO_CURRENCIES = ['USDT', 'USDC', 'BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'BUSD']
+  
+  if (NON_ISO_CURRENCIES.includes(currency)) {
+    const formatted = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount)
+    return `${formatted} ${currency}`
+  }
+  
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
     currency: currency,
