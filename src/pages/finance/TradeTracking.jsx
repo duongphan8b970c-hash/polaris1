@@ -281,7 +281,7 @@ export default function TradeTracking() {
         
         {/* Total P&L */}
         <div className={`${dm.statCard} ${!darkMode ? '' : 'rounded-xl shadow-md p-6'} border-primary-500`}>
-          <p className={`text-sm ${dm.subtext} mb-1`}>Total P&amp;L {isAllTime && <span className="text-purple-500 text-xs">(All-Time)</span>}</p>
+          <p className={`text-sm ${dm.subtext} mb-1`}>Total P&L {isAllTime && <span className="text-purple-500 text-xs">(All-Time)</span>}</p>
           <div className="space-y-1">
             {Object.keys(stats.plByCurrency).length > 0 ? (
               Object.entries(stats.plByCurrency).map(([currency, amount]) => (
