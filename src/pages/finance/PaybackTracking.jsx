@@ -4,6 +4,7 @@ import { usePaybackGoals } from '../../hooks/finance/usePaybackGoals'
 import { usePaybackPriorities } from '../../hooks/finance/usePaybackPriorities'
 import PaybackGoalList from '../../components/payback/PaybackGoalList'
 import PaybackGoalForm from '../../components/payback/PaybackGoalForm'
+import PaybackCalendarModal from '../../components/payback/PaybackCalendarModal'
 import Modal from '../../components/common/Modal'
 import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
@@ -19,6 +20,7 @@ export default function PaybackTracking() {
   const [editingGoal, setEditingGoal] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [selectedPriority, setSelectedPriority] = useState('all')
+  const [showCalendar, setShowCalendar] = useState(false)
 
   // ✅ Separate active and completed
   const activeGoals = goals.filter(g => g.status === 'active')
@@ -131,6 +133,16 @@ export default function PaybackTracking() {
         title="Theo Dõi Payback" 
         action={
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowCalendar(true)}
+              className="btn btn-secondary bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+            >
+              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Watchout 📅
+            </button>
+
             <button 
               onClick={() => navigate('/payback/priorities')}
               className="btn btn-secondary"
@@ -360,6 +372,14 @@ export default function PaybackTracking() {
           loading={submitting}
         />
       </Modal>
+
+      {/* Payback Calendar Modal */}
+      {showCalendar && (
+        <PaybackCalendarModal
+          goals={goals}
+          onClose={() => setShowCalendar(false)}
+        />
+      )}
     </div>
   )
 }

@@ -25,7 +25,7 @@ export default function BudgetList({ budgets, onEdit, onDelete }) {
           .gte('date', currentMonth)
           .is('deleted_at', null)
         
-        const spent = data?.reduce((sum, t) => sum + t.amount, 0) || 0
+        const spent = data?.reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0
         usage[budget.id] = {
           spent,
           remaining: budget.amount - spent,

@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import { NotificationProvider } from './contexts/NotificationContext'
 import MainLayout from './components/layout/MainLayout'
 import Dashboard from './pages/Dashboard'
 import FinancialTracking from './pages/finance/FinancialTracking'
@@ -69,6 +70,7 @@ function App() {
   }
 
   return (
+    <NotificationProvider>
     <Router>
       <Routes>
         {/* ✅ Public Route - Login */}
@@ -116,6 +118,7 @@ function App() {
         />
       </Routes>
     </Router>
+    </NotificationProvider>
   )
 }
 

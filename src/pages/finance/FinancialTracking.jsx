@@ -4,11 +4,11 @@ import { useTransactions } from '../../hooks/finance/useTransactions'
 import { useCategories } from '../../hooks/finance/useCategories'
 import { useBudgets } from '../../hooks/finance/useBudgets'
 import { useWallets } from '../../hooks/finance/useWallets'
+import { useNotifications } from '../../contexts/NotificationContext'
 import TransactionList from '../../components/transactions/TransactionList'
 import TransactionForm from '../../components/transactions/TransactionForm'
 import CategoryList from '../../components/transactions/CategoryList'
 import CategoryForm from '../../components/transactions/CategoryForm'
-import BudgetList from '../../components/budgets/BudgetList' 
 import BudgetForm from '../../components/budgets/BudgetForm' 
 import Modal from '../../components/common/Modal'
 import PageHeader from '../../components/layout/PageHeader'
@@ -19,6 +19,8 @@ import { formatCurrency, formatDate, formatNumber } from '../../utils'
 export default function FinancialTracking() {
   const [activeTab, setActiveTab] = useState('transactions')
   const [categoryType, setCategoryType] = useState('expense')
+  
+  const { notifyBudgetExceeded, notifyBudgetWarning } = useNotifications()
   
   // Filters state
   const [filters, setFilters] = useState({
@@ -102,6 +104,7 @@ export default function FinancialTracking() {
   const [showBudgetForm, setShowBudgetForm] = useState(false)
   const [editingBudget, setEditingBudget] = useState(null)
   const [submittingBudget, setSubmittingBudget] = useState(false)
+  const [budgetCategoryPreset, setBudgetCategoryPreset] = useState(null)
 
   const [breakdownView, setBreakdownView] = useState('month')
 
@@ -237,6 +240,33 @@ const filteredStats = useMemo(() => {
     setEditingTransaction(null)
   }
 
+  const checkBudgetAfterTransaction = async (formData) => {
+    if (formData.type !== 'expense' || !formData.category_id) return
+
+    const budget = budgets.find(b => b.category_id === formData.category_id)
+    if (!budget) return
+
+    const now = new Date()
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+
+    const { data } = await supabase
+      .from('financial_transactions')
+      .select('amount')
+      .eq('category_id', formData.category_id)
+      .eq('type', 'expense')
+      .gte('date', currentMonth)
+      .is('deleted_at', null)
+
+    const totalSpent = data?.reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0
+    const percentage = budget.amount > 0 ? (totalSpent / budget.amount) * 100 : 0
+
+    if (totalSpent > budget.amount) {
+      notifyBudgetExceeded(budget.category?.name || 'Danh mục', totalSpent, budget.amount)
+    } else if (percentage > 80) {
+      notifyBudgetWarning(budget.category?.name || 'Danh mục', percentage)
+    }
+  }
+
   const handleSubmitTransaction = async (formData) => {
     setSubmittingTransaction(true)
     
@@ -248,6 +278,10 @@ const filteredStats = useMemo(() => {
     
     if (result.success) {
       handleCloseTransactionForm()
+      // Check budget after successful expense transaction
+      if (formData.type === 'expense') {
+        await checkBudgetAfterTransaction(formData)
+      }
     } else {
       alert('Lỗi: ' + result.error)
     }
@@ -323,6 +357,19 @@ const filteredStats = useMemo(() => {
   const handleCloseBudgetForm = () => {
     setShowBudgetForm(false)
     setEditingBudget(null)
+    setBudgetCategoryPreset(null)
+  }
+
+  // Set budget directly from category card
+  const handleSetBudgetForCategory = (category, existingBudget) => {
+    if (existingBudget) {
+      setEditingBudget(existingBudget)
+    } else {
+      setEditingBudget(null)
+      // Pre-set category_id by using a special state
+      setBudgetCategoryPreset(category.id)
+    }
+    setShowBudgetForm(true)
   }
 
   const handleSubmitBudget = async (formData) => {
@@ -427,20 +474,7 @@ const filteredStats = useMemo(() => {
               <svg className="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
               </svg>
-              Danh mục
-            </button>
-            <button
-              onClick={() => setActiveTab('budgets')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'budgets'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <svg className="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              Ngân sách
+              Danh mục & Hạn mức
             </button>
           </nav>
         </div>
@@ -792,7 +826,11 @@ const filteredStats = useMemo(() => {
 
           <CategoryList
             categories={safeCategories}
+            budgets={budgets}
             onEdit={handleEditCategory}
+            onSetBudget={handleSetBudgetForCategory}
+            onEditBudget={handleEditBudget}
+            onDeleteBudget={handleDeleteBudget}
           />
 
           <Modal
@@ -810,44 +848,15 @@ const filteredStats = useMemo(() => {
           </Modal>
         </>
       )}
-      {/* ✅ THÊM: TAB CONTENT: BUDGETS */}
-      {activeTab === 'budgets' && (
-        <>
-          {/* Add Budget Button */}
-          <div className="mb-6 flex justify-between items-center">
-            <p className="text-gray-600">
-              Quản lý hạn mức chi tiêu tối đa cho từng danh mục theo tháng/năm
-            </p>
-            <button onClick={handleCreateBudget} className="btn btn-primary">
-              <svg className="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Thêm ngân sách
-            </button>
-          </div>
-
-          {/* Budgets List */}
-          {budgetsLoading ? (
-            <Loading />
-          ) : budgetsError ? (
-            <ErrorMessage message={budgetsError} />
-          ) : (
-            <BudgetList
-              budgets={budgets}
-              onEdit={handleEditBudget}
-              onDelete={handleDeleteBudget}
-            />
-          )}
-        </>
-      )}
-      {/* ✅ THÊM: Budget Form Modal */}
+      {/* Budget Form Modal (shared across tabs) */}
       <Modal
         isOpen={showBudgetForm}
         onClose={handleCloseBudgetForm}
-        title={editingBudget ? 'Sửa ngân sách' : 'Thêm ngân sách mới'}
+        title={editingBudget ? 'Sửa hạn mức' : 'Đặt hạn mức chi tiêu'}
       >
         <BudgetForm
           budget={editingBudget}
+          presetCategoryId={budgetCategoryPreset}
           onSubmit={handleSubmitBudget}
           onCancel={handleCloseBudgetForm}
           loading={submittingBudget}

@@ -63,6 +63,8 @@ export function useTrades(filters = {}) {
           leverage: parseInt(tradeData.leverage) || 1,
           exit_currency: tradeData.exit_currency,
           status: 'open',
+          notes: tradeData.notes || null,
+          plan_note: tradeData.plan_note || null,
         }])
         .select(`
           *,
@@ -124,6 +126,8 @@ export function useTrades(filters = {}) {
         entry_price: parseFloat(tradeData.entry_price),
         amount: parseFloat(tradeData.amount),
         leverage: parseInt(tradeData.leverage),
+        notes: tradeData.notes || null,
+        plan_note: tradeData.plan_note || null,
       }
 
       // If closing trade
