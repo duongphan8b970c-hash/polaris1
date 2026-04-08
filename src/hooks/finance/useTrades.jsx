@@ -64,7 +64,6 @@ export function useTrades(filters = {}) {
           exit_currency: tradeData.exit_currency,
           status: 'open',
           notes: tradeData.notes || null,
-          plan_note: tradeData.plan_note || null,
         }])
         .select(`
           *,
@@ -127,7 +126,6 @@ export function useTrades(filters = {}) {
         amount: parseFloat(tradeData.amount),
         leverage: parseInt(tradeData.leverage),
         notes: tradeData.notes || null,
-        plan_note: tradeData.plan_note || null,
       }
 
       // If closing trade

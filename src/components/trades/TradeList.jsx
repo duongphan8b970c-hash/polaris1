@@ -39,14 +39,6 @@ export default function TradeList({ trades, onEdit, onClose, onQuickClose, darkM
                 <td className="px-4 py-3 whitespace-nowrap">
                   <div className={`text-sm font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{trade.symbol}</div>
                   <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>{trade.wallet?.name}</div>
-                  {trade.plan_note && (
-                    <div
-                      className="mt-1 text-xs truncate max-w-[120px] text-blue-500 cursor-help"
-                      title={trade.plan_note}
-                    >
-                      📋 {trade.plan_note}
-                    </div>
-                  )}
                 </td>
 
                 <td className="px-4 py-3 whitespace-nowrap">
