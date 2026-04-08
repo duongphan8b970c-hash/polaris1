@@ -34,7 +34,51 @@ function stripHtml(html, maxLen = 200) {
   return text.length > maxLen ? text.slice(0, maxLen) + '…' : text
 }
 
-// ── Strategy 1: rss2json.com (returns JSON directly) ────────────────
+/** Parse RSS XML text into normalised raw items. */
+function parseRssXml(xmlText) {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(xmlText, 'text/xml')
+  const items = doc.querySelectorAll('item')
+  return Array.from(items).map((item) => {
+    const getText = (tag) => item.querySelector(tag)?.textContent?.trim() || ''
+    let thumbnail = ''
+    const mediaContent = item.querySelector('content[url]') || item.querySelector('thumbnail[url]')
+    if (mediaContent) {
+      thumbnail = mediaContent.getAttribute('url') || ''
+    }
+    if (!thumbnail) {
+      const enclosure = item.querySelector('enclosure[url]')
+      if (enclosure) thumbnail = enclosure.getAttribute('url') || ''
+    }
+    const categoryEls = item.querySelectorAll('category')
+    const categories = Array.from(categoryEls).map((c) => c.textContent?.trim()).filter(Boolean)
+
+    return {
+      title: getText('title'),
+      description: getText('description'),
+      author: getText('creator') || getText('author'),
+      pubDate: getText('pubDate'),
+      link: getText('link'),
+      thumbnail,
+      categories,
+    }
+  })
+}
+
+// ── Strategy 1 (primary): Own Vercel serverless proxy ───────────────
+// No CORS issues — the request goes server-side from Vercel's edge.
+async function fetchViaVercelProxy(feedUrl) {
+  const url = `/api/rss-proxy?url=${encodeURIComponent(feedUrl)}`
+  const res = await fetch(url)
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Vercel proxy returned ${res.status}: ${body.slice(0, 120)}`)
+  }
+  const xmlText = await res.text()
+  return parseRssXml(xmlText)
+}
+
+// ── Strategy 2: rss2json.com (returns JSON directly) ────────────────
 async function fetchViaRss2Json(feedUrl, count) {
   const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=${count}`
   const res = await fetch(url)
@@ -54,39 +98,7 @@ async function fetchViaRss2Json(feedUrl, count) {
   }))
 }
 
-// ── Strategy 2: AllOrigins CORS proxy → client-side XML parse ───────
-function parseRssXml(xmlText) {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(xmlText, 'text/xml')
-  const items = doc.querySelectorAll('item')
-  return Array.from(items).map((item) => {
-    const getText = (tag) => item.querySelector(tag)?.textContent?.trim() || ''
-    // Try to find thumbnail from media:content, media:thumbnail, or enclosure
-    let thumbnail = ''
-    const mediaContent = item.querySelector('content[url]') || item.querySelector('thumbnail[url]')
-    if (mediaContent) {
-      thumbnail = mediaContent.getAttribute('url') || ''
-    }
-    if (!thumbnail) {
-      const enclosure = item.querySelector('enclosure[url]')
-      if (enclosure) thumbnail = enclosure.getAttribute('url') || ''
-    }
-    // Extract categories
-    const categoryEls = item.querySelectorAll('category')
-    const categories = Array.from(categoryEls).map((c) => c.textContent?.trim()).filter(Boolean)
-
-    return {
-      title: getText('title'),
-      description: getText('description'),
-      author: getText('creator') || getText('author'),
-      pubDate: getText('pubDate'),
-      link: getText('link'),
-      thumbnail,
-      categories,
-    }
-  })
-}
-
+// ── Strategy 3: AllOrigins CORS proxy ───────────────────────────────
 async function fetchViaAllOrigins(feedUrl) {
   const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`
   const res = await fetch(url)
@@ -95,20 +107,11 @@ async function fetchViaAllOrigins(feedUrl) {
   return parseRssXml(xmlText)
 }
 
-// ── Strategy 3: cors.lol CORS proxy → client-side XML parse ────────
-async function fetchViaCorsLol(feedUrl) {
-  const url = `https://api.cors.lol/?url=${encodeURIComponent(feedUrl)}`
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`cors.lol returned ${res.status}`)
-  const xmlText = await res.text()
-  return parseRssXml(xmlText)
-}
-
 // ── Proxy strategies in priority order ──────────────────────────────
 const PROXY_STRATEGIES = [
+  { name: 'vercel-proxy', fn: (feedUrl) => fetchViaVercelProxy(feedUrl) },
   { name: 'rss2json', fn: (feedUrl, count) => fetchViaRss2Json(feedUrl, count) },
   { name: 'AllOrigins', fn: (feedUrl) => fetchViaAllOrigins(feedUrl) },
-  { name: 'cors.lol', fn: (feedUrl) => fetchViaCorsLol(feedUrl) },
 ]
 
 /** Normalise raw items into our UI model. */
@@ -131,7 +134,7 @@ function normaliseItems(rawItems, sourceName) {
 export const cryptoNewsService = {
   /**
    * Fetch latest crypto / market news.
-   * Tries multiple CORS proxy strategies for each RSS source.
+   * Tries own Vercel serverless proxy first, then external CORS proxies.
    * @param {number} limit  – max articles (default 20)
    * @param {boolean} forceRefresh – bypass cache
    * @returns {Promise<Array>} normalised news items
