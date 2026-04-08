@@ -42,7 +42,7 @@ export default function LiveTradeChart({ trade }) {
       <div className="card border-red-200">
         <p className="text-sm text-red-600">❌ {trade.symbol} - Không thể lấy dữ liệu live</p>
         <p className="text-xs text-gray-500 mt-1">Entry: ${trade.entry_price?.toFixed(2)}</p>
-        <p className="text-xs text-gray-400 mt-1">Kiểm tra lại symbol có đúng trên Binance không</p>
+        <p className="text-xs text-gray-400 mt-1">{error} — Kiểm tra lại symbol có đúng trên Binance không</p>
       </div>
     )
   }

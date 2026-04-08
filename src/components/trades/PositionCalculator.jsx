@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react'
 import { formatCurrency } from '../../utils'
 
+const DEFAULT_RISK_PERCENT = 2 // 2% risk for suggested levels
+
 export default function PositionCalculator({ entryPrice, amount, leverage, side, currency }) {
   const [tpLevels, setTpLevels] = useState([
     { price: '', percentage: '50' },
@@ -24,7 +26,7 @@ export default function PositionCalculator({ entryPrice, amount, leverage, side,
 
   // Calculate suggested TP/SL based on risk/reward ratio
   const suggestedLevels = useMemo(() => {
-    const riskPercent = 2 // 2% risk
+    const riskPercent = DEFAULT_RISK_PERCENT
     const rewardRatios = [1, 2, 3] // 1:1, 1:2, 1:3 R:R
 
     const slPrice = side === 'buy'

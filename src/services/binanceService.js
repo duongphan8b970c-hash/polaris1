@@ -81,7 +81,7 @@ export const binanceService = {
       }
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error)
+        console.error(`WebSocket error for ${symbol}:`, error)
       }
 
       return ws

@@ -23,7 +23,7 @@ export function useBinancePrice(symbol, enableWebSocket = true) {
           setTicker(data)
           setError(null)
         } else {
-          setError('Failed to fetch price')
+          setError(`Failed to fetch price for ${symbol}`)
         }
       } catch (err) {
         setError(err.message)
