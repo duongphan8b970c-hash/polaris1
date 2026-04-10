@@ -249,7 +249,7 @@ export default function PaybackCalendarModal({ goals = [], goalType = 'payback',
                       key={goal.id}
                       className={`flex items-center justify-between p-3 rounded-xl border ${
                         isOverdue
-                          ? (isPlan ? 'bg-red-50 border-red-200' : 'bg-red-50 border-red-200')
+                          ? 'bg-red-50 border-red-200'
                           : daysRemaining <= 7
                           ? (isPlan ? 'bg-teal-50 border-teal-200' : 'bg-orange-50 border-orange-200')
                           : 'bg-blue-50 border-blue-200'
@@ -269,7 +269,7 @@ export default function PaybackCalendarModal({ goals = [], goalType = 'payback',
                           {formatNumber(isPlan ? goal.target_amount : goal.remaining)} ₫
                         </p>
                         <p className={`text-xs font-medium ${
-                          isOverdue ? (isPlan ? 'text-red-600' : 'text-red-600') :
+                          isOverdue ? 'text-red-600' :
                           daysRemaining <= 7 ? (isPlan ? 'text-teal-600' : 'text-orange-600') :
                           'text-blue-600'
                         }`}>

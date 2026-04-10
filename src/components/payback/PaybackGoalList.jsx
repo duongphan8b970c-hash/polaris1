@@ -102,7 +102,7 @@ function PaybackGoalRow({ goal, goalType = 'payback', onEdit, onDelete, onComple
             ✓ Hoàn thành
           </span>
         ) : isOverdue ? (
-          <span className={`inline-flex items-center gap-1 px-2 py-1 ${isPlan ? 'bg-red-100 text-red-700' : 'bg-red-100 text-red-700'} rounded-full text-xs font-medium`}>
+          <span className={`inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium`}>
             ⚠ Quá hạn
           </span>
         ) : (
@@ -178,7 +178,7 @@ function PaybackGoalRow({ goal, goalType = 'payback', onEdit, onDelete, onComple
             🎉 {formatDate(goal.completed_date)}
           </span>
         ) : (
-          <span className={`font-medium ${isOverdue ? (isPlan ? 'text-red-600' : 'text-red-600') : daysRemaining <= 7 ? 'text-orange-600' : 'text-gray-700'}`}>
+          <span className={`font-medium ${isOverdue ? 'text-red-600' : daysRemaining <= 7 ? 'text-orange-600' : 'text-gray-700'}`}>
             {formatDate(goal.deadline)}
           </span>
         )}
@@ -191,11 +191,11 @@ function PaybackGoalRow({ goal, goalType = 'payback', onEdit, onDelete, onComple
             ✓ Xong
           </span>
         ) : isOverdue ? (
-          <span className={`inline-flex items-center gap-1 px-2.5 py-1.5 ${isPlan ? 'bg-red-100 text-red-700' : 'bg-red-100 text-red-700'} rounded-full text-xs font-bold`}>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-100 text-red-700 rounded-full text-xs font-bold">
             ⚠ Quá {Math.abs(daysRemaining)} ngày
           </span>
         ) : daysRemaining === 0 ? (
-          <span className={`inline-flex items-center gap-1 px-2.5 py-1.5 ${isPlan ? 'bg-orange-100 text-orange-700' : 'bg-orange-100 text-orange-700'} rounded-full text-xs font-bold`}>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold">
             🔥 Hôm nay
           </span>
         ) : daysRemaining <= 3 ? (
