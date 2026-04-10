@@ -415,6 +415,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
       {showCalendar && (
         <PaybackCalendarModal
           goals={goals}
+          goalType={goalType}
           onClose={() => setShowCalendar(false)}
         />
       )}
