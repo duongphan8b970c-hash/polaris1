@@ -23,20 +23,34 @@ export default function CategoryList({
       const activeBudgets = budgets.filter(b => b.period === 'monthly' || b.period === 'yearly')
       if (!activeBudgets.length) return
 
+      // Calculate date ranges for all budgets and find the overall min/max
+      const budgetRanges = activeBudgets.map(b => ({
+        budget: b,
+        ...getBudgetPeriodRange(b, now),
+      }))
+
+      const allStarts = budgetRanges.map(r => r.periodStart)
+      const allEnds = budgetRanges.map(r => r.periodEnd)
+      const minStart = allStarts.sort()[0]
+      const maxEnd = allEnds.sort().reverse()[0]
+      const categoryIds = activeBudgets.map(b => b.category_id)
+
+      // Single query fetching all relevant transactions
+      const { data } = await supabase
+        .from('financial_transactions')
+        .select('amount, category_id, date')
+        .in('category_id', categoryIds)
+        .eq('type', 'expense')
+        .gte('date', minStart)
+        .lte('date', maxEnd)
+        .is('deleted_at', null)
+
       const usage = {}
-      for (const budget of activeBudgets) {
-        const { periodStart, periodEnd } = getBudgetPeriodRange(budget, now)
-
-        const { data } = await supabase
-          .from('financial_transactions')
-          .select('amount, category_id')
-          .eq('category_id', budget.category_id)
-          .eq('type', 'expense')
-          .gte('date', periodStart)
-          .lte('date', periodEnd)
-          .is('deleted_at', null)
-
-        const spent = (data || []).reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      for (const { budget, periodStart, periodEnd } of budgetRanges) {
+        const categoryTransactions = (data || []).filter(
+          t => t.category_id === budget.category_id && t.date >= periodStart && t.date <= periodEnd
+        )
+        const spent = categoryTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0)
         usage[budget.category_id] = {
           spent,
           remaining: budget.amount - spent,
