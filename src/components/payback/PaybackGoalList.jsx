@@ -79,7 +79,7 @@ function PaybackGoalRow({ goal, goalType = 'payback', onEdit, onDelete, onComple
   const daysRemaining = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24))
 
   return (
-    <tr className={`hover:${isPlan ? 'bg-amber-50' : 'bg-orange-50'} transition-colors group`}>
+    <tr className={isPlan ? 'hover:bg-amber-50 transition-colors group' : 'hover:bg-orange-50 transition-colors group'}>
       {/* Name */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
