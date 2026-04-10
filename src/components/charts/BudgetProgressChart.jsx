@@ -1,6 +1,7 @@
 import { useMemo, useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { supabase } from '../../lib/supabase'
+import { getBudgetPeriodRange } from '../../utils/budgetPeriod'
 
 export default function BudgetProgressChart({ budgets }) {
   const [budgetUsage, setBudgetUsage] = useState({})
@@ -11,23 +12,23 @@ export default function BudgetProgressChart({ budgets }) {
 
   const fetchBudgetUsage = async () => {
     const now = new Date()
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
     
     const usage = {}
     
     for (const budget of budgets) {
-      if (budget.period === 'monthly') {
-        const { data } = await supabase
-          .from('financial_transactions')
-          .select('amount')
-          .eq('category_id', budget.category_id)
-          .eq('type', 'expense')
-          .gte('date', currentMonth)
-          .is('deleted_at', null)
-        
-        const spent = data?.reduce((sum, t) => sum + t.amount, 0) || 0
-        usage[budget.id] = spent
-      }
+      const { periodStart, periodEnd } = getBudgetPeriodRange(budget, now)
+
+      const { data } = await supabase
+        .from('financial_transactions')
+        .select('amount')
+        .eq('category_id', budget.category_id)
+        .eq('type', 'expense')
+        .gte('date', periodStart)
+        .lte('date', periodEnd)
+        .is('deleted_at', null)
+      
+      const spent = data?.reduce((sum, t) => sum + t.amount, 0) || 0
+      usage[budget.id] = spent
     }
     
     setBudgetUsage(usage)
@@ -35,7 +36,6 @@ export default function BudgetProgressChart({ budgets }) {
 
   const chartData = useMemo(() => {
     return budgets
-      .filter(b => b.period === 'monthly')
       .map(budget => {
         const spent = budgetUsage[budget.id] || 0
         return {
@@ -70,7 +70,7 @@ export default function BudgetProgressChart({ budgets }) {
   return (
     <div className="card">
       <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
-        Tiến độ ngân sách tháng này
+        Tiến độ ngân sách kỳ hiện tại
       </h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData}>

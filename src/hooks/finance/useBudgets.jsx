@@ -36,7 +36,8 @@ export function useBudgets() {
           category_id: budgetData.category_id,
           amount: parseFloat(budgetData.amount),
           period: budgetData.period,
-          start_date: budgetData.start_date,
+          period_start_day: budgetData.period_start_day || 1,
+          period_start_month: budgetData.period_start_month || 1,
         }])
         .select(`
           *,
@@ -61,6 +62,8 @@ export function useBudgets() {
         .update({
           amount: parseFloat(budgetData.amount),
           period: budgetData.period,
+          period_start_day: budgetData.period_start_day || 1,
+          period_start_month: budgetData.period_start_month || 1,
         })
         .eq('id', id)
         .select(`

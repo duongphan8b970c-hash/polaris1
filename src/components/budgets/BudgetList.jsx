@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatNumber } from '../../utils'
+import { getBudgetPeriodRange, getBudgetPeriodLabel } from '../../utils/budgetPeriod'
 
 export default function BudgetList({ budgets, onEdit, onDelete }) {
   const [budgetUsage, setBudgetUsage] = useState({})
@@ -11,26 +12,26 @@ export default function BudgetList({ budgets, onEdit, onDelete }) {
 
   const fetchBudgetUsage = async () => {
     const now = new Date()
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
     
     const usage = {}
     
     for (const budget of budgets) {
-      if (budget.period === 'monthly') {
-        const { data } = await supabase
-          .from('financial_transactions')
-          .select('amount')
-          .eq('category_id', budget.category_id)
-          .eq('type', 'expense')
-          .gte('date', currentMonth)
-          .is('deleted_at', null)
-        
-        const spent = data?.reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0
-        usage[budget.id] = {
-          spent,
-          remaining: budget.amount - spent,
-          percentage: budget.amount > 0 ? (spent / budget.amount * 100) : 0
-        }
+      const { periodStart, periodEnd } = getBudgetPeriodRange(budget, now)
+
+      const { data } = await supabase
+        .from('financial_transactions')
+        .select('amount')
+        .eq('category_id', budget.category_id)
+        .eq('type', 'expense')
+        .gte('date', periodStart)
+        .lte('date', periodEnd)
+        .is('deleted_at', null)
+      
+      const spent = data?.reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0
+      usage[budget.id] = {
+        spent,
+        remaining: budget.amount - spent,
+        percentage: budget.amount > 0 ? (spent / budget.amount * 100) : 0
       }
     }
     
@@ -69,6 +70,8 @@ export default function BudgetList({ budgets, onEdit, onDelete }) {
                   </h3>
                   <p className="text-xs text-gray-500">
                     {budget.period === 'monthly' ? 'Hàng tháng' : 'Hàng năm'}
+                    {' · '}
+                    <span className="text-gray-400">{getBudgetPeriodLabel(budget)}</span>
                   </p>
                 </div>
               </div>

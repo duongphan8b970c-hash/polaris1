@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatNumber } from '../../utils'
+import { getBudgetPeriodRange, getBudgetPeriodLabel } from '../../utils/budgetPeriod'
 
 export default function CategoryList({ 
   categories = [],
@@ -18,24 +19,24 @@ export default function CategoryList({
     const fetchUsage = async () => {
       if (!budgets.length) return
       const now = new Date()
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 
-      const monthlyBudgets = budgets.filter(b => b.period === 'monthly')
-      if (!monthlyBudgets.length) return
-
-      const categoryIds = monthlyBudgets.map(b => b.category_id)
-      const { data } = await supabase
-        .from('financial_transactions')
-        .select('amount, category_id')
-        .in('category_id', categoryIds)
-        .eq('type', 'expense')
-        .gte('date', currentMonth)
-        .is('deleted_at', null)
+      const activeBudgets = budgets.filter(b => b.period === 'monthly' || b.period === 'yearly')
+      if (!activeBudgets.length) return
 
       const usage = {}
-      for (const budget of monthlyBudgets) {
-        const categoryTransactions = (data || []).filter(t => t.category_id === budget.category_id)
-        const spent = categoryTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      for (const budget of activeBudgets) {
+        const { periodStart, periodEnd } = getBudgetPeriodRange(budget, now)
+
+        const { data } = await supabase
+          .from('financial_transactions')
+          .select('amount, category_id')
+          .eq('category_id', budget.category_id)
+          .eq('type', 'expense')
+          .gte('date', periodStart)
+          .lte('date', periodEnd)
+          .is('deleted_at', null)
+
+        const spent = (data || []).reduce((sum, t) => sum + Math.abs(t.amount), 0)
         usage[budget.category_id] = {
           spent,
           remaining: budget.amount - spent,
@@ -121,7 +122,14 @@ export default function CategoryList({
                   <div>
                     {/* Budget header with edit/delete */}
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-gray-500 font-medium">Hạn mức tháng</span>
+                      <div>
+                        <span className="text-xs text-gray-500 font-medium">
+                          {budget.period === 'monthly' ? 'Hạn mức tháng' : 'Hạn mức năm'}
+                        </span>
+                        <span className="block text-[10px] text-gray-400">
+                          {getBudgetPeriodLabel(budget)}
+                        </span>
+                      </div>
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => onEditBudget && onEditBudget(budget)}
