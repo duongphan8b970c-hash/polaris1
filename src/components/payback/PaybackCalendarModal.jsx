@@ -111,7 +111,7 @@ export default function PaybackCalendarModal({ goals = [], goalType = 'payback',
                 disabled={isCurrentMonth}
                 className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-colors ${
                   isCurrentMonth
-                    ? (isPlan ? 'bg-amber-100 text-amber-600 cursor-default' : 'bg-orange-100 text-orange-600 cursor-default')
+                    ? (isPlan ? 'bg-teal-100 text-teal-600 cursor-default' : 'bg-orange-100 text-orange-600 cursor-default')
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -130,11 +130,11 @@ export default function PaybackCalendarModal({ goals = [], goalType = 'payback',
 
           {/* Month summary */}
           {monthPaybacks.length > 0 && (
-            <div className={`mb-4 p-3 ${isPlan ? 'bg-amber-50 border-amber-200' : 'bg-orange-50 border-orange-200'} border rounded-xl`}>
-              <p className={`text-sm font-medium ${isPlan ? 'text-amber-800' : 'text-orange-800'}`}>
+            <div className={`mb-4 p-3 ${isPlan ? 'bg-teal-50 border-teal-200' : 'bg-orange-50 border-orange-200'} border rounded-xl`}>
+              <p className={`text-sm font-medium ${isPlan ? 'text-teal-800' : 'text-orange-800'}`}>
                 ⏰ {monthPaybacks.length} {isPlan ? 'kế hoạch' : 'khoản'} đến hạn trong {getMonthName(currentMonth)}
               </p>
-              <p className={`text-sm ${isPlan ? 'text-amber-700' : 'text-orange-700'} mt-1`}>
+              <p className={`text-sm ${isPlan ? 'text-teal-700' : 'text-orange-700'} mt-1`}>
                 Tổng: {formatNumber(monthPaybacks.reduce((s, g) => s + (isPlan ? g.target_amount : g.remaining), 0))} ₫ {isPlan ? 'dự kiến' : 'còn lại'}
               </p>
             </div>
@@ -188,13 +188,13 @@ export default function PaybackCalendarModal({ goals = [], goalType = 'payback',
                     className={`
                       relative h-12 border rounded-lg transition-all text-sm
                       ${day.isCurrentMonth ? '' : 'opacity-30'}
-                      ${isSelected ? (isPlan ? 'ring-2 ring-amber-500 border-amber-500' : 'ring-2 ring-orange-500 border-orange-500') : bgClass || 'border-gray-100'}
-                      ${isToday && !isSelected ? (isPlan ? 'ring-2 ring-amber-300' : 'ring-2 ring-orange-300') : ''}
+                      ${isSelected ? (isPlan ? 'ring-2 ring-teal-500 border-teal-500' : 'ring-2 ring-orange-500 border-orange-500') : bgClass || 'border-gray-100'}
+                      ${isToday && !isSelected ? (isPlan ? 'ring-2 ring-teal-300' : 'ring-2 ring-orange-300') : ''}
                       hover:shadow-sm
                     `}
                   >
                     <span className={`text-xs font-semibold ${
-                      isToday ? (isPlan ? 'text-amber-600' : 'text-orange-600') :
+                      isToday ? (isPlan ? 'text-teal-600' : 'text-orange-600') :
                       !day.isCurrentMonth ? 'text-gray-300' :
                       'text-gray-700'
                     }`}>
@@ -249,9 +249,9 @@ export default function PaybackCalendarModal({ goals = [], goalType = 'payback',
                       key={goal.id}
                       className={`flex items-center justify-between p-3 rounded-xl border ${
                         isOverdue
-                          ? (isPlan ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200')
+                          ? (isPlan ? 'bg-red-50 border-red-200' : 'bg-red-50 border-red-200')
                           : daysRemaining <= 7
-                          ? (isPlan ? 'bg-yellow-50 border-yellow-200' : 'bg-orange-50 border-orange-200')
+                          ? (isPlan ? 'bg-teal-50 border-teal-200' : 'bg-orange-50 border-orange-200')
                           : 'bg-blue-50 border-blue-200'
                       }`}
                     >
@@ -269,8 +269,8 @@ export default function PaybackCalendarModal({ goals = [], goalType = 'payback',
                           {formatNumber(isPlan ? goal.target_amount : goal.remaining)} ₫
                         </p>
                         <p className={`text-xs font-medium ${
-                          isOverdue ? (isPlan ? 'text-amber-600' : 'text-red-600') :
-                          daysRemaining <= 7 ? (isPlan ? 'text-yellow-600' : 'text-orange-600') :
+                          isOverdue ? (isPlan ? 'text-red-600' : 'text-red-600') :
+                          daysRemaining <= 7 ? (isPlan ? 'text-teal-600' : 'text-orange-600') :
                           'text-blue-600'
                         }`}>
                           {isOverdue

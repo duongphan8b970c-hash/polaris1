@@ -265,7 +265,7 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
       {formData.name && formData.target_amount && (
         <div className="border-t pt-4">
           <p className="text-sm text-gray-600 mb-2">Xem trước:</p>
-          <div className={`bg-gradient-to-r ${isPlan ? 'from-amber-50 to-yellow-50 border-amber-200' : 'from-orange-50 to-red-50 border-orange-200'} border rounded-lg p-4`}>
+          <div className={`bg-gradient-to-r ${isPlan ? 'from-teal-50 to-emerald-50 border-teal-200' : 'from-orange-50 to-red-50 border-orange-200'} border rounded-lg p-4`}>
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-bold text-gray-900">{formData.name}</h4>
               <span className="text-2xl">{isPlan ? '📋' : '💳'}</span>
@@ -275,7 +275,7 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
             </p>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">{isPlan ? 'Dự kiến:' : 'Mục tiêu:'}</span>
-              <span className={`font-bold ${isPlan ? 'text-amber-600' : 'text-red-600'}`}>
+              <span className={`font-bold ${isPlan ? 'text-teal-600' : 'text-red-600'}`}>
                 {parseFloat(formData.target_amount || 0).toLocaleString('vi-VN')} ₫
               </span>
             </div>
@@ -303,7 +303,7 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
         </button>
         <button
           type="submit"
-          className={`flex-1 px-4 py-2 ${isPlan ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600' : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600'} text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+          className={`flex-1 px-4 py-2 ${isPlan ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600' : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600'} text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
           disabled={loading}
         >
           {loading ? (

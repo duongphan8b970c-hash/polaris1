@@ -125,7 +125,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
       <div className="flex flex-wrap gap-2 mb-6">
         <button
           onClick={() => setShowCalendar(true)}
-          className={`btn btn-secondary ${isPlan ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100' : 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100'}`}
+          className={`btn btn-secondary ${isPlan ? 'bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100' : 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100'}`}
         >
           <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -146,7 +146,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
           </button>
         )}
 
-        <button onClick={handleCreate} className={`btn ${isPlan ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white' : 'btn-primary'}`}>
+        <button onClick={handleCreate} className={`btn ${isPlan ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white' : 'btn-primary'}`}>
           <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -157,28 +157,28 @@ export default function PaybackTracking({ goalType = 'payback' }) {
       {/* Summary Stats */}
       {stats.active > 0 && (
         isPlan ? (
-          /* Plan tab: only total goals + estimated spending in yellow tone */
+          /* Plan tab: only total goals + estimated spending in teal tone */
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div className="bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl p-4 text-white shadow-lg">
+            <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white shadow-lg">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-amber-100 text-sm font-medium">Tổng mục tiêu</p>
+                <p className="text-teal-100 text-sm font-medium">Tổng mục tiêu</p>
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
               <p className="text-3xl font-bold">{stats.active}</p>
-              <p className="text-amber-100 text-xs">kế hoạch</p>
+              <p className="text-teal-100 text-xs">kế hoạch</p>
             </div>
 
-            <div className="bg-gradient-to-br from-yellow-500 to-amber-500 rounded-xl p-4 text-white shadow-lg">
+            <div className="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl p-4 text-white shadow-lg">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-yellow-100 text-sm font-medium">Dự kiến chi tiêu</p>
+                <p className="text-emerald-100 text-sm font-medium">Dự kiến chi tiêu</p>
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
               <p className="text-3xl font-bold">{formatNumber(stats.totalDebt)}</p>
-              <p className="text-yellow-100 text-xs">VND</p>
+              <p className="text-emerald-100 text-xs">VND</p>
             </div>
           </div>
         ) : (
@@ -279,7 +279,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
       {activeGoals.length > 0 && (
         <div className="mb-8">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <svg className={`w-6 h-6 ${isPlan ? 'text-amber-500' : 'text-orange-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className={`w-6 h-6 ${isPlan ? 'text-teal-500' : 'text-orange-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {isPlan ? `Kế hoạch chi tiêu (${activeGoals.length})` : `Đang trả (${activeGoals.length})`}
@@ -376,8 +376,8 @@ export default function PaybackTracking({ goalType = 'payback' }) {
       {/* Empty State */}
       {activeGoals.length === 0 && completedGoals.length === 0 && (
         <div className="card text-center py-16">
-          <div className={`w-20 h-20 bg-gradient-to-br ${isPlan ? 'from-amber-100 to-yellow-100' : 'from-orange-100 to-red-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-            <svg className={`w-10 h-10 ${isPlan ? 'text-amber-600' : 'text-orange-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className={`w-20 h-20 bg-gradient-to-br ${isPlan ? 'from-teal-100 to-emerald-100' : 'from-orange-100 to-red-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+            <svg className={`w-10 h-10 ${isPlan ? 'text-teal-600' : 'text-orange-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
@@ -387,7 +387,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
           <p className="text-gray-600 mb-6">
             {isPlan ? 'Tạo kế hoạch chi tiêu đầu tiên' : 'Tạo mục tiêu đầu tiên để bắt đầu theo dõi'}
           </p>
-          <button onClick={handleCreate} className={`btn ${isPlan ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white' : 'btn-primary'}`}>
+          <button onClick={handleCreate} className={`btn ${isPlan ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white' : 'btn-primary'}`}>
             {isPlan ? '+ Tạo kế hoạch mới' : '+ Tạo mục tiêu mới'}
           </button>
         </div>

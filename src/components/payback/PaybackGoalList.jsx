@@ -6,8 +6,8 @@ export default function PaybackGoalList({ goals, goalType = 'payback', onEdit, o
   if (goals.length === 0) {
     return (
       <div className="card text-center py-12">
-        <div className={`w-20 h-20 bg-gradient-to-br ${isPlan ? 'from-amber-100 to-yellow-100' : 'from-orange-100 to-red-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-          <svg className={`w-10 h-10 ${isPlan ? 'text-amber-600' : 'text-orange-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className={`w-20 h-20 bg-gradient-to-br ${isPlan ? 'from-teal-100 to-emerald-100' : 'from-orange-100 to-red-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+          <svg className={`w-10 h-10 ${isPlan ? 'text-teal-600' : 'text-orange-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
         </div>
@@ -79,7 +79,7 @@ function PaybackGoalRow({ goal, goalType = 'payback', onEdit, onDelete, onComple
   const daysRemaining = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24))
 
   return (
-    <tr className={isPlan ? 'hover:bg-amber-50 transition-colors group' : 'hover:bg-orange-50 transition-colors group'}>
+    <tr className={isPlan ? 'hover:bg-teal-50 transition-colors group' : 'hover:bg-orange-50 transition-colors group'}>
       {/* Name */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
@@ -102,11 +102,11 @@ function PaybackGoalRow({ goal, goalType = 'payback', onEdit, onDelete, onComple
             ✓ Hoàn thành
           </span>
         ) : isOverdue ? (
-          <span className={`inline-flex items-center gap-1 px-2 py-1 ${isPlan ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'} rounded-full text-xs font-medium`}>
+          <span className={`inline-flex items-center gap-1 px-2 py-1 ${isPlan ? 'bg-red-100 text-red-700' : 'bg-red-100 text-red-700'} rounded-full text-xs font-medium`}>
             ⚠ Quá hạn
           </span>
         ) : (
-          <span className={`inline-flex items-center gap-1 px-2 py-1 ${isPlan ? 'bg-yellow-100 text-yellow-700' : 'bg-orange-100 text-orange-700'} rounded-full text-xs font-medium`}>
+          <span className={`inline-flex items-center gap-1 px-2 py-1 ${isPlan ? 'bg-teal-100 text-teal-700' : 'bg-orange-100 text-orange-700'} rounded-full text-xs font-medium`}>
             {isPlan ? '📅 Đang lên kế hoạch' : '⏳ Đang trả'}
           </span>
         )}
@@ -178,7 +178,7 @@ function PaybackGoalRow({ goal, goalType = 'payback', onEdit, onDelete, onComple
             🎉 {formatDate(goal.completed_date)}
           </span>
         ) : (
-          <span className={`font-medium ${isOverdue ? (isPlan ? 'text-amber-600' : 'text-red-600') : daysRemaining <= 7 ? 'text-yellow-600' : 'text-gray-700'}`}>
+          <span className={`font-medium ${isOverdue ? (isPlan ? 'text-red-600' : 'text-red-600') : daysRemaining <= 7 ? 'text-orange-600' : 'text-gray-700'}`}>
             {formatDate(goal.deadline)}
           </span>
         )}
@@ -191,15 +191,15 @@ function PaybackGoalRow({ goal, goalType = 'payback', onEdit, onDelete, onComple
             ✓ Xong
           </span>
         ) : isOverdue ? (
-          <span className={`inline-flex items-center gap-1 px-2.5 py-1.5 ${isPlan ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'} rounded-full text-xs font-bold`}>
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1.5 ${isPlan ? 'bg-red-100 text-red-700' : 'bg-red-100 text-red-700'} rounded-full text-xs font-bold`}>
             ⚠ Quá {Math.abs(daysRemaining)} ngày
           </span>
         ) : daysRemaining === 0 ? (
-          <span className={`inline-flex items-center gap-1 px-2.5 py-1.5 ${isPlan ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'} rounded-full text-xs font-bold`}>
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1.5 ${isPlan ? 'bg-orange-100 text-orange-700' : 'bg-orange-100 text-orange-700'} rounded-full text-xs font-bold`}>
             🔥 Hôm nay
           </span>
         ) : daysRemaining <= 3 ? (
-          <span className={`inline-flex items-center gap-1 px-2.5 py-1.5 ${isPlan ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'} rounded-full text-xs font-bold`}>
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1.5 ${isPlan ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'} rounded-full text-xs font-bold`}>
             ⏰ {daysRemaining} ngày
           </span>
         ) : daysRemaining <= 7 ? (
