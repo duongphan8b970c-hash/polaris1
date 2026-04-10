@@ -118,13 +118,36 @@ function GoalRow({ goal, onEdit, onDelete, onComplete, onGoalClick }) {
             'text-gray-600'
           }`}>
             {new Date(goal.target_date).toLocaleDateString('vi-VN')}
-            {timeRemaining.type === 'overdue' && <span className="ml-1 text-xs">(quá {timeRemaining.days} ngày)</span>}
-            {timeRemaining.type === 'today' && <span className="ml-1 text-xs">(hôm nay)</span>}
-            {timeRemaining.type === 'soon' && <span className="ml-1 text-xs">(còn {timeRemaining.days} ngày)</span>}
-            {timeRemaining.type === 'normal' && <span className="ml-1 text-xs">(còn {timeRemaining.days} ngày)</span>}
           </span>
         ) : (
           <span className="text-gray-400 text-xs">—</span>
+        )}
+      </td>
+
+      {/* Countdown */}
+      <td className="px-4 py-3 whitespace-nowrap text-center">
+        {isCompleted ? (
+          <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+            ✓ Xong
+          </span>
+        ) : !timeRemaining ? (
+          <span className="text-gray-400 text-xs">—</span>
+        ) : timeRemaining.type === 'overdue' ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-100 text-red-700 rounded-full text-xs font-bold">
+            ⚠ Quá {timeRemaining.days} ngày
+          </span>
+        ) : timeRemaining.type === 'today' ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold">
+            🔥 Hôm nay
+          </span>
+        ) : timeRemaining.type === 'soon' ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold">
+            ⏰ {timeRemaining.days} ngày
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs font-bold">
+            📅 {timeRemaining.days} ngày
+          </span>
         )}
       </td>
 
@@ -191,7 +214,7 @@ function GoalSection({ title, icon, goals, onEdit, onDelete, onComplete, onGoalC
     <tbody>
       {/* Section header row */}
       <tr className="bg-gray-50 border-t-2 border-gray-200">
-        <td colSpan={9} className="px-4 py-2">
+        <td colSpan={10} className="px-4 py-2">
           <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
             {icon}
             {title}
@@ -249,6 +272,7 @@ export default function GoalList({ goals, onEdit, onDelete, onComplete, onGoalCl
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tasks</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Danh mục</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Hạn chót</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Còn lại</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Thành viên</th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Thao tác</th>
             </tr>

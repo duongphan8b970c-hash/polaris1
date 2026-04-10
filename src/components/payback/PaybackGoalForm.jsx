@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { usePaybackPriorities } from '../../hooks/finance/usePaybackPriorities' 
 
-export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
+export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, onCancel, loading }) {
   const { priorities } = usePaybackPriorities()
+  const isPlan = goalType === 'plan'
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -55,13 +56,18 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
       return
     }
 
-    // Check deadline is after start_date
-    if (new Date(formData.deadline) <= new Date(formData.start_date)) {
+    // Check deadline is after start_date (only for payback)
+    if (!isPlan && new Date(formData.deadline) <= new Date(formData.start_date)) {
       alert('Ngày hạn phải sau ngày bắt đầu')
       return
     }
 
-    onSubmit(formData)
+    // For plan mode, auto-set start_date to today
+    const submitData = isPlan 
+      ? { ...formData, start_date: new Date().toISOString().split('T')[0], priority_id: null }
+      : formData
+
+    onSubmit(submitData)
   }
 
   return (
@@ -100,6 +106,8 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
         />
       </div>
 
+      {/* Priority - only for payback */}
+      {!isPlan && (
       <div>
   <label className="block text-sm font-medium text-gray-700 mb-2">
     Mức độ ưu tiên <span className="text-red-500">*</span>
@@ -140,6 +148,7 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
         </p>
       )}
     </div>
+      )}
 
       {/* Amounts */}
       <div className="grid grid-cols-2 gap-4">
@@ -188,32 +197,11 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
       </div>
 
       {/* Dates */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Start Date */}
+      {isPlan ? (
+        /* Plan: only deadline */
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Ngày bắt đầu <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            name="start_date"
-            value={formData.start_date}
-            onChange={handleChange}
-            className="input"
-            required
-            disabled={loading || goal} // Can't change start_date when editing
-          />
-          {goal && (
-            <p className="text-xs text-amber-600 mt-1">
-              ⚠️ Không thể thay đổi ngày bắt đầu
-            </p>
-          )}
-        </div>
-
-        {/* Deadline */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Ngày hạn <span className="text-red-500">*</span>
+            Ngày dự kiến chi tiêu <span className="text-red-500">*</span>
           </label>
           <input
             type="date"
@@ -225,32 +213,75 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
             disabled={loading}
           />
           <p className="text-xs text-gray-500 mt-1">
-            ⏰ Dự kiến hoàn thành
+            📅 Ngày lên kế hoạch chi tiêu
           </p>
         </div>
-      </div>
+      ) : (
+        /* Payback: start_date + deadline */
+        <div className="grid grid-cols-2 gap-4">
+          {/* Start Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ngày bắt đầu <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              name="start_date"
+              value={formData.start_date}
+              onChange={handleChange}
+              className="input"
+              required
+              disabled={loading || goal}
+            />
+            {goal && (
+              <p className="text-xs text-amber-600 mt-1">
+                ⚠️ Không thể thay đổi ngày bắt đầu
+              </p>
+            )}
+          </div>
+
+          {/* Deadline */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ngày hạn <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              name="deadline"
+              value={formData.deadline}
+              onChange={handleChange}
+              className="input"
+              required
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              ⏰ Dự kiến hoàn thành
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Preview */}
       {formData.name && formData.target_amount && (
         <div className="border-t pt-4">
           <p className="text-sm text-gray-600 mb-2">Xem trước:</p>
-          <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
+          <div className={`bg-gradient-to-r ${isPlan ? 'from-teal-50 to-emerald-50 border-teal-200' : 'from-orange-50 to-red-50 border-orange-200'} border rounded-lg p-4`}>
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-bold text-gray-900">{formData.name}</h4>
-              <span className="text-2xl">💳</span>
+              <span className="text-2xl">{isPlan ? '📋' : '💳'}</span>
             </div>
             <p className="text-sm text-gray-600 mb-2">
               {formData.description || 'Chưa có mô tả'}
             </p>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Mục tiêu:</span>
-              <span className="font-bold text-red-600">
+              <span className="text-sm text-gray-600">{isPlan ? 'Dự kiến:' : 'Mục tiêu:'}</span>
+              <span className={`font-bold ${isPlan ? 'text-teal-600' : 'text-red-600'}`}>
                 {parseFloat(formData.target_amount || 0).toLocaleString('vi-VN')} ₫
               </span>
             </div>
             {formData.deadline && (
               <div className="flex items-center justify-between mt-1">
-                <span className="text-sm text-gray-600">Hạn:</span>
+                <span className="text-sm text-gray-600">{isPlan ? 'Ngày chi tiêu:' : 'Hạn:'}</span>
                 <span className="text-sm font-medium text-gray-900">
                   {new Date(formData.deadline).toLocaleDateString('vi-VN')}
                 </span>
@@ -272,7 +303,7 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
         </button>
         <button
           type="submit"
-          className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`flex-1 px-4 py-2 ${isPlan ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600' : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600'} text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
           disabled={loading}
         >
           {loading ? (
@@ -284,7 +315,7 @@ export default function PaybackGoalForm({ goal, onSubmit, onCancel, loading }) {
               Đang lưu...
             </span>
           ) : (
-            goal ? 'Cập nhật' : 'Tạo mục tiêu'
+            goal ? 'Cập nhật' : (isPlan ? 'Tạo kế hoạch' : 'Tạo mục tiêu')
           )}
         </button>
       </div>
