@@ -216,7 +216,7 @@ function PaybackGoalRow({ goal, goalType = 'payback', onEdit, onDelete, onComple
       {/* Actions */}
       <td className="px-4 py-3 whitespace-nowrap text-right">
         <div className="flex items-center justify-end gap-1 transition-opacity">
-          {!isCompleted && goal.progress >= 100 && (
+          {!isCompleted && (isPlan || goal.progress >= 100) && (
             <button
               onClick={() => onComplete(goal)}
               className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
