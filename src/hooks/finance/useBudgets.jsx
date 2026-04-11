@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import {
+  mergePeriodSettings,
+  setBudgetPeriodSettings,
+  removeBudgetPeriodSettings,
+} from '../../utils/budgetPeriodStorage'
+import { getBudgetPeriodRange } from '../../utils/budgetPeriod'
 
 export function useBudgets() {
   const [budgets, setBudgets] = useState([])
@@ -20,7 +26,8 @@ export function useBudgets() {
         .order('created_at', { ascending: false })
       
       if (fetchError) throw fetchError
-      setBudgets(data || [])
+      // Merge period settings from localStorage since the DB columns may not exist yet
+      setBudgets(mergePeriodSettings(data || []))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -30,13 +37,18 @@ export function useBudgets() {
 
   const createBudget = async (budgetData) => {
     try {
+      const { periodStart: createPeriodStart } = getBudgetPeriodRange({
+        period: budgetData.period,
+        period_start_day: budgetData.period_start_day || 1,
+        period_start_month: budgetData.period_start_month || 1,
+      })
       const { data, error: createError } = await supabase
         .from('budgets')
         .insert([{
           category_id: budgetData.category_id,
           amount: parseFloat(budgetData.amount),
           period: budgetData.period,
-          start_date: budgetData.start_date,
+          start_date: createPeriodStart,
         }])
         .select(`
           *,
@@ -45,9 +57,20 @@ export function useBudgets() {
         .single()
       
       if (createError) throw createError
-      
-      setBudgets(prev => [data, ...prev])
-      return { success: true, data }
+
+      // Persist period start settings to localStorage
+      setBudgetPeriodSettings(data.id, {
+        period_start_day: budgetData.period_start_day || 1,
+        period_start_month: budgetData.period_start_month || 1,
+      })
+
+      const enriched = {
+        ...data,
+        period_start_day: budgetData.period_start_day || 1,
+        period_start_month: budgetData.period_start_month || 1,
+      }
+      setBudgets(prev => [enriched, ...prev])
+      return { success: true, data: enriched }
     } catch (err) {
       console.error('Error creating budget:', err)
       return { success: false, error: err.message }
@@ -56,11 +79,17 @@ export function useBudgets() {
 
   const updateBudget = async (id, budgetData) => {
     try {
+      const { periodStart: updatePeriodStart } = getBudgetPeriodRange({
+        period: budgetData.period,
+        period_start_day: budgetData.period_start_day || 1,
+        period_start_month: budgetData.period_start_month || 1,
+      })
       const { data, error: updateError } = await supabase
         .from('budgets')
         .update({
           amount: parseFloat(budgetData.amount),
           period: budgetData.period,
+          start_date: updatePeriodStart,
         })
         .eq('id', id)
         .select(`
@@ -70,9 +99,20 @@ export function useBudgets() {
         .single()
       
       if (updateError) throw updateError
-      
-      setBudgets(prev => prev.map(b => b.id === id ? data : b))
-      return { success: true, data }
+
+      // Persist period start settings to localStorage
+      setBudgetPeriodSettings(id, {
+        period_start_day: budgetData.period_start_day || 1,
+        period_start_month: budgetData.period_start_month || 1,
+      })
+
+      const enriched = {
+        ...data,
+        period_start_day: budgetData.period_start_day || 1,
+        period_start_month: budgetData.period_start_month || 1,
+      }
+      setBudgets(prev => prev.map(b => b.id === id ? enriched : b))
+      return { success: true, data: enriched }
     } catch (err) {
       console.error('Error updating budget:', err)
       return { success: false, error: err.message }
@@ -87,7 +127,8 @@ export function useBudgets() {
         .eq('id', id)
       
       if (deleteError) throw deleteError
-      
+
+      removeBudgetPeriodSettings(id)
       setBudgets(prev => prev.filter(b => b.id !== id))
       return { success: true }
     } catch (err) {

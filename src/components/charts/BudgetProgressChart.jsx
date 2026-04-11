@@ -1,6 +1,7 @@
 import { useMemo, useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { supabase } from '../../lib/supabase'
+import { getBudgetPeriodRange } from '../../utils/budgetPeriod'
 
 export default function BudgetProgressChart({ budgets }) {
   const [budgetUsage, setBudgetUsage] = useState({})
@@ -11,23 +12,37 @@ export default function BudgetProgressChart({ budgets }) {
 
   const fetchBudgetUsage = async () => {
     const now = new Date()
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-    
+    if (!budgets.length) return
+
+    // Calculate date ranges for all budgets and find the overall min/max
+    const budgetRanges = budgets.map(b => ({
+      budget: b,
+      ...getBudgetPeriodRange(b, now),
+    }))
+
+    const allStarts = budgetRanges.map(r => r.periodStart)
+    const allEnds = budgetRanges.map(r => r.periodEnd)
+    const minStart = allStarts.sort()[0]
+    const maxEnd = allEnds.sort().reverse()[0]
+    const categoryIds = budgets.map(b => b.category_id)
+
+    // Single query fetching all relevant transactions
+    const { data } = await supabase
+      .from('financial_transactions')
+      .select('amount, category_id, date')
+      .in('category_id', categoryIds)
+      .eq('type', 'expense')
+      .gte('date', minStart)
+      .lte('date', maxEnd)
+      .is('deleted_at', null)
+
     const usage = {}
-    
-    for (const budget of budgets) {
-      if (budget.period === 'monthly') {
-        const { data } = await supabase
-          .from('financial_transactions')
-          .select('amount')
-          .eq('category_id', budget.category_id)
-          .eq('type', 'expense')
-          .gte('date', currentMonth)
-          .is('deleted_at', null)
-        
-        const spent = data?.reduce((sum, t) => sum + t.amount, 0) || 0
-        usage[budget.id] = spent
-      }
+    for (const { budget, periodStart, periodEnd } of budgetRanges) {
+      const categoryTransactions = (data || []).filter(
+        t => t.category_id === budget.category_id && t.date >= periodStart && t.date <= periodEnd
+      )
+      const spent = categoryTransactions.reduce((sum, t) => sum + t.amount, 0) || 0
+      usage[budget.id] = spent
     }
     
     setBudgetUsage(usage)
@@ -35,7 +50,6 @@ export default function BudgetProgressChart({ budgets }) {
 
   const chartData = useMemo(() => {
     return budgets
-      .filter(b => b.period === 'monthly')
       .map(budget => {
         const spent = budgetUsage[budget.id] || 0
         return {
@@ -70,7 +84,7 @@ export default function BudgetProgressChart({ budgets }) {
   return (
     <div className="card">
       <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
-        Tiến độ ngân sách tháng này
+        Tiến độ ngân sách kỳ hiện tại
       </h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData}>

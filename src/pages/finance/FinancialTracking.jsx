@@ -15,6 +15,7 @@ import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { formatCurrency, formatDate, formatNumber } from '../../utils'
+import { getBudgetPeriodRange } from '../../utils/budgetPeriod'
 
 export default function FinancialTracking() {
   const [activeTab, setActiveTab] = useState('transactions')
@@ -247,14 +248,15 @@ const filteredStats = useMemo(() => {
     if (!budget) return
 
     const now = new Date()
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const { periodStart, periodEnd } = getBudgetPeriodRange(budget, now)
 
     const { data } = await supabase
       .from('financial_transactions')
       .select('amount')
       .eq('category_id', formData.category_id)
       .eq('type', 'expense')
-      .gte('date', currentMonth)
+      .gte('date', periodStart)
+      .lte('date', periodEnd)
       .is('deleted_at', null)
 
     const totalSpent = data?.reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatNumber } from '../../utils'
+import { getBudgetPeriodRange, getBudgetPeriodLabel } from '../../utils/budgetPeriod'
 
 export default function CategoryList({ 
   categories = [],
@@ -18,23 +19,37 @@ export default function CategoryList({
     const fetchUsage = async () => {
       if (!budgets.length) return
       const now = new Date()
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 
-      const monthlyBudgets = budgets.filter(b => b.period === 'monthly')
-      if (!monthlyBudgets.length) return
+      const activeBudgets = budgets.filter(b => b.period === 'monthly' || b.period === 'yearly')
+      if (!activeBudgets.length) return
 
-      const categoryIds = monthlyBudgets.map(b => b.category_id)
+      // Calculate date ranges for all budgets and find the overall min/max
+      const budgetRanges = activeBudgets.map(b => ({
+        budget: b,
+        ...getBudgetPeriodRange(b, now),
+      }))
+
+      const allStarts = budgetRanges.map(r => r.periodStart)
+      const allEnds = budgetRanges.map(r => r.periodEnd)
+      const minStart = allStarts.sort()[0]
+      const maxEnd = allEnds.sort().reverse()[0]
+      const categoryIds = activeBudgets.map(b => b.category_id)
+
+      // Single query fetching all relevant transactions
       const { data } = await supabase
         .from('financial_transactions')
-        .select('amount, category_id')
+        .select('amount, category_id, date')
         .in('category_id', categoryIds)
         .eq('type', 'expense')
-        .gte('date', currentMonth)
+        .gte('date', minStart)
+        .lte('date', maxEnd)
         .is('deleted_at', null)
 
       const usage = {}
-      for (const budget of monthlyBudgets) {
-        const categoryTransactions = (data || []).filter(t => t.category_id === budget.category_id)
+      for (const { budget, periodStart, periodEnd } of budgetRanges) {
+        const categoryTransactions = (data || []).filter(
+          t => t.category_id === budget.category_id && t.date >= periodStart && t.date <= periodEnd
+        )
         const spent = categoryTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0)
         usage[budget.category_id] = {
           spent,
@@ -121,7 +136,14 @@ export default function CategoryList({
                   <div>
                     {/* Budget header with edit/delete */}
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-gray-500 font-medium">Hạn mức tháng</span>
+                      <div>
+                        <span className="text-xs text-gray-500 font-medium">
+                          {budget.period === 'monthly' ? 'Hạn mức tháng' : 'Hạn mức năm'}
+                        </span>
+                        <span className="block text-[10px] text-gray-400">
+                          {getBudgetPeriodLabel(budget)}
+                        </span>
+                      </div>
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => onEditBudget && onEditBudget(budget)}

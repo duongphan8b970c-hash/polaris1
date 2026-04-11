@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useCategories } from '../../hooks/finance/useCategories'
+import { getBudgetPeriodLabel } from '../../utils/budgetPeriod'
 
 export default function BudgetForm({ budget, presetCategoryId, onSubmit, onCancel, loading }) {
   const { categories } = useCategories('expense') // Only expense categories
@@ -8,7 +9,8 @@ export default function BudgetForm({ budget, presetCategoryId, onSubmit, onCance
     category_id: presetCategoryId || '',
     amount: '',
     period: 'monthly',
-    start_date: new Date().toISOString().split('T')[0],
+    period_start_day: 1,
+    period_start_month: 1,
   })
 
   useEffect(() => {
@@ -17,7 +19,8 @@ export default function BudgetForm({ budget, presetCategoryId, onSubmit, onCance
         category_id: budget.category_id,
         amount: budget.amount,
         period: budget.period,
-        start_date: budget.start_date,
+        period_start_day: budget.period_start_day || 1,
+        period_start_month: budget.period_start_month || 1,
       })
     }
   }, [budget])
@@ -43,7 +46,9 @@ export default function BudgetForm({ budget, presetCategoryId, onSubmit, onCance
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: (name === 'period_start_day' || name === 'period_start_month')
+        ? parseInt(value, 10)
+        : value
     }))
   }
 
@@ -132,25 +137,60 @@ export default function BudgetForm({ budget, presetCategoryId, onSubmit, onCance
         </div>
       </div>
 
-      {/* Start Date */}
+      {/* Period Start Day */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Ngày bắt đầu <span className="text-red-500">*</span>
+          Ngày bắt đầu kỳ <span className="text-red-500">*</span>
         </label>
-        <input
-          type="date"
-          name="start_date"
-          value={formData.start_date}
+        <select
+          name="period_start_day"
+          value={formData.period_start_day}
           onChange={handleChange}
           className="input"
-          required
-          disabled={loading || budget}
-        />
-        {budget && (
-          <p className="text-xs text-amber-600 mt-1">
-            ⚠️ Không thể thay đổi ngày bắt đầu
-          </p>
-        )}
+          disabled={loading}
+        >
+          {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
+            <option key={day} value={day}>
+              Ngày {day}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-gray-500 mt-1">
+          💡 Ngày bắt đầu tính hạn mức mỗi {formData.period === 'monthly' ? 'tháng' : 'năm'} (theo kỳ lương)
+        </p>
+      </div>
+
+      {/* Period Start Month (yearly only) */}
+      {formData.period === 'yearly' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Tháng bắt đầu kỳ <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="period_start_month"
+            value={formData.period_start_month}
+            onChange={handleChange}
+            className="input"
+            disabled={loading}
+          >
+            {[
+              'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4',
+              'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8',
+              'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+            ].map((label, i) => (
+              <option key={i + 1} value={i + 1}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Period Preview */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+        <p className="text-xs text-blue-700">
+          📅 Kỳ hiện tại: <span className="font-semibold">{getBudgetPeriodLabel(formData)}</span>
+        </p>
       </div>
 
       {/* Actions */}

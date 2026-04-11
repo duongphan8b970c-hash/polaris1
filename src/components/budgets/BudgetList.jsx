@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatNumber } from '../../utils'
+import { getBudgetPeriodRange, getBudgetPeriodLabel } from '../../utils/budgetPeriod'
 
 export default function BudgetList({ budgets, onEdit, onDelete }) {
   const [budgetUsage, setBudgetUsage] = useState({})
@@ -11,26 +12,40 @@ export default function BudgetList({ budgets, onEdit, onDelete }) {
 
   const fetchBudgetUsage = async () => {
     const now = new Date()
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-    
+    if (!budgets.length) return
+
+    // Calculate date ranges for all budgets and find the overall min/max
+    const budgetRanges = budgets.map(b => ({
+      budget: b,
+      ...getBudgetPeriodRange(b, now),
+    }))
+
+    const allStarts = budgetRanges.map(r => r.periodStart)
+    const allEnds = budgetRanges.map(r => r.periodEnd)
+    const minStart = allStarts.sort()[0]
+    const maxEnd = allEnds.sort().reverse()[0]
+    const categoryIds = budgets.map(b => b.category_id)
+
+    // Single query fetching all relevant transactions
+    const { data } = await supabase
+      .from('financial_transactions')
+      .select('amount, category_id, date')
+      .in('category_id', categoryIds)
+      .eq('type', 'expense')
+      .gte('date', minStart)
+      .lte('date', maxEnd)
+      .is('deleted_at', null)
+
     const usage = {}
-    
-    for (const budget of budgets) {
-      if (budget.period === 'monthly') {
-        const { data } = await supabase
-          .from('financial_transactions')
-          .select('amount')
-          .eq('category_id', budget.category_id)
-          .eq('type', 'expense')
-          .gte('date', currentMonth)
-          .is('deleted_at', null)
-        
-        const spent = data?.reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0
-        usage[budget.id] = {
-          spent,
-          remaining: budget.amount - spent,
-          percentage: budget.amount > 0 ? (spent / budget.amount * 100) : 0
-        }
+    for (const { budget, periodStart, periodEnd } of budgetRanges) {
+      const categoryTransactions = (data || []).filter(
+        t => t.category_id === budget.category_id && t.date >= periodStart && t.date <= periodEnd
+      )
+      const spent = categoryTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      usage[budget.id] = {
+        spent,
+        remaining: budget.amount - spent,
+        percentage: budget.amount > 0 ? (spent / budget.amount * 100) : 0
       }
     }
     
@@ -69,6 +84,8 @@ export default function BudgetList({ budgets, onEdit, onDelete }) {
                   </h3>
                   <p className="text-xs text-gray-500">
                     {budget.period === 'monthly' ? 'Hàng tháng' : 'Hàng năm'}
+                    {' · '}
+                    <span className="text-gray-400">{getBudgetPeriodLabel(budget)}</span>
                   </p>
                 </div>
               </div>
