@@ -5,6 +5,7 @@ import {
   setBudgetPeriodSettings,
   removeBudgetPeriodSettings,
 } from '../../utils/budgetPeriodStorage'
+import { getBudgetPeriodRange } from '../../utils/budgetPeriod'
 
 export function useBudgets() {
   const [budgets, setBudgets] = useState([])
@@ -36,12 +37,18 @@ export function useBudgets() {
 
   const createBudget = async (budgetData) => {
     try {
+      const { periodStart: createPeriodStart } = getBudgetPeriodRange({
+        period: budgetData.period,
+        period_start_day: budgetData.period_start_day || 1,
+        period_start_month: budgetData.period_start_month || 1,
+      })
       const { data, error: createError } = await supabase
         .from('budgets')
         .insert([{
           category_id: budgetData.category_id,
           amount: parseFloat(budgetData.amount),
           period: budgetData.period,
+          start_date: createPeriodStart,
         }])
         .select(`
           *,
@@ -72,11 +79,17 @@ export function useBudgets() {
 
   const updateBudget = async (id, budgetData) => {
     try {
+      const { periodStart: updatePeriodStart } = getBudgetPeriodRange({
+        period: budgetData.period,
+        period_start_day: budgetData.period_start_day || 1,
+        period_start_month: budgetData.period_start_month || 1,
+      })
       const { data, error: updateError } = await supabase
         .from('budgets')
         .update({
           amount: parseFloat(budgetData.amount),
           period: budgetData.period,
+          start_date: updatePeriodStart,
         })
         .eq('id', id)
         .select(`
