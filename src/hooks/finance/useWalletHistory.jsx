@@ -33,17 +33,17 @@ export function useWalletHistory(walletId, filters = {}) {
         .from('financial_transactions')
         .select(`
           *,
-          categories!category_id (
+          categories!financial_transactions_category_id_fkey (
             id,
             name,
             icon,
             type
           ),
-          to_wallet:wallets!to_wallet_id (
+          to_wallet:wallets!financial_transactions_to_wallet_id_fkey (
             id,
             name
           ),
-          payback_goals!payback_goal_id (
+          payback_goals!financial_transactions_payback_goal_id_fkey (
             id,
             name
           )

@@ -21,7 +21,7 @@ export function usePaybackGoals(goalType = 'payback') {
       .from('payback_goals')
       .select(`
         *,
-        priority:payback_priorities!priority_id(
+        priority:payback_priorities!payback_goals_priority_id_fkey(
           id,
           name,
           icon,
