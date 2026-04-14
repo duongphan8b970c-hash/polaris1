@@ -100,7 +100,7 @@ export default function TradeForm({ trade, onSubmit, onCancel, loading }) {
     
     const dataToSubmit = {
       ...formData,
-      currency: walletCurrency,
+      exit_currency: walletCurrency,
       amount: amount,
       entry_price: entryPrice,
       leverage: leverage,

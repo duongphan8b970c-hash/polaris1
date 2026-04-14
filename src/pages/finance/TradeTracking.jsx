@@ -65,7 +65,9 @@ export default function TradeTracking() {
     if (selectedMonth === 'all') return trades
     const [year, month] = selectedMonth.split('-').map(Number)
     return trades.filter(t => {
+      if (!t.created_at) return false
       const d = new Date(t.created_at)
+      if (isNaN(d.getTime())) return false
       return d.getFullYear() === year && d.getMonth() + 1 === month
     })
   }, [trades, selectedMonth])
