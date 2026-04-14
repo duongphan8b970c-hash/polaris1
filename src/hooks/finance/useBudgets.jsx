@@ -1,10 +1,5 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import {
-  mergePeriodSettings,
-  setBudgetPeriodSettings,
-  removeBudgetPeriodSettings,
-} from '../../utils/budgetPeriodStorage'
 import { getBudgetPeriodRange } from '../../utils/budgetPeriod'
 
 export function useBudgets() {
@@ -26,8 +21,7 @@ export function useBudgets() {
         .order('created_at', { ascending: false })
       
       if (fetchError) throw fetchError
-      // Merge period settings from localStorage since the DB columns may not exist yet
-      setBudgets(mergePeriodSettings(data || []))
+      setBudgets(data || [])
     } catch (err) {
       setError(err.message)
     } finally {
@@ -48,6 +42,8 @@ export function useBudgets() {
           category_id: budgetData.category_id,
           amount: parseFloat(budgetData.amount),
           period: budgetData.period,
+          period_start_day: budgetData.period_start_day || 1,
+          period_start_month: budgetData.period_start_month || 1,
           start_date: createPeriodStart,
         }])
         .select(`
@@ -57,12 +53,6 @@ export function useBudgets() {
         .single()
       
       if (createError) throw createError
-
-      // Persist period start settings to localStorage
-      setBudgetPeriodSettings(data.id, {
-        period_start_day: budgetData.period_start_day || 1,
-        period_start_month: budgetData.period_start_month || 1,
-      })
 
       const enriched = {
         ...data,
@@ -89,6 +79,8 @@ export function useBudgets() {
         .update({
           amount: parseFloat(budgetData.amount),
           period: budgetData.period,
+          period_start_day: budgetData.period_start_day || 1,
+          period_start_month: budgetData.period_start_month || 1,
           start_date: updatePeriodStart,
         })
         .eq('id', id)
@@ -99,12 +91,6 @@ export function useBudgets() {
         .single()
       
       if (updateError) throw updateError
-
-      // Persist period start settings to localStorage
-      setBudgetPeriodSettings(id, {
-        period_start_day: budgetData.period_start_day || 1,
-        period_start_month: budgetData.period_start_month || 1,
-      })
 
       const enriched = {
         ...data,
@@ -128,7 +114,6 @@ export function useBudgets() {
       
       if (deleteError) throw deleteError
 
-      removeBudgetPeriodSettings(id)
       setBudgets(prev => prev.filter(b => b.id !== id))
       return { success: true }
     } catch (err) {
