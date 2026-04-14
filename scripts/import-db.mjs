@@ -91,7 +91,18 @@ function processRow(row) {
     }
     // Ensure array fields stay as arrays (not stringified)
     if (key === 'assigned_to' || key === 'tags' || key === 'images') {
-      processed[key] = Array.isArray(value) ? value : value
+      if (Array.isArray(value)) {
+        processed[key] = value
+      } else if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value)
+          processed[key] = Array.isArray(parsed) ? parsed : [value]
+        } catch {
+          processed[key] = [value]
+        }
+      } else {
+        processed[key] = value
+      }
       continue
     }
     // Keep progress as-is (integer or float)
