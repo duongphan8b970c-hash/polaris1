@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import FinanceTab from '../components/dashboard/FinanceTab'
 import Loading from '../components/common/Loading'
 import { formatDateTime, getRelativeTime } from '../utils'
+import RLSFixBanner from '../components/common/RLSFixBanner'
 
 export default function Dashboard() {
   // ✅ State cho active tab
@@ -25,27 +26,15 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      // 🔍 DEBUG: Check auth state first
-      const { data: { session } } = await supabase.auth.getSession()
-      console.log('🔍 [Dashboard] Auth session:', session ? `✅ User: ${session.user?.email}, Role: ${session.user?.role}` : '❌ No session (anon role)')
-      console.log('🔍 [Dashboard] Supabase URL:', import.meta.env.VITE_SUPABASE_URL?.substring(0, 30) + '...')
-
       // Fetch transactions without FK joins (works even without FK constraints)
-      const { data: txnData, error: txnError, status } = await supabase
+      const { data: txnData, error: txnError } = await supabase
         .from('financial_transactions')
         .select('*')
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
 
-      console.log('🔍 [Dashboard] financial_transactions query:', {
-        status,
-        rowCount: txnData?.length ?? 'null',
-        error: txnError,
-        firstRow: txnData?.[0] ? { id: txnData[0].id, type: txnData[0].type, amount: txnData[0].amount, date: txnData[0].date } : 'no data',
-      })
-
       if (txnError) {
-        console.error('❌ [Dashboard] Transaction query error:', txnError)
+        console.error('Transaction query error:', txnError)
       }
 
       const txns = txnData || []
@@ -62,11 +51,6 @@ export default function Dashboard() {
           ? supabase.from('payback_goals').select('id, name').in('id', goalIds)
           : { data: [] },
       ])
-
-      console.log('🔍 [Dashboard] Related data:', {
-        categories: { count: categoriesRes.data?.length, error: categoriesRes.error },
-        goals: { count: goalsRes.data?.length, error: goalsRes.error },
-      })
 
       const categoryMap = Object.fromEntries((categoriesRes.data || []).map(c => [c.id, c]))
       const goalMap = Object.fromEntries((goalsRes.data || []).map(g => [g.id, g]))
@@ -86,7 +70,6 @@ export default function Dashboard() {
         .select('*')
         .order('updated_at', { ascending: false })
 
-      console.log('🔍 [Dashboard] trades:', { count: tradeData?.length, error: tradeError })
       setTrades(tradeData || [])
 
       const { data: rateData } = await supabase
@@ -219,6 +202,9 @@ useEffect(() => {
 
   return (
     <div className="space-y-6">
+      {/* RLS policy fix banner - auto-detects and shows fix */}
+      <RLSFixBanner />
+
       {/* ✅ HEADER với Tab Navigation */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 mb-1">Dashboard</h1>

@@ -12,7 +12,6 @@ export function useWallets() {
       setError(null)
 
       const { data: { user } } = await supabase.auth.getUser()
-      console.log('🔍 [useWallets] Auth user:', user ? `✅ ${user.email}` : '❌ No user')
       if (!user) throw new Error('User not authenticated')
 
       const { data: walletsData, error: walletsError, status } = await supabase
@@ -20,12 +19,6 @@ export function useWallets() {
         .select('*')
         .is('deleted_at', null)
         .order('name')
-
-      console.log('🔍 [useWallets] Wallets query:', {
-        status,
-        count: walletsData?.length ?? 'null',
-        error: walletsError,
-      })
 
       if (walletsError) throw walletsError
 

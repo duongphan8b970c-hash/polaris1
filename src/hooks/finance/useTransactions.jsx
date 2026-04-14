@@ -13,11 +13,6 @@ export function useTransactions(filters = {}) {
       setLoading(true)
       setError(null)
 
-      // 🔍 DEBUG: Check auth state
-      const { data: { session } } = await supabase.auth.getSession()
-      console.log('🔍 [useTransactions] Auth session:', session ? `✅ User: ${session.user?.email}` : '❌ No session')
-      console.log('🔍 [useTransactions] Filters:', JSON.stringify(filters))
-
       // Fetch transactions without FK joins (works even without FK constraints)
       let query = supabase
         .from('financial_transactions')
@@ -44,14 +39,7 @@ export function useTransactions(filters = {}) {
         query = query.lte('date', filters.date_to)
       }
 
-      const { data: txnData, error: fetchError, status, statusText } = await query
-      console.log('🔍 [useTransactions] Query result:', {
-        status,
-        statusText,
-        rowCount: txnData?.length ?? 'null',
-        error: fetchError,
-        firstRow: txnData?.[0] ? Object.keys(txnData[0]) : 'no data',
-      })
+      const { data: txnData, error: fetchError } = await query
       if (fetchError) throw fetchError
 
       const txns = txnData || []
@@ -63,11 +51,6 @@ export function useTransactions(filters = {}) {
       const goalIds = [...new Set(txns.map(t => t.payback_goal_id).filter(Boolean))]
 
       const allWalletIds = [...new Set([...walletIds, ...toWalletIds])]
-      console.log('🔍 [useTransactions] Related IDs:', {
-        wallets: allWalletIds.length,
-        categories: categoryIds.length,
-        goals: goalIds.length,
-      })
 
       const [walletsRes, categoriesRes, goalsRes] = await Promise.all([
         allWalletIds.length > 0
@@ -80,12 +63,6 @@ export function useTransactions(filters = {}) {
           ? supabase.from('payback_goals').select('id, name, target_amount, status').in('id', goalIds)
           : { data: [] },
       ])
-
-      console.log('🔍 [useTransactions] Related data:', {
-        wallets: { count: walletsRes.data?.length, error: walletsRes.error },
-        categories: { count: categoriesRes.data?.length, error: categoriesRes.error },
-        goals: { count: goalsRes.data?.length, error: goalsRes.error },
-      })
 
       // Build lookup maps
       const walletMap = Object.fromEntries((walletsRes.data || []).map(w => [w.id, w]))
@@ -100,8 +77,6 @@ export function useTransactions(filters = {}) {
         categories: txn.category_id ? categoryMap[txn.category_id] || null : null,
         payback_goals: txn.payback_goal_id ? goalMap[txn.payback_goal_id] || null : null,
       }))
-
-      console.log('🔍 [useTransactions] Final merged count:', merged.length, '| Sample:', merged[0] ? { id: merged[0].id, hasWallet: !!merged[0].wallets, hasCategory: !!merged[0].categories } : 'empty')
 
       setTransactions(merged)
     } catch (err) {
