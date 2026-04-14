@@ -125,7 +125,7 @@ CREATE POLICY "financial_transactions_delete"
             </button>
             
             <a
-              href={`${import.meta.env.VITE_SUPABASE_URL?.replace('.supabase.co', '')? 'https://supabase.com/dashboard' : 'https://supabase.com/dashboard'}`}
+              href="https://supabase.com/dashboard"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
