@@ -29,7 +29,7 @@ export default function Dashboard() {
         .from('financial_transactions')
         .select(`
           *,
-          categories (
+          categories!category_id (
             id,
             name,
             icon,

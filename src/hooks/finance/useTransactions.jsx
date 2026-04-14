@@ -17,24 +17,24 @@ export function useTransactions(filters = {}) {
         .from('financial_transactions')
         .select(`
           *,
-          wallets!financial_transactions_wallet_id_fkey (
+          wallets!wallet_id (
             id,
             name,
             currency,
             current_amount
           ),
-          to_wallet:wallets!financial_transactions_to_wallet_id_fkey (
+          to_wallet:wallets!to_wallet_id (
             id,
             name,
             currency
           ),
-          categories (
+          categories!category_id (
             id,
             name,
             icon,
             type
           ),
-          payback_goals (
+          payback_goals!payback_goal_id (
             id,
             name,
             target_amount,

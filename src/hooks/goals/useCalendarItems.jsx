@@ -51,7 +51,7 @@ export function useCalendarItems(startDate, endDate, options = {}) {
             is_calendar_visible,
             assigned_to,
             goal_id,
-            goal:goals(id, name, icon, color)
+            goal:goals!goal_id(id, name, icon, color)
           `)
           .eq('is_calendar_visible', true)
           .is('deleted_at', null)
@@ -82,11 +82,11 @@ export function useCalendarItems(startDate, endDate, options = {}) {
             is_calendar_visible,
             assigned_to,
             task_id,
-            task:tasks(
+            task:tasks!task_id(
               id,
               title,
               goal_id,
-              goal:goals(id, name, icon, color)
+              goal:goals!goal_id(id, name, icon, color)
             )
           `)
           .eq('is_calendar_visible', true)
@@ -112,11 +112,10 @@ export function useCalendarItems(startDate, endDate, options = {}) {
           if (isRecurring(task)) {
             const taskStartDate = parseDateString(task.scheduled_date) || rangeStart
             const occurrences = generateOccurrences(
+              task.recurrence_rule,
               taskStartDate,
-              rangeStart,
-              rangeEnd,
-              task.recurrence_rule
-            )
+              rangeEnd
+            ).filter(d => d >= rangeStart)
 
             occurrences.forEach(occDate => {
               calendarItems.push({
@@ -146,11 +145,10 @@ export function useCalendarItems(startDate, endDate, options = {}) {
           if (isRecurring(subtask)) {
             const subtaskStartDate = parseDateString(subtask.scheduled_date) || rangeStart
             const occurrences = generateOccurrences(
+              subtask.recurrence_rule,
               subtaskStartDate,
-              rangeStart,
-              rangeEnd,
-              subtask.recurrence_rule
-            )
+              rangeEnd
+            ).filter(d => d >= rangeStart)
 
             occurrences.forEach(occDate => {
               calendarItems.push({
