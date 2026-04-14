@@ -28,13 +28,13 @@ export function useTransactions(filters = {}) {
             name,
             currency
           ),
-          categories (
+          categories!financial_transactions_category_id_fkey (
             id,
             name,
             icon,
             type
           ),
-          payback_goals (
+          payback_goals!financial_transactions_payback_goal_id_fkey (
             id,
             name,
             target_amount,
