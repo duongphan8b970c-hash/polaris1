@@ -29,13 +29,13 @@ export default function Dashboard() {
         .from('financial_transactions')
         .select(`
           *,
-          categories!financial_transactions_category_id_fkey (
+          categories!category_id (
             id,
             name,
             icon,
             type
           ),
-          payback_goal:payback_goals!financial_transactions_payback_goal_id_fkey (
+          payback_goal:payback_goals!payback_goal_id (
             id,
             name
           )
