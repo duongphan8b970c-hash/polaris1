@@ -5,8 +5,6 @@ import { detectRadicalFromKanji } from './kanjiRadicals'
  */
 export async function fetchKanjiFromJisho(kanji) {
   try {
-    console.log('🔍 Fetching Kanji:', kanji)
-    
     // Use Vercel serverless function
     const response = await fetch(`/api/jisho?kanji=${encodeURIComponent(kanji)}`)
     

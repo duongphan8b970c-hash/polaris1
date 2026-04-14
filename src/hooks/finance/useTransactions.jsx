@@ -80,7 +80,7 @@ export function useTransactions(filters = {}) {
 
       setTransactions(merged)
     } catch (err) {
-      console.error('❌ [useTransactions] Error fetching transactions:', err)
+      console.error('Error fetching transactions:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -101,16 +101,8 @@ export function useTransactions(filters = {}) {
         const { wallet_id, to_wallet_id, amount, fee, description, date, time } = transactionData
         const transferAmount = Math.abs(parseFloat(amount))
         const transferFee = parseFloat(fee || 0)
-        
-        console.log('💸 Starting transfer:', {
-          from: wallet_id,
-          to: to_wallet_id,
-          amount: transferAmount,
-          fee: transferFee,
-          time: time
-        })
 
-        // ✅ 1. Get source wallet
+        // 1. Get source wallet
         const { data: sourceWallet, error: sourceError } = await supabase
           .from('wallets')
           .select('id, name, current_amount, currency')
@@ -132,32 +124,15 @@ export function useTransactions(filters = {}) {
           throw new Error('Không tìm thấy ví đích')
         }
 
-        console.log('💰 Source wallet:', {
-          name: sourceWallet.name,
-          currency: sourceWallet.currency,
-          current: sourceWallet.current_amount
-        })
-
-        console.log('💰 Destination wallet:', {
-          name: destWallet.name,
-          currency: destWallet.currency,
-          current: destWallet.current_amount
-        })
-
-        // ✅ 3. Check if different currencies and get exchange rate
+        // 3. Check if different currencies and get exchange rate
         const isDifferentCurrency = sourceWallet.currency !== destWallet.currency
         let exchangeRate = 1
         let convertedAmount = transferAmount
 
         if (isDifferentCurrency) {
-          console.log(`💱 Converting ${sourceWallet.currency} → ${destWallet.currency}`)
-          
           try {
             exchangeRate = await getExchangeRate(sourceWallet.currency, destWallet.currency)
             convertedAmount = transferAmount * exchangeRate
-
-            console.log(`💱 Exchange rate: 1 ${sourceWallet.currency} = ${exchangeRate} ${destWallet.currency}`)
-            console.log(`💱 Conversion: ${transferAmount} ${sourceWallet.currency} = ${convertedAmount.toFixed(2)} ${destWallet.currency}`)
 
             // Confirm conversion with user
             const confirmMsg = 
@@ -174,7 +149,6 @@ export function useTransactions(filters = {}) {
               return { success: false, error: 'Đã hủy giao dịch' }
             }
           } catch (err) {
-            console.error('❌ Exchange rate error:', err)
             throw new Error(
               `Không tìm thấy tỷ giá ${sourceWallet.currency} → ${destWallet.currency}.\n` +
               `Vui lòng cập nhật tỷ giá trước khi chuyển khoản.`
@@ -192,11 +166,10 @@ export function useTransactions(filters = {}) {
           throw new Error(errorMsg)
         }
 
-        // ✅ 5. Generate transfer pair ID
+        // 5. Generate transfer pair ID
         const transferPairId = crypto.randomUUID()
-        console.log('🔗 Transfer pair ID:', transferPairId)
 
-        // ✅ 6. Create OUTGOING transaction (negative in source currency)
+        // 6. Create OUTGOING transaction (negative in source currency)
         const { data: outgoingTxn, error: outgoingError } = await supabase
           .from('financial_transactions')
           .insert({
@@ -214,13 +187,10 @@ export function useTransactions(filters = {}) {
           .single()
 
         if (outgoingError) {
-          console.error('❌ Outgoing transaction error:', outgoingError)
           throw outgoingError
         }
 
-        console.log('✅ Outgoing transaction created:', outgoingTxn.id)
-
-        // ✅ 7. Create INCOMING transaction (positive in destination currency)
+        // 7. Create INCOMING transaction (positive in destination currency)
         const { data: incomingTxn, error: incomingError } = await supabase
           .from('financial_transactions')
           .insert({
@@ -238,7 +208,6 @@ export function useTransactions(filters = {}) {
           .single()
 
         if (incomingError) {
-          console.error('❌ Incoming transaction error:', incomingError)
           // Rollback: delete outgoing transaction
           await supabase
             .from('financial_transactions')
@@ -247,25 +216,8 @@ export function useTransactions(filters = {}) {
           throw incomingError
         }
 
-        console.log('✅ Incoming transaction created:', incomingTxn.id)
-
-        // ✅ 8. Recalculate wallet balances
-        const { error: recalcError } = await supabase.rpc('recalculate_all_wallet_balances')
-        
-        if (recalcError) {
-          console.error('⚠️ Recalculation error:', recalcError)
-        } else {
-          console.log('✅ Wallet balances recalculated')
-        }
-
-        console.log('🎉 Transfer completed:', {
-          transferPairId,
-          outgoing: outgoingTxn.id,
-          incoming: incomingTxn.id,
-          exchangeRate: isDifferentCurrency ? exchangeRate : null,
-          sourceAmount: transferAmount,
-          destinationAmount: convertedAmount
-        })
+        // 8. Recalculate wallet balances
+        await supabase.rpc('recalculate_all_wallet_balances')
 
         await fetchTransactions()
         return { 
@@ -292,7 +244,7 @@ export function useTransactions(filters = {}) {
       return { success: true, data }
 
     } catch (err) {
-      console.error('❌ Error creating transaction:', err)
+      console.error('Error creating transaction:', err)
       return { success: false, error: err.message }
     }
   }
@@ -340,8 +292,6 @@ export function useTransactions(filters = {}) {
           .eq('transfer_pair_id', txn.transfer_pair_id)
 
         if (deleteError) throw deleteError
-
-        console.log('✅ Deleted transfer pair:', txn.transfer_pair_id)
       } else {
         // Delete single transaction
         const { error: deleteError } = await supabase
@@ -350,8 +300,6 @@ export function useTransactions(filters = {}) {
           .eq('id', id)
 
         if (deleteError) throw deleteError
-
-        console.log('✅ Deleted transaction:', id)
       }
 
       // Recalculate wallet balances

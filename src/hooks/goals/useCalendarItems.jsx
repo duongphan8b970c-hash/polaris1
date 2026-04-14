@@ -205,10 +205,9 @@ export function useCalendarItems(startDate, endDate, options = {}) {
     }
   }, [dateKey, optionsKey, refreshTrigger]) // ⭐ ADD: refreshTrigger vào dependencies
 
-  // ✅ FIX: refetch function trigger lại useEffect
+  // refetch function trigger lại useEffect
   const refetch = useCallback(() => {
-    console.log('🔄 Manual refetch triggered')
-    setRefreshTrigger(prev => prev + 1) // Increment trigger để useEffect chạy lại
+    setRefreshTrigger(prev => prev + 1)
   }, [])
 
   return {

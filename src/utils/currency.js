@@ -107,8 +107,6 @@ export const getExchangeRate = async (fromCurrency, toCurrency) => {
   }
 
   try {
-    console.log(`🔍 Fetching rate: ${fromCurrency} → ${toCurrency}`)
-    
     // Query exchange_rates table
     const { data, error } = await supabase
       .from('exchange_rates')
@@ -123,8 +121,6 @@ export const getExchangeRate = async (fromCurrency, toCurrency) => {
     }
 
     // If direct rate not found, try reverse rate
-    console.log(`⚠️ Direct rate not found, trying reverse...`)
-    
     const { data: reverseData, error: reverseError } = await supabase
       .from('exchange_rates')
       .select('rate')

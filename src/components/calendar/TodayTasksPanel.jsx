@@ -17,8 +17,6 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
     try {
       setUpdating(prev => ({ ...prev, [itemKey]: true }))
 
-      console.log('🔄 Updating item:', item.type, item.original_id)
-
       if (item.type === 'task') {
         const newStatus = item.status === 'completed' ? 'in_progress' : 'completed'
         const { data, error } = await supabase
@@ -31,11 +29,8 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
           .select()
 
         if (error) {
-          console.error('❌ Supabase error:', error)
           throw error
         }
-        
-        console.log('✅ Task updated:', data)
         
       } else if (item.type === 'subtask') {
         const newCompleted = !item.is_completed
@@ -50,23 +45,17 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
           .select()
 
         if (error) {
-          console.error('❌ Supabase error:', error)
           throw error
         }
-        
-        console.log('✅ Subtask updated:', data)
       }
 
-      // ✅ SAFE: Call onRefresh in background with defensive checks
+      // Call onRefresh in background with defensive checks
       if (onRefresh && typeof onRefresh === 'function') {
-        console.log('🔄 Triggering background refresh...')
-        
-        await onRefresh()  // ⭐ THÊM AWAIT
-        console.log('✅ Refresh completed')
+        await onRefresh()
       }
       
     } catch (err) {
-      console.error('❌ Error checking in:', err)
+      console.error('Error checking in:', err)
       alert('Lỗi: ' + err.message)
     } finally {
       // ✅ ALWAYS clear loading state immediately

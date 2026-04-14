@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase'
 import FinanceTab from '../components/dashboard/FinanceTab'
 import Loading from '../components/common/Loading'
 import { formatDateTime, getRelativeTime } from '../utils'
-import RLSFixBanner from '../components/common/RLSFixBanner'
 
 export default function Dashboard() {
   // ✅ State cho active tab
@@ -62,7 +61,6 @@ export default function Dashboard() {
         payback_goal: txn.payback_goal_id ? goalMap[txn.payback_goal_id] || null : null,
       }))
 
-      console.log('🔍 [Dashboard] Final transactions:', merged.length)
       setTransactions(merged)
 
       const { data: tradeData, error: tradeError } = await supabase
@@ -202,9 +200,6 @@ useEffect(() => {
 
   return (
     <div className="space-y-6">
-      {/* RLS policy fix banner - auto-detects and shows fix */}
-      <RLSFixBanner />
-
       {/* ✅ HEADER với Tab Navigation */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 mb-1">Dashboard</h1>

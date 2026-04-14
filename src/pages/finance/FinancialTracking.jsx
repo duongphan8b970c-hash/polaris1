@@ -16,7 +16,6 @@ import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { formatCurrency, formatDate, formatNumber } from '../../utils'
 import { getBudgetPeriodRange } from '../../utils/budgetPeriod'
-import RLSFixBanner from '../../components/common/RLSFixBanner'
 
 export default function FinancialTracking() {
   const [activeTab, setActiveTab] = useState('transactions')
@@ -448,9 +447,6 @@ const filteredStats = useMemo(() => {
       <PageHeader 
         title="Quản lý thu chi" 
       />
-
-      {/* RLS policy fix banner - auto-detects and shows fix */}
-      <RLSFixBanner />
 
       {/* Tabs */}
       <div className="mb-6">
