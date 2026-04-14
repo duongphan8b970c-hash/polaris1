@@ -12,6 +12,11 @@ export function useWalletHistory(walletId, filters = {}) {
       setLoading(true)
       setError(null)
 
+      // 🔍 DEBUG: Check auth state
+      const { data: { session } } = await supabase.auth.getSession()
+      console.log('🔍 [useWalletHistory] Auth session:', session ? `✅ User: ${session.user?.email}` : '❌ No session')
+      console.log('🔍 [useWalletHistory] walletId:', walletId)
+
       if (!walletId) {
         setTransactions([])
         setWallet(null)
@@ -19,11 +24,17 @@ export function useWalletHistory(walletId, filters = {}) {
       }
 
       // Get wallet info
-      const { data: walletData, error: walletError } = await supabase
+      const { data: walletData, error: walletError, status: walletStatus } = await supabase
         .from('wallets')
         .select('*')
         .eq('id', walletId)
         .single()
+
+      console.log('🔍 [useWalletHistory] Wallet query:', {
+        status: walletStatus,
+        data: walletData ? { id: walletData.id, name: walletData.name } : 'null',
+        error: walletError,
+      })
 
       if (walletError) throw walletError
       setWallet(walletData)
@@ -50,7 +61,12 @@ export function useWalletHistory(walletId, filters = {}) {
         query = query.lte('date', filters.date_to)
       }
 
-      const { data: txnData, error: txnError } = await query
+      const { data: txnData, error: txnError, status } = await query
+      console.log('🔍 [useWalletHistory] Transactions query:', {
+        status,
+        rowCount: txnData?.length ?? 'null',
+        error: txnError,
+      })
       if (txnError) throw txnError
 
       const txns = txnData || []
@@ -71,6 +87,12 @@ export function useWalletHistory(walletId, filters = {}) {
           ? supabase.from('payback_goals').select('id, name').in('id', goalIds)
           : { data: [] },
       ])
+
+      console.log('🔍 [useWalletHistory] Related data:', {
+        categories: { count: categoriesRes.data?.length, error: categoriesRes.error },
+        wallets: { count: walletsRes.data?.length, error: walletsRes.error },
+        goals: { count: goalsRes.data?.length, error: goalsRes.error },
+      })
 
       const categoryMap = Object.fromEntries((categoriesRes.data || []).map(c => [c.id, c]))
       const walletMap = Object.fromEntries((walletsRes.data || []).map(w => [w.id, w]))

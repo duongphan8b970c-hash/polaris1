@@ -25,12 +25,28 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
+      // 🔍 DEBUG: Check auth state first
+      const { data: { session } } = await supabase.auth.getSession()
+      console.log('🔍 [Dashboard] Auth session:', session ? `✅ User: ${session.user?.email}, Role: ${session.user?.role}` : '❌ No session (anon role)')
+      console.log('🔍 [Dashboard] Supabase URL:', import.meta.env.VITE_SUPABASE_URL?.substring(0, 30) + '...')
+
       // Fetch transactions without FK joins (works even without FK constraints)
-      const { data: txnData } = await supabase
+      const { data: txnData, error: txnError, status } = await supabase
         .from('financial_transactions')
         .select('*')
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
+
+      console.log('🔍 [Dashboard] financial_transactions query:', {
+        status,
+        rowCount: txnData?.length ?? 'null',
+        error: txnError,
+        firstRow: txnData?.[0] ? { id: txnData[0].id, type: txnData[0].type, amount: txnData[0].amount, date: txnData[0].date } : 'no data',
+      })
+
+      if (txnError) {
+        console.error('❌ [Dashboard] Transaction query error:', txnError)
+      }
 
       const txns = txnData || []
 
@@ -47,6 +63,11 @@ export default function Dashboard() {
           : { data: [] },
       ])
 
+      console.log('🔍 [Dashboard] Related data:', {
+        categories: { count: categoriesRes.data?.length, error: categoriesRes.error },
+        goals: { count: goalsRes.data?.length, error: goalsRes.error },
+      })
+
       const categoryMap = Object.fromEntries((categoriesRes.data || []).map(c => [c.id, c]))
       const goalMap = Object.fromEntries((goalsRes.data || []).map(g => [g.id, g]))
 
@@ -57,13 +78,15 @@ export default function Dashboard() {
         payback_goal: txn.payback_goal_id ? goalMap[txn.payback_goal_id] || null : null,
       }))
 
+      console.log('🔍 [Dashboard] Final transactions:', merged.length)
       setTransactions(merged)
 
-      const { data: tradeData } = await supabase
+      const { data: tradeData, error: tradeError } = await supabase
         .from('trades')
         .select('*')
         .order('updated_at', { ascending: false })
 
+      console.log('🔍 [Dashboard] trades:', { count: tradeData?.length, error: tradeError })
       setTrades(tradeData || [])
 
       const { data: rateData } = await supabase
