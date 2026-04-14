@@ -25,25 +25,39 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
+      // Fetch transactions without FK joins (works even without FK constraints)
       const { data: txnData } = await supabase
         .from('financial_transactions')
-        .select(`
-          *,
-          categories!category_id (
-            id,
-            name,
-            icon,
-            type
-          ),
-          payback_goal:payback_goals!payback_goal_id (
-            id,
-            name
-          )
-        `)
+        .select('*')
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
 
-      setTransactions(txnData || [])
+      const txns = txnData || []
+
+      // Fetch related data in parallel
+      const categoryIds = [...new Set(txns.map(t => t.category_id).filter(Boolean))]
+      const goalIds = [...new Set(txns.map(t => t.payback_goal_id).filter(Boolean))]
+
+      const [categoriesRes, goalsRes] = await Promise.all([
+        categoryIds.length > 0
+          ? supabase.from('categories').select('id, name, icon, type').in('id', categoryIds)
+          : { data: [] },
+        goalIds.length > 0
+          ? supabase.from('payback_goals').select('id, name').in('id', goalIds)
+          : { data: [] },
+      ])
+
+      const categoryMap = Object.fromEntries((categoriesRes.data || []).map(c => [c.id, c]))
+      const goalMap = Object.fromEntries((goalsRes.data || []).map(g => [g.id, g]))
+
+      // Merge related data onto transactions
+      const merged = txns.map(txn => ({
+        ...txn,
+        categories: txn.category_id ? categoryMap[txn.category_id] || null : null,
+        payback_goal: txn.payback_goal_id ? goalMap[txn.payback_goal_id] || null : null,
+      }))
+
+      setTransactions(merged)
 
       const { data: tradeData } = await supabase
         .from('trades')

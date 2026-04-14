@@ -13,34 +13,10 @@ export function useTransactions(filters = {}) {
       setLoading(true)
       setError(null)
 
+      // Fetch transactions without FK joins (works even without FK constraints)
       let query = supabase
         .from('financial_transactions')
-        .select(`
-          *,
-          wallets!wallet_id (
-            id,
-            name,
-            currency,
-            current_amount
-          ),
-          to_wallet:wallets!to_wallet_id (
-            id,
-            name,
-            currency
-          ),
-          categories!category_id (
-            id,
-            name,
-            icon,
-            type
-          ),
-          payback_goals!payback_goal_id (
-            id,
-            name,
-            target_amount,
-            status
-          )
-        `)
+        .select('*')
         .order('date', { ascending: false })
         .order('time', { ascending: false })
 
@@ -63,11 +39,46 @@ export function useTransactions(filters = {}) {
         query = query.lte('date', filters.date_to)
       }
 
-      const { data, error: fetchError } = await query
-
+      const { data: txnData, error: fetchError } = await query
       if (fetchError) throw fetchError
 
-      setTransactions(data || [])
+      const txns = txnData || []
+
+      // Fetch related data in parallel (no FK constraints needed)
+      const walletIds = [...new Set(txns.map(t => t.wallet_id).filter(Boolean))]
+      const toWalletIds = [...new Set(txns.map(t => t.to_wallet_id).filter(Boolean))]
+      const categoryIds = [...new Set(txns.map(t => t.category_id).filter(Boolean))]
+      const goalIds = [...new Set(txns.map(t => t.payback_goal_id).filter(Boolean))]
+
+      const allWalletIds = [...new Set([...walletIds, ...toWalletIds])]
+
+      const [walletsRes, categoriesRes, goalsRes] = await Promise.all([
+        allWalletIds.length > 0
+          ? supabase.from('wallets').select('id, name, currency, current_amount').in('id', allWalletIds)
+          : { data: [] },
+        categoryIds.length > 0
+          ? supabase.from('categories').select('id, name, icon, type').in('id', categoryIds)
+          : { data: [] },
+        goalIds.length > 0
+          ? supabase.from('payback_goals').select('id, name, target_amount, status').in('id', goalIds)
+          : { data: [] },
+      ])
+
+      // Build lookup maps
+      const walletMap = Object.fromEntries((walletsRes.data || []).map(w => [w.id, w]))
+      const categoryMap = Object.fromEntries((categoriesRes.data || []).map(c => [c.id, c]))
+      const goalMap = Object.fromEntries((goalsRes.data || []).map(g => [g.id, g]))
+
+      // Merge related data onto transactions (same shape as FK joins produced)
+      const merged = txns.map(txn => ({
+        ...txn,
+        wallets: txn.wallet_id ? walletMap[txn.wallet_id] || null : null,
+        to_wallet: txn.to_wallet_id ? walletMap[txn.to_wallet_id] || null : null,
+        categories: txn.category_id ? categoryMap[txn.category_id] || null : null,
+        payback_goals: txn.payback_goal_id ? goalMap[txn.payback_goal_id] || null : null,
+      }))
+
+      setTransactions(merged)
     } catch (err) {
       console.error('Error fetching transactions:', err)
       setError(err.message)
