@@ -7,6 +7,15 @@
 -- Solution: Create permissive policies for authenticated users.
 -- The app's finance hooks do NOT filter by user_id, so policies
 -- allow any authenticated user full CRUD access.
+--
+-- SECURITY NOTE: These are permissive (USING true) policies that allow
+-- any authenticated user to access all finance data. This matches the
+-- current app code which doesn't isolate finance data by user_id.
+-- For multi-user deployments, these should be tightened to user-scoped
+-- policies (e.g. auth.uid() = user_id) after:
+--   1. Adding user_id columns to tables that lack them
+--   2. Backfilling user_id on existing rows
+--   3. Updating all finance hooks to include user_id in queries/inserts
 -- ============================================================
 
 BEGIN;
