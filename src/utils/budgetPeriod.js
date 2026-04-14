@@ -108,16 +108,12 @@ export function getBudgetPeriodLabel(budget, referenceDate = new Date()) {
   const start = new Date(periodStart)
   const end = new Date(periodEnd)
 
-  const formatShort = (d) => {
-    return `${d.getDate()}/${d.getMonth() + 1}`
+  const fmt = (d) => {
+    const day = String(d.getDate()).padStart(2, '0')
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const year = d.getFullYear()
+    return `${day}/${month}/${year}`
   }
 
-  if (budget.period === 'monthly') {
-    return `${formatShort(start)} - ${formatShort(end)}`
-  }
-
-  const formatWithYear = (d) => {
-    return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`
-  }
-  return `${formatWithYear(start)} - ${formatWithYear(end)}`
+  return `${fmt(start)} – ${fmt(end)}`
 }
