@@ -28,26 +28,10 @@ export function useWalletHistory(walletId, filters = {}) {
       if (walletError) throw walletError
       setWallet(walletData)
 
-      // Build query for transactions
+      // Fetch transactions without FK joins (works even without FK constraints)
       let query = supabase
         .from('financial_transactions')
-        .select(`
-          *,
-          categories (
-            id,
-            name,
-            icon,
-            type
-          ),
-          to_wallet:wallets!financial_transactions_to_wallet_id_fkey (
-            id,
-            name
-          ),
-          payback_goals (
-            id,
-            name
-          )
-        `)
+        .select('*')
         .eq('wallet_id', walletId)
         .order('date', { ascending: false })
         .order('time', { ascending: false })
@@ -67,11 +51,41 @@ export function useWalletHistory(walletId, filters = {}) {
       }
 
       const { data: txnData, error: txnError } = await query
-
       if (txnError) throw txnError
 
+      const txns = txnData || []
+
+      // Fetch related data in parallel (no FK constraints needed)
+      const categoryIds = [...new Set(txns.map(t => t.category_id).filter(Boolean))]
+      const toWalletIds = [...new Set(txns.map(t => t.to_wallet_id).filter(Boolean))]
+      const goalIds = [...new Set(txns.map(t => t.payback_goal_id).filter(Boolean))]
+
+      const [categoriesRes, walletsRes, goalsRes] = await Promise.all([
+        categoryIds.length > 0
+          ? supabase.from('categories').select('id, name, icon, type').in('id', categoryIds)
+          : { data: [] },
+        toWalletIds.length > 0
+          ? supabase.from('wallets').select('id, name').in('id', toWalletIds)
+          : { data: [] },
+        goalIds.length > 0
+          ? supabase.from('payback_goals').select('id, name').in('id', goalIds)
+          : { data: [] },
+      ])
+
+      const categoryMap = Object.fromEntries((categoriesRes.data || []).map(c => [c.id, c]))
+      const walletMap = Object.fromEntries((walletsRes.data || []).map(w => [w.id, w]))
+      const goalMap = Object.fromEntries((goalsRes.data || []).map(g => [g.id, g]))
+
+      // Merge related data onto transactions
+      const merged = txns.map(txn => ({
+        ...txn,
+        categories: txn.category_id ? categoryMap[txn.category_id] || null : null,
+        to_wallet: txn.to_wallet_id ? walletMap[txn.to_wallet_id] || null : null,
+        payback_goals: txn.payback_goal_id ? goalMap[txn.payback_goal_id] || null : null,
+      }))
+
       // Calculate running balance for each transaction
-      const transactionsWithBalance = calculateRunningBalance(txnData, walletId, walletData.initial_amount)
+      const transactionsWithBalance = calculateRunningBalance(merged, walletId, walletData.initial_amount)
 
       setTransactions(transactionsWithBalance)
 
