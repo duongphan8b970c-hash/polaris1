@@ -23,7 +23,7 @@ export function useTasks(goalId = null, filters = {}) {
           scheduled_date,
           recurrence_rule,
           is_calendar_visible,
-          goal:goals(
+          goal:goals!goal_id(
             id,
             name,
             icon,

@@ -18,9 +18,9 @@ export function useCheckins(goalId = null, dateRange = {}) {
         .from('checkin_calendar')
         .select(`
           *,
-          goal:goals(id, name, icon, color),
-          task:tasks(id, title),
-          subtask:subtasks(id, title)
+          goal:goals!goal_id(id, name, icon, color),
+          task:tasks!task_id(id, title),
+          subtask:subtasks!subtask_id(id, title)
         `)
         .is('deleted_at', null)
         .order('date', { ascending: false })

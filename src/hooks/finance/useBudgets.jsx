@@ -14,7 +14,7 @@ export function useBudgets() {
         .from('budgets')
         .select(`
           *,
-          category:categories(id, name, type, icon)
+          category:categories!category_id(id, name, type, icon)
         `)
         .is('deleted_at', null)
         .eq('is_active', true)
@@ -48,7 +48,7 @@ export function useBudgets() {
         }])
         .select(`
           *,
-          category:categories(id, name, type, icon)
+          category:categories!category_id(id, name, type, icon)
         `)
         .single()
       
@@ -86,7 +86,7 @@ export function useBudgets() {
         .eq('id', id)
         .select(`
           *,
-          category:categories(id, name, type, icon)
+          category:categories!category_id(id, name, type, icon)
         `)
         .single()
       

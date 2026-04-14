@@ -20,7 +20,7 @@ export function useTrades(filters = {}) {
         .from('trades')
         .select(`
           *,
-          wallet:wallets(id, name, currency)
+          wallet:wallets!wallet_id(id, name, currency)
         `)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
@@ -67,7 +67,7 @@ export function useTrades(filters = {}) {
         }])
         .select(`
           *,
-          wallet:wallets(id, name, currency)
+          wallet:wallets!wallet_id(id, name, currency)
         `)
         .single()
       
@@ -141,7 +141,7 @@ export function useTrades(filters = {}) {
         .eq('id', id)
         .select(`
           *,
-          wallet:wallets(id, name, currency)
+          wallet:wallets!wallet_id(id, name, currency)
         `)
         .single()
       
@@ -172,7 +172,7 @@ export function useTrades(filters = {}) {
         .eq('id', id)
         .select(`
           *,
-          wallet:wallets(id, name, currency)
+          wallet:wallets!wallet_id(id, name, currency)
         `)
         .single()
       
