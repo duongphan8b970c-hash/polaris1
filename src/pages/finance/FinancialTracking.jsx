@@ -17,6 +17,17 @@ import ErrorMessage from '../../components/common/ErrorMessage'
 import { formatCurrency, formatDate, formatNumber } from '../../utils'
 import { getBudgetPeriodRange } from '../../utils/budgetPeriod'
 
+const getCurrentMonthRange = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const date_from = firstDay.toISOString().split('T')[0]
+  const lastDay = new Date(year, month + 1, 0)
+  const date_to = lastDay.toISOString().split('T')[0]
+  return { date_from, date_to }
+}
+
 export default function FinancialTracking() {
   const [activeTab, setActiveTab] = useState('transactions')
   const [categoryType, setCategoryType] = useState('expense')
@@ -24,12 +35,15 @@ export default function FinancialTracking() {
   const { notifyBudgetExceeded, notifyBudgetWarning } = useNotifications()
   
   // Filters state
-  const [filters, setFilters] = useState({
-    wallet_id: '',
-    type: '',
-    category_ids: [],
-    date_from: '',
-    date_to: ''
+  const [filters, setFilters] = useState(() => {
+    const { date_from, date_to } = getCurrentMonthRange()
+    return {
+      wallet_id: '',
+      type: '',
+      category_ids: [],
+      date_from,
+      date_to
+    }
   })
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
@@ -128,12 +142,13 @@ export default function FinancialTracking() {
   }
 
   const handleClearFilters = () => {
+    const { date_from, date_to } = getCurrentMonthRange()
     setFilters({
       wallet_id: '',
       type: '',
       category_ids: [],
-      date_from: '',
-      date_to: ''
+      date_from,
+      date_to
     })
     setCategoryDropdownOpen(false)
   }
