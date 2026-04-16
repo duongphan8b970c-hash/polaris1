@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { recalculateAllWalletBalances } from '../../utils/walletBalance'
 
 export function useWallets() {
   const [wallets, setWallets] = useState([])
@@ -181,7 +182,7 @@ export function useWallets() {
     if (transactionError) throw transactionError
 
     // 4. Recalculate wallet balances
-    await supabase.rpc('recalculate_all_wallet_balances')
+    await recalculateAllWalletBalances()
 
     // 5. Refetch wallets
     await fetchWallets()
@@ -233,6 +234,17 @@ export function useWallets() {
     }
   }
 
+  const recalculateBalances = async () => {
+    try {
+      const updatedCount = await recalculateAllWalletBalances()
+      await fetchWallets()
+      return { success: true, updatedCount }
+    } catch (err) {
+      console.error('Error recalculating balances:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
   return {
     wallets,
     loading,
@@ -242,6 +254,7 @@ export function useWallets() {
     resetWalletBalance,
     deleteWallet,
     getMonthlyReport,
+    recalculateBalances,
     refetch: fetchWallets
   }
 }

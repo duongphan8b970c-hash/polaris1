@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { getExchangeRate } from '../../utils/currency'
+import { recalculateAllWalletBalances } from '../../utils/walletBalance'
 
 export function useTransactions(filters = {}) {
   const [transactions, setTransactions] = useState([])
@@ -218,7 +219,7 @@ export function useTransactions(filters = {}) {
         }
 
         // 8. Recalculate wallet balances
-        await supabase.rpc('recalculate_all_wallet_balances')
+        await recalculateAllWalletBalances()
 
         await fetchTransactions()
         return { 
@@ -253,6 +254,9 @@ export function useTransactions(filters = {}) {
 
       if (insertError) throw insertError
 
+      // Recalculate wallet balances after creating transaction
+      await recalculateAllWalletBalances()
+
       await fetchTransactions()
       return { success: true, data }
 
@@ -277,6 +281,9 @@ export function useTransactions(filters = {}) {
         .single()
 
       if (updateError) throw updateError
+
+      // Recalculate wallet balances after updating transaction
+      await recalculateAllWalletBalances()
 
       await fetchTransactions()
       return { success: true, data }
@@ -316,7 +323,7 @@ export function useTransactions(filters = {}) {
       }
 
       // Recalculate wallet balances
-      await supabase.rpc('recalculate_all_wallet_balances')
+      await recalculateAllWalletBalances()
 
       await fetchTransactions()
       return { success: true }
