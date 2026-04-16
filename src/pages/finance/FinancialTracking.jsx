@@ -397,7 +397,7 @@ const filteredStats = useMemo(() => {
 
   // ✅ SAFE DEFAULTS - Ensure arrays are never undefined
   const safeWallets = Array.isArray(wallets) ? wallets : []
-  const safeAllCategories = Array.isArray(allCategories) ? allCategories : []
+  const safeAllCategories = useMemo(() => Array.isArray(allCategories) ? allCategories : [], [allCategories])
   const safeTransactions = Array.isArray(transactions) ? transactions : []
   const safeCategories = Array.isArray(categories) ? categories : []
   const selectedCategoryIds = filters.category_ids || []

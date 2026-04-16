@@ -42,8 +42,9 @@ export default function TransactionList({
     if (currentPage > 1) setCurrentPage(currentPage - 1)
   }
 
-  // ✅ Reset to page 1 when transactions change
+  // Reset to page 1 when transactions change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1)
   }, [transactions.length])
 

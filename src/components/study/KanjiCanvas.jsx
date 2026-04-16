@@ -229,9 +229,11 @@ const KanjiCanvas = forwardRef(function KanjiCanvas(
   }, [redrawAll])
 
   useEffect(() => {
+    const timeoutId = animTimeoutRef.current
+    const frameId = animFrameRef.current
     return () => {
-      if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current)
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+      if (timeoutId) clearTimeout(timeoutId)
+      if (frameId) cancelAnimationFrame(frameId)
     }
   }, [])
 
