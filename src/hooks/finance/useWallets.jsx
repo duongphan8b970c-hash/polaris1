@@ -167,6 +167,7 @@ export function useWallets() {
         wallet_id: walletId,
         category_id: category.id,
         type: transactionType,
+        currency: wallet.currency,
         amount: isIncrease 
           ? Math.abs(difference)   // Income: positive
           : -Math.abs(difference), // Expense: NEGATIVE
