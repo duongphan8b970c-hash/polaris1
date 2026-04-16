@@ -253,6 +253,9 @@ export function useTransactions(filters = {}) {
 
       if (insertError) throw insertError
 
+      // Recalculate wallet balances after creating transaction
+      await supabase.rpc('recalculate_all_wallet_balances')
+
       await fetchTransactions()
       return { success: true, data }
 
@@ -277,6 +280,9 @@ export function useTransactions(filters = {}) {
         .single()
 
       if (updateError) throw updateError
+
+      // Recalculate wallet balances after updating transaction
+      await supabase.rpc('recalculate_all_wallet_balances')
 
       await fetchTransactions()
       return { success: true, data }
