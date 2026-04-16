@@ -1,4 +1,4 @@
-import { parseDateString, formatDateString, normalizeToMidnight, isSameDay as dateUtilsIsSameDay } from './dateUtils'
+import { formatDateString, normalizeToMidnight, isSameDay as dateUtilsIsSameDay } from './dateUtils'
 
 /**
  * Calendar Utilities
