@@ -1,30 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
 import { formatCurrency } from '../../utils'
 
 export default function TradeForm({ trade, onSubmit, onCancel, loading }) {
   const { wallets } = useWallets()
   
-  const [formData, setFormData] = useState({
-    wallet_id: '',
-    symbol: '',
-    side: 'buy',
-    entry_price: '',
-    amount: '',
-    leverage: '1',
-    exit_price: '',
-    profit_loss: '',
-    notes: '',
-  })
-
-  const [isClosing, setIsClosing] = useState(false)
-
-  const selectedWallet = wallets.find(w => w.id === formData.wallet_id)
-  const walletCurrency = selectedWallet?.currency || 'USDT'
-
-  useEffect(() => {
+  const [formData, setFormData] = useState(() => {
     if (trade) {
-      setFormData({
+      return {
         wallet_id: trade.wallet_id,
         symbol: trade.symbol,
         side: trade.side,
@@ -34,10 +17,25 @@ export default function TradeForm({ trade, onSubmit, onCancel, loading }) {
         exit_price: trade.exit_price || '',
         profit_loss: trade.profit_loss || '',
         notes: trade.notes || '',
-      })
-      setIsClosing(trade.status === 'closed')
+      }
     }
-  }, [trade])
+    return {
+      wallet_id: '',
+      symbol: '',
+      side: 'buy',
+      entry_price: '',
+      amount: '',
+      leverage: '1',
+      exit_price: '',
+      profit_loss: '',
+      notes: '',
+    }
+  })
+
+  const [isClosing, setIsClosing] = useState(() => trade?.status === 'closed')
+
+  const selectedWallet = wallets.find(w => w.id === formData.wallet_id)
+  const walletCurrency = selectedWallet?.currency || 'USDT'
 
   const handleSubmit = (e) => {
     e.preventDefault()

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react' // useEffect kept for textarea resize
 import UserSelector from './UserSelector'
 
 const PRIORITY_OPTIONS = [
@@ -15,33 +15,9 @@ const STATUS_OPTIONS = [
 ]
 
 export default function TaskForm({ task, onSubmit, onCancel, loading }) {
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    start_date: '',
-    due_date: '',
-    priority: 'medium',
-    status: 'todo',
-    tags: [],
-    estimated_hours: '',
-    assigned_to: [],
-    scheduled_date: '',
-    is_calendar_visible: false,
-  })
-
-  const [tagInput, setTagInput] = useState('')
-  const descriptionRef = useRef(null)
-
-  const resizeTextarea = () => {
-    if (descriptionRef.current) {
-      descriptionRef.current.style.height = 'auto'
-      descriptionRef.current.style.height = descriptionRef.current.scrollHeight + 'px'
-    }
-  }
-
-  useEffect(() => {
+  const [formData, setFormData] = useState(() => {
     if (task) {
-      setFormData({
+      return {
         title: task.title,
         description: task.description || '',
         start_date: task.start_date || '',
@@ -53,9 +29,32 @@ export default function TaskForm({ task, onSubmit, onCancel, loading }) {
         assigned_to: task.assigned_to || [],
         scheduled_date: task.scheduled_date || '',
         is_calendar_visible: task.is_calendar_visible || false,
-      })
+      }
     }
-  }, [task])
+    return {
+      title: '',
+      description: '',
+      start_date: '',
+      due_date: '',
+      priority: 'medium',
+      status: 'todo',
+      tags: [],
+      estimated_hours: '',
+      assigned_to: [],
+      scheduled_date: '',
+      is_calendar_visible: false,
+    }
+  })
+
+  const [tagInput, setTagInput] = useState('')
+  const descriptionRef = useRef(null)
+
+  const resizeTextarea = () => {
+    if (descriptionRef.current) {
+      descriptionRef.current.style.height = 'auto'
+      descriptionRef.current.style.height = descriptionRef.current.scrollHeight + 'px'
+    }
+  }
 
   // Auto-resize description textarea whenever its value changes
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Modal from '../common/Modal'
 import { RECURRENCE_PRESETS, formatRecurrenceRule, generateOccurrences } from '../../utils/recurrence'
 
@@ -27,25 +27,23 @@ const DAY_OF_WEEK = [
 ]
 
 export default function RecurrenceModal({ isOpen, onClose, onSave, initialData, loading }) {
-  const [formData, setFormData] = useState({
-    scheduled_date: '',
-    recurrence_rule: null,
-    is_calendar_visible: true
-  })
-
-  const [useRecurrence, setUseRecurrence] = useState(false)
-  const [recurrenceMode, setRecurrenceMode] = useState('preset') // 'preset' or 'custom'
-
-  useEffect(() => {
+  const [formData, setFormData] = useState(() => {
     if (initialData) {
-      setFormData({
+      return {
         scheduled_date: initialData.scheduled_date || '',
         recurrence_rule: initialData.recurrence_rule || null,
         is_calendar_visible: initialData.is_calendar_visible ?? true
-      })
-      setUseRecurrence(!!initialData.recurrence_rule)
+      }
     }
-  }, [initialData])
+    return {
+      scheduled_date: '',
+      recurrence_rule: null,
+      is_calendar_visible: true
+    }
+  })
+
+  const [useRecurrence, setUseRecurrence] = useState(() => !!initialData?.recurrence_rule)
+  const [recurrenceMode, setRecurrenceMode] = useState('preset') // 'preset' or 'custom'
 
   const handlePresetClick = (presetKey) => {
     const preset = RECURRENCE_PRESETS[presetKey]

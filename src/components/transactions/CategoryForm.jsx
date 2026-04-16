@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 const CATEGORY_ICONS = [
   '🍔', '🚗', '🏠', '💡', '📱', '🎮', '👕', '💊',
@@ -8,28 +8,22 @@ const CATEGORY_ICONS = [
 ]
 
 export default function CategoryForm({ category, defaultType, onSubmit, onCancel, loading }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    type: defaultType || 'expense',
-    icon: '📁',
-    is_active: true,
-  })
-
-  useEffect(() => {
+  const [formData, setFormData] = useState(() => {
     if (category) {
-      setFormData({
+      return {
         name: category.name,
         type: category.type,
         icon: category.icon || '📁',
         is_active: category.is_active !== false,
-      })
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        type: defaultType || 'expense'
-      }))
+      }
     }
-  }, [category, defaultType])
+    return {
+      name: '',
+      type: defaultType || 'expense',
+      icon: '📁',
+      is_active: true,
+    }
+  })
 
   const handleSubmit = (e) => {
     e.preventDefault()

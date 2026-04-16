@@ -1,29 +1,28 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useCategories } from '../../hooks/finance/useCategories'
 import { getBudgetPeriodLabel } from '../../utils/budgetPeriod'
 
 export default function BudgetForm({ budget, presetCategoryId, onSubmit, onCancel, loading }) {
   const { categories } = useCategories('expense') // Only expense categories
   
-  const [formData, setFormData] = useState({
-    category_id: presetCategoryId || '',
-    amount: '',
-    period: 'monthly',
-    period_start_day: 1,
-    period_start_month: 1,
-  })
-
-  useEffect(() => {
+  const [formData, setFormData] = useState(() => {
     if (budget) {
-      setFormData({
+      return {
         category_id: budget.category_id,
         amount: budget.amount,
         period: budget.period,
         period_start_day: budget.period_start_day || 1,
         period_start_month: budget.period_start_month || 1,
-      })
+      }
     }
-  }, [budget])
+    return {
+      category_id: presetCategoryId || '',
+      amount: '',
+      period: 'monthly',
+      period_start_day: 1,
+      period_start_month: 1,
+    }
+  })
 
   const handleSubmit = (e) => {
     e.preventDefault()

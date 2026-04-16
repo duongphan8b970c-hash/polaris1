@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { WALLET_TYPE_OPTIONS } from '../../constants'
 import { WALLET_TYPES, getWalletTypeInfo } from '../../constants' 
 
@@ -10,23 +10,22 @@ const CURRENCIES = [
 ]
 
 export default function WalletForm({ wallet, onSubmit, onCancel, loading }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    type: 'bank',
-    currency: 'VND',
-    initial_amount: '',
-  })
-
-  useEffect(() => {
+  const [formData, setFormData] = useState(() => {
     if (wallet) {
-      setFormData({
+      return {
         name: wallet.name,
         type: wallet.type,
         currency: wallet.currency,
         initial_amount: wallet.initial_amount,
-      })
+      }
     }
-  }, [wallet])
+    return {
+      name: '',
+      type: 'bank',
+      currency: 'VND',
+      initial_amount: '',
+    }
+  })
 
   const handleSubmit = (e) => {
     e.preventDefault()

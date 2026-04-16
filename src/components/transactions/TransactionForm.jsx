@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
 import { useCategories } from '../../hooks/finance/useCategories'
 import { usePaybackGoals } from '../../hooks/finance/usePaybackGoals'
@@ -21,12 +21,8 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
     time: transaction?.time || new Date().toTimeString().slice(0, 5)
   })
 
-  const [transactionType, setTransactionType] = useState(transaction?.type || 'expense')
+  const transactionType = formData.type
   const { categories } = useCategories(transactionType === 'transfer' ? 'expense' : transactionType)
-
-  useEffect(() => {
-    setTransactionType(formData.type)
-  }, [formData.type])
 
   const selectedCategory = categories.find(c => c.id === formData.category_id)
   const isPaybackCategory = selectedCategory?.name === 'Payback' && formData.type === 'expense'
