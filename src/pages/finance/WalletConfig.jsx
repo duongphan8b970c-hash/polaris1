@@ -16,12 +16,14 @@ export default function WalletConfig() {
     createWallet, 
     updateWallet, 
     resetWalletBalance,
+    recalculateBalances,
     refetch 
   } = useWallets()
   
   const [showForm, setShowForm] = useState(false)
   const [editingWallet, setEditingWallet] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [recalculating, setRecalculating] = useState(false)
   const [expandedSections, setExpandedSections] = useState({})
 
   // Group wallets by type
@@ -110,6 +112,18 @@ export default function WalletConfig() {
     alert('Chức năng xóa ví đang được phát triển')
   }
 
+  const handleRecalculate = async () => {
+    setRecalculating(true)
+    const result = await recalculateBalances()
+    setRecalculating(false)
+    
+    if (result.success) {
+      alert(`✅ Đã tính lại số dư tất cả ví thành công!${result.updatedCount > 0 ? ` (${result.updatedCount} ví được cập nhật)` : ' (Tất cả số dư đã đúng)'}`)
+    } else {
+      alert('❌ Lỗi: ' + result.error)
+    }
+  }
+
   if (loading) {
     return <Loading message="Đang tải ví..." />
   }
@@ -124,12 +138,36 @@ export default function WalletConfig() {
       <PageHeader 
         title="Cấu hình ví" 
         action={
-          <button onClick={handleCreate} className="btn btn-primary">
-            <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Thêm ví
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleRecalculate} 
+              disabled={recalculating}
+              className="btn bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+            >
+              {recalculating ? (
+                <>
+                  <svg className="w-5 h-5 mr-2 inline animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Đang tính...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Tính lại số dư
+                </>
+              )}
+            </button>
+            <button onClick={handleCreate} className="btn btn-primary">
+              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Thêm ví
+            </button>
+          </div>
         }
       />
 
