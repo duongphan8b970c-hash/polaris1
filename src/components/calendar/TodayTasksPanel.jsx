@@ -19,7 +19,7 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
 
       if (item.type === 'task') {
         const newStatus = item.status === 'completed' ? 'in_progress' : 'completed'
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('tasks')
           .update({ 
             status: newStatus,
@@ -34,7 +34,7 @@ export default function TodayTasksPanel({ date, items, onRefresh }) {
         
       } else if (item.type === 'subtask') {
         const newCompleted = !item.is_completed
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('subtasks')
           .update({ 
             is_completed: newCompleted,

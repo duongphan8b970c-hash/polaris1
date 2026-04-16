@@ -83,7 +83,7 @@ export default function AssignmentHistory({ resourceType, resourceId }) {
       </h4>
 
       <div className="space-y-2">
-        {history.map((entry, index) => (
+        {history.map((entry) => (
           <div 
             key={entry.id} 
             className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${

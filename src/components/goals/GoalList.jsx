@@ -209,7 +209,7 @@ function GoalRow({ goal, onEdit, onDelete, onComplete, onGoalClick }) {
   )
 }
 
-function GoalSection({ title, icon, goals, onEdit, onDelete, onComplete, onGoalClick, defaultOpen = true }) {
+function GoalSection({ title, icon, goals, onEdit, onDelete, onComplete, onGoalClick }) {
   return (
     <tbody>
       {/* Section header row */}

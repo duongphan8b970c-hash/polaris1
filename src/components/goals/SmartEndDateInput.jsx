@@ -1,50 +1,10 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
-
 export default function SmartEndDateInput({ 
   goal, 
   value, 
   onChange, 
   disabled = false 
 }) {
-  const [suggestions, setSuggestions] = useState([])
-  const [loading, setLoading] = useState(false)
   const isCompleted = goal?.status === 'completed'
-
-  useEffect(() => {
-    // ✅ FIX: Only show suggestions if goal is NOT completed yet
-    if (goal?.id && !isCompleted) {
-      fetchSuggestions()
-    } else {
-      setSuggestions([])
-    }
-  }, [goal?.id, isCompleted])
-
-  const fetchSuggestions = async () => {
-    try {
-      setLoading(true)
-
-      const { data, error } = await supabase
-        .rpc('get_goal_suggestions', { p_goal_id: goal.id })
-
-      if (error) throw error
-
-      const formattedSuggestions = (data || []).map(s => ({
-        type: s.severity,
-        date: s.suggested_date,
-        message: s.message,
-        action: s.suggested_date ? () => onChange(s.suggested_date) : null
-      }))
-
-      setSuggestions(formattedSuggestions)
-    } catch (err) {
-      console.error('Error fetching suggestions:', err)
-      // Fallback: Don't show suggestions on error
-      setSuggestions([])
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const validateDate = (dateStr) => {
     if (!dateStr) return null

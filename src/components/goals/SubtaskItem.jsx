@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { formatRecurrenceRule } from '../../utils/recurrence'
 
-export default function SubtaskItem({ subtask, onToggle, onEdit, onDelete, onOpenRecurrence, onOpenCalendar }) {
+export default function SubtaskItem({ subtask, onToggle, onEdit, onDelete, onOpenRecurrence }) {
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(subtask.title)
 
@@ -15,12 +15,6 @@ export default function SubtaskItem({ subtask, onToggle, onEdit, onDelete, onOpe
   const handleCancel = () => {
     setEditTitle(subtask.title)
     setIsEditing(false)
-  }
-
-  const handleToggleCalendar = () => {
-    onEdit(subtask.id, { 
-      is_calendar_visible: !subtask.is_calendar_visible 
-    })
   }
 
   return (

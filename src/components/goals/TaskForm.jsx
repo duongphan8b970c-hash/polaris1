@@ -14,7 +14,7 @@ const STATUS_OPTIONS = [
   { value: 'blocked', label: 'Bị chặn', icon: '🚫' },
 ]
 
-export default function TaskForm({ task, goalId, onSubmit, onCancel, loading }) {
+export default function TaskForm({ task, onSubmit, onCancel, loading }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',

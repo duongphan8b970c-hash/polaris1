@@ -1,4 +1,4 @@
-import { getDaysInMonth, getDayName, isSameDay } from '../../utils/calendar'
+import { getDaysInMonth, isSameDay } from '../../utils/calendar'
 import CalendarDay from './CalendarDay'
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']

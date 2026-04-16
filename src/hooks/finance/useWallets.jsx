@@ -14,7 +14,7 @@ export function useWallets() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      const { data: walletsData, error: walletsError, status } = await supabase
+      const { data: walletsData, error: walletsError } = await supabase
         .from('wallets')
         .select('*')
         .is('deleted_at', null)
@@ -161,7 +161,7 @@ export function useWallets() {
     }
 
     // 3. Create Balance Correction transaction
-    const { data: transaction, error: transactionError } = await supabase
+    const { error: transactionError } = await supabase
       .from('financial_transactions')
       .insert({
         wallet_id: walletId,

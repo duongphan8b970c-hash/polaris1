@@ -66,42 +66,6 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
     }))
   }
 
-  // ✅ IMPROVED: Calculate target days for preview only
-  const calculateTargetDaysPreview = () => {
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = today.getMonth()
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-
-    switch (formData.checkin_frequency) {
-      case 'daily':
-        return daysInMonth
-
-      case 'weekdays':
-        let weekdayCount = 0
-        for (let day = 1; day <= daysInMonth; day++) {
-          const date = new Date(year, month, day)
-          const dayOfWeek = date.getDay()
-          if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-            weekdayCount++
-          }
-        }
-        return weekdayCount
-
-      case 'weekly':
-        const weeksInMonth = daysInMonth / 7
-        return Math.round(formData.checkin_days_per_week * weeksInMonth)
-
-      case 'custom':
-        return formData.checkin_target_days || daysInMonth
-
-      default:
-        return daysInMonth
-    }
-  }
-
-  const previewDays = calculateTargetDaysPreview()
-
   const handleSubmit = (e) => {
     e.preventDefault()
     

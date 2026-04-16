@@ -40,15 +40,6 @@ export default function GoalDetails() {
     setShowTaskForm(true)
   }
 
-  const handleDeleteTask = async (task) => {
-    if (!confirm(`Xóa công việc "${task.title}"?`)) return
-    
-    const result = await deleteTask(task.id)
-    if (!result.success) {
-      alert('Lỗi: ' + result.error)
-    }
-  }
-
   const handleToggleTask = async (task) => {
     await toggleTaskStatus(task.id, task.status)
   }

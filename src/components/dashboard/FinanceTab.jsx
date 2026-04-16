@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { formatNumber, formatDate, formatDateTime } from '../../utils'
+import { formatNumber, formatDateTime } from '../../utils'
 import { useMonthlyAnalytics } from '../../hooks/analytics/useMonthlyAnalytics'
 import MonthlyKPICards from '../analytics/MonthlyKPICards'
 import IncomeExpenseChart from '../analytics/IncomeExpenseChart'
@@ -19,7 +19,6 @@ export default function FinanceTab({
   tradePLConverted,
   updatingRates,
   updateResult,
-  lastUpdated,
   formatLastUpdated,
   handleManualUpdate 
 }) {

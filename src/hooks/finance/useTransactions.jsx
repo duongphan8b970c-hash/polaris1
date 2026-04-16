@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { formatNumber } from '../../utils'
 import { getExchangeRate } from '../../utils/currency'
 
 export function useTransactions(filters = {}) {
@@ -148,7 +147,7 @@ export function useTransactions(filters = {}) {
             if (!window.confirm(confirmMsg)) {
               return { success: false, error: 'Đã hủy giao dịch' }
             }
-          } catch (err) {
+          } catch {
             throw new Error(
               `Không tìm thấy tỷ giá ${sourceWallet.currency} → ${destWallet.currency}.\n` +
               `Vui lòng cập nhật tỷ giá trước khi chuyển khoản.`
