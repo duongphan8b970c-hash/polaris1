@@ -213,7 +213,6 @@ function SubtaskLoader({ taskId, depth }) {
 export default function TableTaskRow({
   task,
   depth = 1,
-  goalId,
   onEdit,
   onDelete,
   onToggle,

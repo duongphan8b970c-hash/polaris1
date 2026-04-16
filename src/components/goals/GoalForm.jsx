@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react' // useEffect kept for textarea resize
 import UserSelector from './UserSelector'
 import { PRIORITY_OPTIONS } from '../../constants'
 import SmartEndDateInput from './SmartEndDateInput'
@@ -12,20 +12,35 @@ const CHECKIN_FREQUENCY_OPTIONS = [
 ]
 
 export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    icon: '🎯',
-    color: '#3b82f6',
-    category: 'personal',
-    start_date: new Date().toISOString().split('T')[0],  // ✅ ADD
-    target_date: '',
-    priority: 'medium',
-    is_checkin_enabled: false,
-    checkin_frequency: 'daily',
-    checkin_days_per_week: 7,
-    checkin_target_days: null,
-    assigned_to: [],
+  const [formData, setFormData] = useState(() => {
+    if (goal) {
+      return {
+        name: goal.name,
+        description: goal.description || '',
+        icon: goal.icon || '🎯',
+        color: goal.color || '#3b82f6',
+        category: goal.category || 'personal',
+        start_date: goal.start_date || new Date().toISOString().split('T')[0],
+        target_date: goal.target_date || '',
+        priority: goal.priority || 'medium',
+        assigned_to: goal.assigned_to || [],
+      }
+    }
+    return {
+      name: '',
+      description: '',
+      icon: '🎯',
+      color: '#3b82f6',
+      category: 'personal',
+      start_date: new Date().toISOString().split('T')[0],
+      target_date: '',
+      priority: 'medium',
+      is_checkin_enabled: false,
+      checkin_frequency: 'daily',
+      checkin_days_per_week: 7,
+      checkin_target_days: null,
+      assigned_to: [],
+    }
   })
 
   const descriptionRef = useRef(null)
@@ -36,22 +51,6 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
       descriptionRef.current.style.height = descriptionRef.current.scrollHeight + 'px'
     }
   }
-
-  useEffect(() => {
-    if (goal) {
-      setFormData({
-        name: goal.name,
-        description: goal.description || '',
-        icon: goal.icon || '🎯',
-        color: goal.color || '#3b82f6',
-        category: goal.category || 'personal',
-        start_date: goal.start_date || new Date().toISOString().split('T')[0],  // ✅ ADD
-        target_date: goal.target_date || '',
-        priority: goal.priority || 'medium',
-        assigned_to: goal.assigned_to || [],
-      })
-    }
-  }, [goal])
 
   // Auto-resize description textarea whenever its value changes
   useEffect(() => {
@@ -65,42 +64,6 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
       [name]: type === 'checkbox' ? checked : value
     }))
   }
-
-  // ✅ IMPROVED: Calculate target days for preview only
-  const calculateTargetDaysPreview = () => {
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = today.getMonth()
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-
-    switch (formData.checkin_frequency) {
-      case 'daily':
-        return daysInMonth
-
-      case 'weekdays':
-        let weekdayCount = 0
-        for (let day = 1; day <= daysInMonth; day++) {
-          const date = new Date(year, month, day)
-          const dayOfWeek = date.getDay()
-          if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-            weekdayCount++
-          }
-        }
-        return weekdayCount
-
-      case 'weekly':
-        const weeksInMonth = daysInMonth / 7
-        return Math.round(formData.checkin_days_per_week * weeksInMonth)
-
-      case 'custom':
-        return formData.checkin_target_days || daysInMonth
-
-      default:
-        return daysInMonth
-    }
-  }
-
-  const previewDays = calculateTargetDaysPreview()
 
   const handleSubmit = (e) => {
     e.preventDefault()

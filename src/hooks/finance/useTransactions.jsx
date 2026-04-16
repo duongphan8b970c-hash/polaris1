@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { formatNumber } from '../../utils'
 import { getExchangeRate } from '../../utils/currency'
 
 export function useTransactions(filters = {}) {
@@ -148,7 +147,7 @@ export function useTransactions(filters = {}) {
             if (!window.confirm(confirmMsg)) {
               return { success: false, error: 'Đã hủy giao dịch' }
             }
-          } catch (err) {
+          } catch {
             throw new Error(
               `Không tìm thấy tỷ giá ${sourceWallet.currency} → ${destWallet.currency}.\n` +
               `Vui lòng cập nhật tỷ giá trước khi chuyển khoản.`
@@ -177,6 +176,7 @@ export function useTransactions(filters = {}) {
             type: 'transfer',
             amount: -(transferAmount + transferFee), // Negative with fee
             fee: transferFee,
+            currency: sourceWallet.currency,
             description: description || `Chuyển đến ${destWallet.name}${isDifferentCurrency ? ` (${exchangeRate.toFixed(4)} ${destWallet.currency})` : ''}`,
             date: date,
             time: time,
@@ -198,6 +198,7 @@ export function useTransactions(filters = {}) {
             type: 'transfer',
             amount: convertedAmount, // POSITIVE converted amount
             fee: 0,
+            currency: destWallet.currency,
             description: description || `Nhận từ ${sourceWallet.name}${isDifferentCurrency ? ` (${exchangeRate.toFixed(4)} rate)` : ''}`,
             date: date,
             time: time,
@@ -229,10 +230,22 @@ export function useTransactions(filters = {}) {
       // ========================================
       // REGULAR TRANSACTION (income/expense)
       // ========================================
+      // Look up wallet currency for the transaction
+      const { data: txnWallet, error: txnWalletError } = await supabase
+        .from('wallets')
+        .select('currency')
+        .eq('id', transactionData.wallet_id)
+        .single()
+
+      if (txnWalletError || !txnWallet) {
+        throw new Error('Không tìm thấy ví')
+      }
+
       const { data, error: insertError } = await supabase
         .from('financial_transactions')
         .insert([{
           ...transactionData,
+          currency: txnWallet.currency,
           time: transactionData.time || '12:00:00'
         }])
         .select()

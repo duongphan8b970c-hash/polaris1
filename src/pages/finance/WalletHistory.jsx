@@ -23,7 +23,7 @@ export default function WalletHistory() {
     date_to: searchParams.get('to') || ''
   })
 
-  const { transactions, wallet, stats, loading, error, refetch } = useWalletHistory(walletId, filters)
+  const { transactions, wallet, stats, loading, error } = useWalletHistory(walletId, filters)
 
   const handleWalletChange = (newWalletId) => {
     setSearchParams({ wallet: newWalletId })

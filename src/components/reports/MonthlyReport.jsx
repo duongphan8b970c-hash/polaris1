@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { formatCurrency } from '../../utils'
 import ResponsiveTable from '../common/ResponsiveTable'
 
-export default function MonthlyReport({ transactions, trades, wallets }) {
+export default function MonthlyReport({ transactions, trades }) {
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`

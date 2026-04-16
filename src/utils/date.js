@@ -155,28 +155,31 @@ export const getDateRange = (period) => {
       to = endOfDay(from)
       break
       
-    case 'this_week':
+    case 'this_week': {
       const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()))
       from = startOfDay(startOfWeek)
       to = endOfDay(new Date())
       break
+    }
       
-    case 'last_week':
+    case 'last_week': {
       const lastWeekStart = new Date(now.setDate(now.getDate() - now.getDay() - 7))
       from = startOfDay(lastWeekStart)
       to = endOfDay(new Date(lastWeekStart.setDate(lastWeekStart.getDate() + 6)))
       break
+    }
       
     case 'this_month':
       from = new Date(now.getFullYear(), now.getMonth(), 1)
       to = endOfDay(new Date())
       break
       
-    case 'last_month':
+    case 'last_month': {
       const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
       from = lastMonth
       to = new Date(now.getFullYear(), now.getMonth(), 0)
       break
+    }
       
     case 'this_year':
       from = new Date(now.getFullYear(), 0, 1)

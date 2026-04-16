@@ -94,16 +94,16 @@ export function useSubtasks(taskId) {
       }
 
       // Only include if provided
-      if (subtaskData.hasOwnProperty('scheduled_date')) {
+      if (Object.hasOwn(subtaskData, 'scheduled_date')) {
         updateData.scheduled_date = subtaskData.scheduled_date
       }
-      if (subtaskData.hasOwnProperty('recurrence_rule')) {
+      if (Object.hasOwn(subtaskData, 'recurrence_rule')) {
         updateData.recurrence_rule = subtaskData.recurrence_rule
       }
-      if (subtaskData.hasOwnProperty('is_calendar_visible')) {
+      if (Object.hasOwn(subtaskData, 'is_calendar_visible')) {
         updateData.is_calendar_visible = subtaskData.is_calendar_visible
       }
-      if (subtaskData.hasOwnProperty('assigned_to')) {
+      if (Object.hasOwn(subtaskData, 'assigned_to')) {
         updateData.assigned_to = subtaskData.assigned_to
       }
 

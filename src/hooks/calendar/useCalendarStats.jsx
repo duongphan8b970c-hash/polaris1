@@ -7,7 +7,7 @@ import { formatDateKey } from '../../utils/calendar'
  * @param {Number} year - Current year
  * @param {Number} month - Current month
  */
-export function useCalendarStats(items, year, month) {
+export function useCalendarStats(items) {
   const stats = useMemo(() => {
     if (!items || items.length === 0) {
       return {
@@ -99,7 +99,7 @@ export function useCalendarStats(items, year, month) {
       longestStreak: streaks.longestStreak,
       daysWithItems: Object.keys(itemsByDate).length
     }
-  }, [items, year, month])
+  }, [items])
 
   return stats
 }

@@ -1,33 +1,24 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import UserAvatar from '../common/UserAvatar'
 
 export default function GoalCard({ goal, onEdit, onDelete, onComplete, onClick }) {
-  const [showCompletePrompt, setShowCompletePrompt] = useState(false)
-  const hasPromptedRef = useRef(false)
+  const [hasPrompted, setHasPrompted] = useState(false)
   
   const isCompleted = goal.status === 'completed'
   const progress = parseFloat(goal.progress) || 0
 
-  useEffect(() => {
-    if (isCompleted || progress < 100 || hasPromptedRef.current) {
-      setShowCompletePrompt(false)
-      return
-    }
-    setShowCompletePrompt(true)
-  }, [progress, isCompleted])
+  const showCompletePrompt = !isCompleted && progress >= 100 && !hasPrompted
 
   const handleMarkComplete = async (e) => {
     e.stopPropagation()
     const today = new Date().toISOString().split('T')[0]
-    setShowCompletePrompt(false)
-    hasPromptedRef.current = true
+    setHasPrompted(true)
     await onComplete(goal, today)
   }
 
   const handleDismissPrompt = (e) => {
     e.stopPropagation()
-    setShowCompletePrompt(false)
-    hasPromptedRef.current = true
+    setHasPrompted(true)
   }
 
   const getTimeRemaining = () => {

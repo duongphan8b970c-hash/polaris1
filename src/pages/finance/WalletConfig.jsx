@@ -39,12 +39,13 @@ export default function WalletConfig() {
     return groups
   }, [wallets])
 
-  // Initialize all sections as expanded
+  // Initialize all sections as expanded, preserving user's toggle state for existing sections
   useEffect(() => {
     const initialState = {}
     Object.keys(groupedWallets).forEach(type => {
       initialState[type] = true
     })
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setExpandedSections(prev => {
       const next = { ...initialState }
       Object.keys(prev).forEach(key => {

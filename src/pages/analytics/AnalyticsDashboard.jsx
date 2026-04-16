@@ -6,7 +6,7 @@ import ErrorMessage from '../../components/common/ErrorMessage'
 
 export default function AnalyticsDashboard() {
   const [dateRange, setDateRange] = useState('month')
-  const { analytics, loading, refetch } = useAnalytics(dateRange)
+  const { analytics, loading } = useAnalytics(dateRange)
 
   if (loading) {
     return <Loading message="Đang tải analytics..." />

@@ -150,13 +150,13 @@ export function useTasks(goalId = null, filters = {}) {
         }
 
         // ✅ ADD: Include new fields if provided
-        if (taskData.hasOwnProperty('scheduled_date')) {
+        if (Object.hasOwn(taskData, 'scheduled_date')) {
           updateData.scheduled_date = taskData.scheduled_date
         }
-        if (taskData.hasOwnProperty('recurrence_rule')) {
+        if (Object.hasOwn(taskData, 'recurrence_rule')) {
           updateData.recurrence_rule = taskData.recurrence_rule
         }
-        if (taskData.hasOwnProperty('is_calendar_visible')) {
+        if (Object.hasOwn(taskData, 'is_calendar_visible')) {
           updateData.is_calendar_visible = taskData.is_calendar_visible
         }
 

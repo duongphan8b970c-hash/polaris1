@@ -14,7 +14,7 @@ import Modal from '../../components/common/Modal'
 import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
-import { formatCurrency, formatDate, formatNumber } from '../../utils'
+import { formatCurrency, formatDate } from '../../utils'
 import { getBudgetPeriodRange } from '../../utils/budgetPeriod'
 
 const getCurrentMonthRange = () => {
@@ -70,12 +70,9 @@ export default function FinancialTracking() {
 
   const {
     budgets,
-    loading: budgetsLoading,
-    error: budgetsError,
     createBudget,
     updateBudget,
     deleteBudget,
-    refetch: refetchBudgets
   } = useBudgets()
   
   // ✅ Fetch all categories for filter dropdown
@@ -120,8 +117,6 @@ export default function FinancialTracking() {
   const [editingBudget, setEditingBudget] = useState(null)
   const [submittingBudget, setSubmittingBudget] = useState(false)
   const [budgetCategoryPreset, setBudgetCategoryPreset] = useState(null)
-
-  const [breakdownView, setBreakdownView] = useState('month')
 
   // Filter handlers
   const handleFilterChange = (e) => {
@@ -352,11 +347,6 @@ const filteredStats = useMemo(() => {
     }
   }
 
- const handleCreateBudget = () => {
-    setEditingBudget(null)
-    setShowBudgetForm(true)
-  }
-
   const handleEditBudget = (budget) => {
     setEditingBudget(budget)
     setShowBudgetForm(true)
@@ -407,7 +397,7 @@ const filteredStats = useMemo(() => {
 
   // ✅ SAFE DEFAULTS - Ensure arrays are never undefined
   const safeWallets = Array.isArray(wallets) ? wallets : []
-  const safeAllCategories = Array.isArray(allCategories) ? allCategories : []
+  const safeAllCategories = useMemo(() => Array.isArray(allCategories) ? allCategories : [], [allCategories])
   const safeTransactions = Array.isArray(transactions) ? transactions : []
   const safeCategories = Array.isArray(categories) ? categories : []
   const selectedCategoryIds = filters.category_ids || []

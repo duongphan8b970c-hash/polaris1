@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatNumber } from '../../utils'
@@ -5,10 +6,6 @@ import { getBudgetPeriodRange, getBudgetPeriodLabel } from '../../utils/budgetPe
 
 export default function BudgetList({ budgets, onEdit, onDelete }) {
   const [budgetUsage, setBudgetUsage] = useState({})
-
-  useEffect(() => {
-    fetchBudgetUsage()
-  }, [budgets])
 
   const fetchBudgetUsage = async () => {
     const now = new Date()
@@ -51,6 +48,10 @@ export default function BudgetList({ budgets, onEdit, onDelete }) {
     
     setBudgetUsage(usage)
   }
+
+  useEffect(() => {
+    fetchBudgetUsage()
+  }, [budgets])
 
   if (budgets.length === 0) {
     return (

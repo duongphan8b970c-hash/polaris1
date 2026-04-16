@@ -1,31 +1,23 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react' // useEffect kept for body scroll & route change
 
 export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false }) {
   const location = useLocation()
   
   // ✅ FIX: Default to null (all collapsed)
-  const [expandedMenu, setExpandedMenu] = useState(null) // ❌ WAS: 'financial'
-  const prevPathname = useRef(location.pathname)
-
-  // ✅ FIX: Auto-expand based on current route
-  useEffect(() => {
-    // Check which section current route belongs to
-    if (location.pathname.startsWith('/goals')) {
-      setExpandedMenu('goals')
-    } else if (
+  const [expandedMenu, setExpandedMenu] = useState(() => {
+    if (location.pathname.startsWith('/goals')) return 'goals'
+    if (
       location.pathname.startsWith('/wallets') ||
       location.pathname.startsWith('/transactions') ||
       location.pathname.startsWith('/trades') ||
       location.pathname.startsWith('/a-better-day')
-    ) {
-      setExpandedMenu('financial')
-    } else if (location.pathname.startsWith('/study')) {
-      setExpandedMenu('study')
-    } else if (location.pathname === '/dashboard') {
-      setExpandedMenu(null) // Collapse all when on dashboard
-    }
-  }, []) // ✅ Only run on mount
+    ) return 'financial'
+    if (location.pathname.startsWith('/study')) return 'study'
+    if (location.pathname === '/dashboard') return null
+    return null
+  })
+  const prevPathname = useRef(location.pathname)
 
   useEffect(() => {
     if (prevPathname.current !== location.pathname) {

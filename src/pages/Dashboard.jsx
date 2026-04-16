@@ -3,7 +3,7 @@ import { useWallets } from '../hooks/finance/useWallets'
 import { supabase } from '../lib/supabase'
 import FinanceTab from '../components/dashboard/FinanceTab'
 import Loading from '../components/common/Loading'
-import { formatDateTime, getRelativeTime } from '../utils'
+import { getRelativeTime } from '../utils'
 
 export default function Dashboard() {
   // ✅ State cho active tab
@@ -63,7 +63,7 @@ export default function Dashboard() {
 
       setTransactions(merged)
 
-      const { data: tradeData, error: tradeError } = await supabase
+      const { data: tradeData } = await supabase
         .from('trades')
         .select('*')
         .order('updated_at', { ascending: false })

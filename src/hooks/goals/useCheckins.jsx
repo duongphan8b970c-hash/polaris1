@@ -155,8 +155,6 @@ export function useCheckins(goalId = null, dateRange = {}) {
   const calculateStreak = (checkins) => {
     // Calculate current streak (consecutive days)
     let streak = 0
-    const today = new Date().toISOString().split('T')[0]
-    
     const sortedCheckins = [...checkins]
       .sort((a, b) => new Date(b.date) - new Date(a.date))
     
