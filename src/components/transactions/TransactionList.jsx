@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 export default function TransactionList({ 
   transactions = [],
@@ -43,7 +43,7 @@ export default function TransactionList({
   }
 
   // ✅ Reset to page 1 when transactions change
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1)
   }, [transactions.length])
 

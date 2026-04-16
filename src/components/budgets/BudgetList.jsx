@@ -6,10 +6,6 @@ import { getBudgetPeriodRange, getBudgetPeriodLabel } from '../../utils/budgetPe
 export default function BudgetList({ budgets, onEdit, onDelete }) {
   const [budgetUsage, setBudgetUsage] = useState({})
 
-  useEffect(() => {
-    fetchBudgetUsage()
-  }, [budgets])
-
   const fetchBudgetUsage = async () => {
     const now = new Date()
     if (!budgets.length) return
@@ -51,6 +47,10 @@ export default function BudgetList({ budgets, onEdit, onDelete }) {
     
     setBudgetUsage(usage)
   }
+
+  useEffect(() => {
+    fetchBudgetUsage()
+  }, [budgets])
 
   if (budgets.length === 0) {
     return (

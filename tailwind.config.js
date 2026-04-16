@@ -26,7 +26,6 @@ export default {
         'float': 'float 6s ease-in-out infinite',
         'shine': 'shine 8s ease-in-out infinite',
         'ripple': 'ripple 10s linear infinite',
-        'shake': 'shake 0.5s ease-in-out',
       },
       keyframes: {
         blob: {

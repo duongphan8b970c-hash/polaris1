@@ -6,10 +6,6 @@ import { getBudgetPeriodRange } from '../../utils/budgetPeriod'
 export default function BudgetProgressChart({ budgets }) {
   const [budgetUsage, setBudgetUsage] = useState({})
 
-  useEffect(() => {
-    fetchBudgetUsage()
-  }, [budgets])
-
   const fetchBudgetUsage = async () => {
     const now = new Date()
     if (!budgets.length) return
@@ -47,6 +43,10 @@ export default function BudgetProgressChart({ budgets }) {
     
     setBudgetUsage(usage)
   }
+
+  useEffect(() => {
+    fetchBudgetUsage()
+  }, [budgets])
 
   const chartData = useMemo(() => {
     return budgets
