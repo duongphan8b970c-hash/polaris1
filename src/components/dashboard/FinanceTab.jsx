@@ -50,14 +50,15 @@ export default function FinanceTab({
       return txnDate.getMonth() === currentMonth && txnDate.getFullYear() === currentYear
     })
 
+    // Exclude trade-category transactions from income/expense (handled by tradePLConverted)
     const transactionIncome = monthlyTransactions
-      .filter(txn => txn.type === 'income')
+      .filter(txn => txn.type === 'income' && txn.categories?.name !== 'Trade')
       .reduce((sum, txn) => sum + (txn.amount || 0), 0)
 
     const incomeCount = monthlyTransactions.filter(txn => txn.type === 'income').length
 
     const expense = monthlyTransactions
-      .filter(txn => txn.type === 'expense')
+      .filter(txn => txn.type === 'expense' && txn.categories?.name !== 'Trade')
       .reduce((sum, txn) => sum + Math.abs(txn.amount || 0), 0)
 
     const expenseCount = monthlyTransactions.filter(txn => txn.type === 'expense').length
@@ -115,7 +116,8 @@ export default function FinanceTab({
   const displayStats = {
     ...stats,
     tradePL: tradePLConverted,
-    income: stats.income + (tradePLConverted > 0 ? tradePLConverted : 0)
+    income: stats.income + (tradePLConverted > 0 ? tradePLConverted : 0),
+    expense: stats.expense + (tradePLConverted < 0 ? Math.abs(tradePLConverted) : 0)
   }
 
   return (
@@ -334,8 +336,26 @@ export default function FinanceTab({
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <MonthlyKPICards kpiData={analytics.kpiData} />
+        {/* KPI Cards - enhanced with trade P/L for current month */}
+        <MonthlyKPICards kpiData={(() => {
+          const isCurrentMonth = selectedMonth === now.getMonth() && selectedYear === now.getFullYear()
+          if (!isCurrentMonth || !tradePLConverted || tradePLConverted === 0) return analytics.kpiData
+          
+          const tradeIncome = tradePLConverted > 0 ? tradePLConverted : 0
+          const tradeLoss = tradePLConverted < 0 ? Math.abs(tradePLConverted) : 0
+          const newIncome = analytics.kpiData.income + tradeIncome
+          const newExpense = analytics.kpiData.expense + tradeLoss
+          const newBalance = newIncome - newExpense
+          const newSavingsRate = newIncome > 0 ? (newBalance / newIncome) * 100 : 0
+          
+          return {
+            ...analytics.kpiData,
+            income: newIncome,
+            expense: newExpense,
+            balance: newBalance,
+            savingsRate: newSavingsRate,
+          }
+        })()} />
 
         {/* Row 1: Income/Expense Bar + Category Pie */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">

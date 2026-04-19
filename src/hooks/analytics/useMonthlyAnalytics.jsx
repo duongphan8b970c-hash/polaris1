@@ -1,10 +1,13 @@
 import { useMemo } from 'react'
 
-// Filter out system/correction transactions from all charts
+// Filter out system/correction transactions and trade transactions from all charts
+// Trade transactions are excluded because they may have raw foreign currency amounts;
+// trade P/L is handled separately via tradePLConverted in the dashboard
 const isValidTransaction = (txn) => {
   if (txn.type === 'transfer') return false
   if (txn.description?.includes('Balance Correction')) return false
   if (txn.description?.includes('⚖️')) return false
+  if (txn.categories?.name === 'Trade') return false
   return true
 }
 
