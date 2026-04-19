@@ -77,17 +77,14 @@ export default function TodayTasksPanel({ date, items, allMonthItems, onRefresh 
   // Filter items based on view
   const filteredItems = items
 
-  // Get remaining items in month (from today onwards, excluding selected date's items)
+  // Get remaining items in month (all uncompleted tasks in the month)
   const remainingMonthItems = (() => {
     if (!allMonthItems || activeTab !== 'month') return {}
     
-    const today = new Date()
-    const todayStr = today.toISOString().split('T')[0]
-    
-    // Group items by date, only dates from today onwards
+    // Group all uncompleted items by date (entire month)
     const grouped = {}
     allMonthItems.forEach(item => {
-      if (!item.instance_date || item.instance_date < todayStr) return
+      if (!item.instance_date) return
       
       // Check if item is NOT completed
       const isCompleted = item.type === 'task' 
@@ -219,7 +216,7 @@ export default function TodayTasksPanel({ date, items, allMonthItems, onRefresh 
               📅 Công việc còn lại trong tháng
             </h3>
             <p className="text-sm text-gray-600 mt-1">
-              Các công việc chưa hoàn thành từ hôm nay trở đi
+              Tất cả công việc chưa hoàn thành trong tháng
             </p>
           </div>
 
@@ -234,18 +231,19 @@ export default function TodayTasksPanel({ date, items, allMonthItems, onRefresh 
                   month: 'numeric'
                 })
                 const isToday = dateKey === new Date().toISOString().split('T')[0]
+                const isPast = dateKey < new Date().toISOString().split('T')[0]
 
                 return (
                   <div key={dateKey}>
                     {/* Day Header */}
                     <div className={`flex items-center gap-2 mb-2 px-2 py-1.5 rounded-lg ${
-                      isToday ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'
+                      isToday ? 'bg-blue-50 border border-blue-200' : isPast ? 'bg-red-50 border border-red-200' : 'bg-gray-50'
                     }`}>
-                      <span className={`text-sm font-bold ${isToday ? 'text-blue-700' : 'text-gray-700'}`}>
-                        {isToday ? '🔥 Hôm nay' : '📌'} {dayStr}
+                      <span className={`text-sm font-bold ${isToday ? 'text-blue-700' : isPast ? 'text-red-700' : 'text-gray-700'}`}>
+                        {isToday ? '🔥 Hôm nay' : isPast ? '⚠️ Quá hạn' : '📌'} {dayStr}
                       </span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        isToday ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
+                        isToday ? 'bg-blue-100 text-blue-700' : isPast ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-600'
                       }`}>
                         {dayItems.length} việc
                       </span>

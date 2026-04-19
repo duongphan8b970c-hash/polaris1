@@ -115,14 +115,35 @@ export function useTrades(filters = {}) {
       category = fallbackCategory
     }
 
+    // Convert profit_loss to VND
+    const currency = (trade.exit_currency || trade.wallet?.currency || 'USDT').toUpperCase()
+    let amountVND = Math.abs(profitLoss)
+
+    if (currency !== 'VND') {
+      // Try to get exchange rate from DB
+      const { data: rateData } = await supabase
+        .from('exchange_rates')
+        .select('rate')
+        .eq('from_currency', currency)
+        .eq('to_currency', 'VND')
+        .limit(1)
+        .single()
+
+      const rate = rateData?.rate
+        ? parseFloat(rateData.rate)
+        : (currency === 'USD' || currency === 'USDT' ? 24000 : 1)
+
+      amountVND = Math.abs(profitLoss) * rate
+    }
+
     const { error: txError } = await supabase
       .from('financial_transactions')
       .insert({
         wallet_id: trade.wallet_id,
         category_id: category.id,
         type: transactionType,
-        amount: isProfit ? Math.abs(profitLoss) : -Math.abs(profitLoss),
-        description: `Trade ${trade.symbol} - ${isProfit ? 'Win' : 'Loss'} (${trade.leverage || 1}x)`,
+        amount: isProfit ? amountVND : -amountVND,
+        description: `Trade ${trade.symbol} - ${isProfit ? 'Win' : 'Loss'} (${trade.leverage || 1}x) [${Math.abs(profitLoss)} ${currency}]`,
         date: new Date().toISOString().split('T')[0],
         time: new Date().toTimeString().slice(0, 8),
       })

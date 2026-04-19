@@ -28,16 +28,16 @@ export default function PaybackTracking({ goalType = 'payback' }) {
   const activeGoals = goals.filter(g => g.status === 'active')
   const completedGoals = goals.filter(g => g.status === 'completed')
 
-  // Calculate summary stats (chỉ cho active)
+  // Calculate summary stats (tính cả active + completed)
   const stats = {
     total: goals.length,
     active: activeGoals.length,
     completed: completedGoals.length,
-    totalDebt: activeGoals.reduce((sum, g) => sum + g.target_amount, 0),
-    totalPaid: activeGoals.reduce((sum, g) => sum + g.current_paid, 0),
-    totalRemaining: activeGoals.reduce((sum, g) => sum + g.remaining, 0),
+    totalDebt: goals.reduce((sum, g) => sum + g.target_amount, 0),
+    totalPaid: goals.reduce((sum, g) => sum + g.current_paid, 0),
+    totalRemaining: goals.reduce((sum, g) => sum + g.remaining, 0),
     // Monthly stats (only when filter is active)
-    monthlyPaid: monthFilter ? activeGoals.reduce((sum, g) => sum + (g.monthly_paid || 0), 0) : 0
+    monthlyPaid: monthFilter ? goals.reduce((sum, g) => sum + (g.monthly_paid || 0), 0) : 0
   }
 
   // Generate month options for filter
