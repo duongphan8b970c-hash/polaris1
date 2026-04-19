@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [updateResult, setUpdateResult] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
   const [tradePLConverted, setTradePLConverted] = useState(0)
+  const [monthlyTradePLMap, setMonthlyTradePLMap] = useState({})
 
   useEffect(() => {
     fetchData()
@@ -137,57 +138,55 @@ export default function Dashboard() {
       setUpdatingRates(false)
     }
   }
-  // Convert trade P&L to VND
+  // Convert trade P&L to VND per month
 useEffect(() => {
-  const convertTradePL = async () => {
-    const now = new Date()
-    const currentMonth = now.getMonth()
-    const currentYear = now.getFullYear()
+  const computeMonthlyTradePL = async () => {
+    const closedTrades = trades.filter(t => t.status === 'closed' && t.updated_at)
 
-    const monthlyClosedTrades = trades.filter(trade => {
-      if (trade.status !== 'closed' || !trade.updated_at) return false
-      const tradeDate = new Date(trade.updated_at)
-      return tradeDate.getMonth() === currentMonth && tradeDate.getFullYear() === currentYear
-    })
-
-    if (monthlyClosedTrades.length === 0) {
+    if (closedTrades.length === 0) {
       setTradePLConverted(0)
+      setMonthlyTradePLMap({})
       return
     }
 
-    // ✅ FIX: Query tất cả rates một lần duy nhất
+    // Query all VND rates once
     const { data: allRates } = await supabase
       .from('exchange_rates')
       .select('from_currency, to_currency, rate')
       .eq('to_currency', 'VND')
 
-    // Tạo Map để lookup nhanh
     const ratesMap = new Map()
     allRates?.forEach(r => {
       ratesMap.set(r.from_currency, parseFloat(r.rate))
     })
 
-    // Tính tổng với cached rates
-    let totalVND = 0
+    // Compute per-month P/L in VND
+    const plByMonth = {}
 
-    for (const trade of monthlyClosedTrades) {
+    for (const trade of closedTrades) {
+      const tradeDate = new Date(trade.updated_at)
+      const key = `${tradeDate.getFullYear()}-${tradeDate.getMonth()}`
       const pl = trade.profit_loss || 0
       const currency = (trade.exit_currency || 'USDT').toUpperCase()
 
-      if (currency === 'VND') {
-        totalVND += pl
-        continue
+      let plVND = pl
+      if (currency !== 'VND') {
+        const rate = ratesMap.get(currency) || (currency === 'USD' || currency === 'USDT' ? 24000 : 1)
+        plVND = pl * rate
       }
 
-      // Lấy rate từ Map (nhanh hơn nhiều)
-      const rate = ratesMap.get(currency) || (currency === 'USD' || currency === 'USDT' ? 24000 : 1)
-      totalVND += pl * rate
+      plByMonth[key] = (plByMonth[key] || 0) + plVND
     }
 
-    setTradePLConverted(totalVND)
+    setMonthlyTradePLMap(plByMonth)
+
+    // Current month's trade P/L for backward compatibility
+    const now = new Date()
+    const currentKey = `${now.getFullYear()}-${now.getMonth()}`
+    setTradePLConverted(plByMonth[currentKey] || 0)
   }
 
-    convertTradePL()
+    computeMonthlyTradePL()
   }, [trades])
 
   if (loading || walletsLoading) {
@@ -233,6 +232,7 @@ useEffect(() => {
             transactions={transactions}
             trades={trades}
             tradePLConverted={tradePLConverted}
+            monthlyTradePLMap={monthlyTradePLMap}
             updatingRates={updatingRates}
             updateResult={updateResult}
             lastUpdated={lastUpdated}

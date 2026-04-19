@@ -29,6 +29,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
   const completedGoals = goals.filter(g => g.status === 'completed')
 
   // Calculate summary stats (tính cả active + completed)
+  const today = new Date()
   const stats = {
     total: goals.length,
     active: activeGoals.length,
@@ -37,7 +38,15 @@ export default function PaybackTracking({ goalType = 'payback' }) {
     totalPaid: goals.reduce((sum, g) => sum + g.current_paid, 0),
     totalRemaining: goals.reduce((sum, g) => sum + g.remaining, 0),
     // Monthly stats (only when filter is active)
-    monthlyPaid: monthFilter ? goals.reduce((sum, g) => sum + (g.monthly_paid || 0), 0) : 0
+    monthlyPaid: monthFilter ? goals.reduce((sum, g) => sum + (g.monthly_paid || 0), 0) : 0,
+    // Countdown: nearest deadline among active goals
+    nearestDeadline: activeGoals.length > 0
+      ? activeGoals.reduce((nearest, g) => {
+          const deadline = new Date(g.deadline)
+          return !nearest || deadline < nearest.date ? { date: deadline, name: g.name } : nearest
+        }, null)
+      : null,
+    overdueCount: activeGoals.filter(g => g.is_overdue).length,
   }
 
   // Generate month options for filter
@@ -224,8 +233,8 @@ export default function PaybackTracking({ goalType = 'payback' }) {
             </div>
           </div>
         ) : (
-          /* Payback tab: full 4-card stats */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          /* Payback tab: full 5-card stats */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-blue-100 text-sm font-medium">Đang theo dõi</p>
@@ -269,8 +278,97 @@ export default function PaybackTracking({ goalType = 'payback' }) {
               <p className="text-3xl font-bold">{formatNumber(stats.totalRemaining)}</p>
               <p className="text-orange-100 text-xs">VND</p>
             </div>
+
+            {/* Countdown / Nearest Deadline Card */}
+            <div className={`bg-gradient-to-br ${stats.overdueCount > 0 ? 'from-rose-500 to-rose-600' : 'from-indigo-500 to-indigo-600'} rounded-xl p-4 text-white shadow-lg`}>
+              <div className="flex items-center justify-between mb-2">
+                <p className={`${stats.overdueCount > 0 ? 'text-rose-100' : 'text-indigo-100'} text-sm font-medium`}>
+                  {stats.overdueCount > 0 ? '⚠ Quá hạn' : '⏰ Deadline gần nhất'}
+                </p>
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              {stats.overdueCount > 0 ? (
+                <>
+                  <p className="text-3xl font-bold">{stats.overdueCount}</p>
+                  <p className="text-rose-100 text-xs">mục tiêu quá hạn</p>
+                </>
+              ) : stats.nearestDeadline ? (
+                <>
+                  <p className="text-3xl font-bold">
+                    {(() => {
+                      const days = Math.ceil((stats.nearestDeadline.date - today) / (1000 * 60 * 60 * 24))
+                      return days === 0 ? 'Hôm nay' : `${days} ngày`
+                    })()}
+                  </p>
+                  <p className="text-indigo-100 text-xs truncate" title={stats.nearestDeadline.name}>
+                    {stats.nearestDeadline.name}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold">—</p>
+                  <p className="text-indigo-100 text-xs">Không có deadline</p>
+                </>
+              )}
+            </div>
           </div>
         )
+      )}
+
+      {/* Countdown Overview - all active goals' deadlines */}
+      {!isPlan && activeGoals.length > 0 && (
+        <div className="mb-6 bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">⏰</span>
+            <h3 className="text-sm font-bold text-slate-900">Countdown tất cả mục tiêu</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[...activeGoals]
+              .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+              .map(goal => {
+                const deadline = new Date(goal.deadline)
+                const daysLeft = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24))
+                const isOverdue = daysLeft < 0
+                const isUrgent = daysLeft >= 0 && daysLeft <= 7
+                const isToday = daysLeft === 0
+
+                return (
+                  <div
+                    key={goal.id}
+                    className={`bg-white rounded-lg p-3 border ${
+                      isOverdue ? 'border-red-300 bg-red-50' :
+                      isToday ? 'border-orange-300 bg-orange-50' :
+                      isUrgent ? 'border-yellow-300 bg-yellow-50' :
+                      'border-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-semibold text-gray-900 truncate flex-1 mr-2" title={goal.name}>
+                        💳 {goal.name}
+                      </p>
+                      <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                        isOverdue ? 'bg-red-100 text-red-700' :
+                        isToday ? 'bg-orange-100 text-orange-700' :
+                        isUrgent ? 'bg-yellow-100 text-yellow-700' :
+                        daysLeft <= 30 ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {isOverdue ? `⚠ Quá ${Math.abs(daysLeft)} ngày` :
+                         isToday ? '🔥 Hôm nay' :
+                         `📅 ${daysLeft} ngày`}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>Hạn: {deadline.toLocaleDateString('vi-VN')}</span>
+                      <span className="font-medium">{goal.progress.toFixed(0)}% hoàn thành</span>
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
       )}
 
       {/* Monthly Stats Card - only when month filter is active */}

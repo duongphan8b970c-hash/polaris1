@@ -17,6 +17,7 @@ export default function FinanceTab({
   transactions, 
   trades, 
   tradePLConverted,
+  monthlyTradePLMap,
   updatingRates,
   updateResult,
   formatLastUpdated,
@@ -29,6 +30,59 @@ export default function FinanceTab({
 
   // Monthly analytics hook
   const analytics = useMonthlyAnalytics(transactions, selectedMonth, selectedYear)
+
+  // Enhanced yearly chart data with per-month trade P/L
+  const enhancedYearlyData = useMemo(() => {
+    if (!monthlyTradePLMap || Object.keys(monthlyTradePLMap).length === 0) return analytics.yearlyMonthlyData
+    return analytics.yearlyMonthlyData.map((monthData, i) => {
+      const tradePL = monthlyTradePLMap[`${selectedYear}-${i}`] || 0
+      if (tradePL === 0) return monthData
+      return {
+        ...monthData,
+        income: monthData.income + (tradePL > 0 ? tradePL : 0),
+        expense: monthData.expense + (tradePL < 0 ? Math.abs(tradePL) : 0),
+      }
+    })
+  }, [analytics.yearlyMonthlyData, monthlyTradePLMap, selectedYear])
+
+  // Enhanced 3-month comparison data with trade P/L
+  const enhancedThreeMonthData = useMemo(() => {
+    if (!monthlyTradePLMap || Object.keys(monthlyTradePLMap).length === 0) return analytics.threeMonthComparison
+    return analytics.threeMonthComparison.map((monthData, i) => {
+      // Compute which month this entry represents (selected month minus offset)
+      let targetMonth = selectedMonth - (2 - i)
+      let targetYear = selectedYear
+      if (targetMonth < 0) { targetMonth += 12; targetYear -= 1 }
+      const tradePL = monthlyTradePLMap[`${targetYear}-${targetMonth}`] || 0
+      if (tradePL === 0) return monthData
+      return {
+        ...monthData,
+        income: monthData.income + (tradePL > 0 ? tradePL : 0),
+        expense: monthData.expense + (tradePL < 0 ? Math.abs(tradePL) : 0),
+      }
+    })
+  }, [analytics.threeMonthComparison, monthlyTradePLMap, selectedMonth, selectedYear])
+
+  // Enhanced KPI data with trade P/L for selected month
+  const enhancedKpiData = useMemo(() => {
+    const tradePL = (monthlyTradePLMap && monthlyTradePLMap[`${selectedYear}-${selectedMonth}`]) || 0
+    if (tradePL === 0) return analytics.kpiData
+
+    const tradeIncome = tradePL > 0 ? tradePL : 0
+    const tradeLoss = tradePL < 0 ? Math.abs(tradePL) : 0
+    const newIncome = analytics.kpiData.income + tradeIncome
+    const newExpense = analytics.kpiData.expense + tradeLoss
+    const newBalance = newIncome - newExpense
+    const newSavingsRate = newIncome > 0 ? (newBalance / newIncome) * 100 : 0
+
+    return {
+      ...analytics.kpiData,
+      income: newIncome,
+      expense: newExpense,
+      balance: newBalance,
+      savingsRate: newSavingsRate,
+    }
+  }, [analytics.kpiData, monthlyTradePLMap, selectedMonth, selectedYear])
 
   // Available years (current year and last 3 years)
   const availableYears = Array.from({ length: 4 }, (_, i) => now.getFullYear() - i)
@@ -336,30 +390,12 @@ export default function FinanceTab({
           </div>
         </div>
 
-        {/* KPI Cards - enhanced with trade P/L for current month */}
-        <MonthlyKPICards kpiData={(() => {
-          const isCurrentMonth = selectedMonth === now.getMonth() && selectedYear === now.getFullYear()
-          if (!isCurrentMonth || !tradePLConverted || tradePLConverted === 0) return analytics.kpiData
-          
-          const tradeIncome = tradePLConverted > 0 ? tradePLConverted : 0
-          const tradeLoss = tradePLConverted < 0 ? Math.abs(tradePLConverted) : 0
-          const newIncome = analytics.kpiData.income + tradeIncome
-          const newExpense = analytics.kpiData.expense + tradeLoss
-          const newBalance = newIncome - newExpense
-          const newSavingsRate = newIncome > 0 ? (newBalance / newIncome) * 100 : 0
-          
-          return {
-            ...analytics.kpiData,
-            income: newIncome,
-            expense: newExpense,
-            balance: newBalance,
-            savingsRate: newSavingsRate,
-          }
-        })()} />
+        {/* KPI Cards - enhanced with trade P/L */}
+        <MonthlyKPICards kpiData={enhancedKpiData} />
 
         {/* Row 1: Income/Expense Bar + Category Pie */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          <IncomeExpenseChart data={analytics.yearlyMonthlyData} />
+          <IncomeExpenseChart data={enhancedYearlyData} />
           <ExpenseCategoryPieChart data={analytics.categoryBreakdown} />
         </div>
 
@@ -378,7 +414,7 @@ export default function FinanceTab({
         {/* Row 4: Weekly Category Stacked + 3-Month Comparison */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           <WeeklyCategoryChart data={analytics.weeklyCategories} />
-          <ThreeMonthComparisonChart data={analytics.threeMonthComparison} />
+          <ThreeMonthComparisonChart data={enhancedThreeMonthData} />
         </div>
 
         {/* Row 5: Top Transactions Table (full width) */}
