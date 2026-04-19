@@ -84,6 +84,23 @@ export default function FinanceTab({
     }
   }, [analytics.kpiData, monthlyTradePLMap, selectedMonth, selectedYear])
 
+  // Enhanced top income sources with trade P/L injected
+  const enhancedTopIncomes = useMemo(() => {
+    const tradePL = (monthlyTradePLMap && monthlyTradePLMap[`${selectedYear}-${selectedMonth}`]) || 0
+    if (tradePL <= 0) return analytics.topIncomes
+
+    // Count closed trades in selected month
+    const tradeCount = (trades || []).filter(trade => {
+      if (trade.status !== 'closed' || !trade.updated_at) return false
+      const d = new Date(trade.updated_at)
+      return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear
+    }).length
+
+    const tradeEntry = { name: 'Trade P&L', icon: '📈', amount: tradePL, count: tradeCount }
+    const merged = [...analytics.topIncomes, tradeEntry]
+    return merged.sort((a, b) => b.amount - a.amount).slice(0, 5)
+  }, [analytics.topIncomes, monthlyTradePLMap, selectedMonth, selectedYear, trades])
+
   // Available years (current year and last 3 years)
   const availableYears = Array.from({ length: 4 }, (_, i) => now.getFullYear() - i)
   const monthNames = [
@@ -402,7 +419,7 @@ export default function FinanceTab({
         {/* Row 2: Cumulative Balance + Top Income Sources */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           <CumulativeBalanceChart data={analytics.dailyBalance} />
-          <TopIncomeSourcesChart data={analytics.topIncomes} />
+          <TopIncomeSourcesChart data={enhancedTopIncomes} />
         </div>
 
         {/* Row 3: Transaction Frequency + Expense Heat Map */}

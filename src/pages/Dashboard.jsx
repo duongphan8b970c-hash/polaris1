@@ -155,10 +155,15 @@ useEffect(() => {
       .select('from_currency, to_currency, rate')
       .eq('to_currency', 'VND')
 
+    // Build case-insensitive rates map with USDT↔USD cross-lookup
     const ratesMap = new Map()
     allRates?.forEach(r => {
-      ratesMap.set(r.from_currency, parseFloat(r.rate))
+      const key = r.from_currency.toUpperCase()
+      ratesMap.set(key, parseFloat(r.rate))
     })
+    // Cross-populate: if we have USD but not USDT (or vice versa), use the other
+    if (ratesMap.has('USD') && !ratesMap.has('USDT')) ratesMap.set('USDT', ratesMap.get('USD'))
+    if (ratesMap.has('USDT') && !ratesMap.has('USD')) ratesMap.set('USD', ratesMap.get('USDT'))
 
     // Compute per-month P/L in VND
     const plByMonth = {}
@@ -171,7 +176,7 @@ useEffect(() => {
 
       let plVND = pl
       if (currency !== 'VND') {
-        const rate = ratesMap.get(currency) || (currency === 'USD' || currency === 'USDT' ? 24000 : 1)
+        const rate = ratesMap.get(currency) || ratesMap.get('USD') || ratesMap.get('USDT') || 25000
         plVND = pl * rate
       }
 
