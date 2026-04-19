@@ -131,7 +131,7 @@ export function useTrades(filters = {}) {
 
       const rate = rateData?.rate
         ? parseFloat(rateData.rate)
-        : (currency === 'USD' || currency === 'USDT' ? 24000 : 1)
+        : (currency === 'USD' || currency === 'USDT' ? 25000 : 1)
 
       amountVND = Math.abs(profitLoss) * rate
     }
