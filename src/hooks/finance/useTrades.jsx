@@ -88,16 +88,31 @@ export function useTrades(filters = {}) {
     const isProfit = profitLoss > 0
     const transactionType = isProfit ? 'income' : 'expense'
 
-    const { data: category, error: categoryError } = await supabase
+    // Try to find "Trade" category first, then fall back to first matching type
+    let category = null
+    const { data: tradeCategory } = await supabase
       .from('categories')
       .select('id')
+      .eq('name', 'Trade')
       .eq('type', transactionType)
       .limit(1)
       .single()
 
-    if (categoryError || !category) {
-      console.warn(`No ${transactionType} category found, skipping wallet transaction`)
-      return
+    if (tradeCategory) {
+      category = tradeCategory
+    } else {
+      const { data: fallbackCategory, error: categoryError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('type', transactionType)
+        .limit(1)
+        .single()
+
+      if (categoryError || !fallbackCategory) {
+        console.warn(`No ${transactionType} category found, skipping wallet transaction`)
+        return
+      }
+      category = fallbackCategory
     }
 
     const { error: txError } = await supabase

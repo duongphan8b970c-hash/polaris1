@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useBudgets } from '../hooks/useBudgets'
 import BudgetList from '../../components/budgets/BudgetList'
 import BudgetForm from '../../components/budgets/BudgetForm'
+import BudgetSummaryModal from '../../components/budgets/BudgetSummaryModal'
 import Modal from '../../components/common/Modal'
 import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
@@ -13,6 +14,7 @@ export default function Budgets() {
   const [showForm, setShowForm] = useState(false)
   const [editingBudget, setEditingBudget] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [showSummary, setShowSummary] = useState(false)
 
   const handleCreate = () => {
     setEditingBudget(null)
@@ -67,12 +69,25 @@ export default function Budgets() {
       <PageHeader 
         title="Ngân sách" 
         action={
-          <button onClick={handleCreate} className="btn btn-primary">
-            <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Thêm ngân sách
-          </button>
+          <div className="flex gap-2">
+            {budgets.length > 0 && (
+              <button 
+                onClick={() => setShowSummary(true)} 
+                className="btn btn-secondary"
+              >
+                <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Tổng hợp
+              </button>
+            )}
+            <button onClick={handleCreate} className="btn btn-primary">
+              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Thêm ngân sách
+            </button>
+          </div>
         }
       />
 
@@ -94,6 +109,12 @@ export default function Budgets() {
           loading={submitting}
         />
       </Modal>
+
+      <BudgetSummaryModal
+        budgets={budgets}
+        isOpen={showSummary}
+        onClose={() => setShowSummary(false)}
+      />
     </div>
   )
 }

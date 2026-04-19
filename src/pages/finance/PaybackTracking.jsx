@@ -12,7 +12,7 @@ import { formatNumber } from '../../utils'
 
 export default function PaybackTracking({ goalType = 'payback' }) {
   const navigate = useNavigate()
-  const { goals, loading, error, createGoal, updateGoal, completeGoal, deleteGoal, refetch } = usePaybackGoals(goalType)
+  const { goals, loading, error, monthFilter, setMonthFilter, createGoal, updateGoal, completeGoal, deleteGoal, refetch } = usePaybackGoals(goalType)
   const { priorities } = usePaybackPriorities()
   
   const isPlan = goalType === 'plan'
@@ -35,8 +35,23 @@ export default function PaybackTracking({ goalType = 'payback' }) {
     completed: completedGoals.length,
     totalDebt: activeGoals.reduce((sum, g) => sum + g.target_amount, 0),
     totalPaid: activeGoals.reduce((sum, g) => sum + g.current_paid, 0),
-    totalRemaining: activeGoals.reduce((sum, g) => sum + g.remaining, 0)
+    totalRemaining: activeGoals.reduce((sum, g) => sum + g.remaining, 0),
+    // Monthly stats (only when filter is active)
+    monthlyPaid: monthFilter ? activeGoals.reduce((sum, g) => sum + (g.monthly_paid || 0), 0) : 0
   }
+
+  // Generate month options for filter
+  const monthOptions = (() => {
+    const options = [{ value: '', label: 'Tất cả (All-time)' }]
+    const now = new Date()
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const label = `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`
+      options.push({ value, label })
+    }
+    return options
+  })()
 
   // ✅ Filter active goals by priority (only for payback)
   const filteredActiveGoals = selectedPriority === 'all'
@@ -155,6 +170,32 @@ export default function PaybackTracking({ goalType = 'payback' }) {
         </button>
       </div>
 
+      {/* Month Filter - only for payback */}
+      {!isPlan && (
+        <div className="mb-6">
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">📅 Lọc theo tháng:</label>
+            <select
+              value={monthFilter || ''}
+              onChange={(e) => setMonthFilter(e.target.value || null)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              {monthOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            {monthFilter && (
+              <button
+                onClick={() => setMonthFilter(null)}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                ✕ Xóa filter
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Summary Stats */}
       {stats.active > 0 && (
         isPlan ? (
@@ -230,6 +271,53 @@ export default function PaybackTracking({ goalType = 'payback' }) {
             </div>
           </div>
         )
+      )}
+
+      {/* Monthly Stats Card - only when month filter is active */}
+      {!isPlan && monthFilter && stats.active > 0 && (
+        <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">📊</span>
+            <h3 className="text-sm font-bold text-indigo-900">
+              Thống kê tháng {monthFilter.split('-')[1]}/{monthFilter.split('-')[0]}
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-3 border border-indigo-100">
+              <p className="text-xs text-gray-500 mb-1">Đã trả trong tháng</p>
+              <p className="text-xl font-bold text-indigo-600">{formatNumber(stats.monthlyPaid)} ₫</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-indigo-100">
+              <p className="text-xs text-gray-500 mb-1">Tổng đã trả (all-time)</p>
+              <p className="text-xl font-bold text-green-600">{formatNumber(stats.totalPaid)} ₫</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-indigo-100">
+              <p className="text-xs text-gray-500 mb-1">Tiến độ tổng</p>
+              <p className="text-xl font-bold text-gray-900">
+                {stats.totalDebt > 0 ? ((stats.totalPaid / stats.totalDebt) * 100).toFixed(1) : 0}%
+              </p>
+            </div>
+          </div>
+          {/* Per-goal monthly breakdown */}
+          <div className="mt-3 space-y-2">
+            {activeGoals.filter(g => g.monthly_paid > 0).map(goal => (
+              <div key={goal.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-indigo-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">💳</span>
+                  <span className="text-sm font-medium text-gray-900">{goal.name}</span>
+                </div>
+                <span className="text-sm font-bold text-indigo-600">
+                  {formatNumber(goal.monthly_paid)} ₫
+                </span>
+              </div>
+            ))}
+            {activeGoals.filter(g => g.monthly_paid > 0).length === 0 && (
+              <p className="text-sm text-gray-500 text-center py-2">
+                Chưa có giao dịch payback nào trong tháng này
+              </p>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Priority Filter Buttons - only for payback */}

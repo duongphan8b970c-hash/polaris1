@@ -5,6 +5,7 @@ export function usePaybackGoals(goalType = 'payback') {
   const [goals, setGoals] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [monthFilter, setMonthFilter] = useState(null) // null = all-time, 'YYYY-MM' = specific month
 
   // Fetch all payback goals with calculated progress
   const fetchGoals = async () => {
@@ -59,17 +60,31 @@ export function usePaybackGoals(goalType = 'payback') {
       // ✅ Tính current_paid từ transactions có payback_goal_id
       const goalsWithProgress = await Promise.all(
         (goalsData || []).map(async (goal) => {
-          // Get transactions linked to this goal
-          const { data: transactions } = await supabase
+          // Get ALL transactions linked to this goal (all-time)
+          const { data: allTransactions } = await supabase
             .from('financial_transactions')
-            .select('amount')
+            .select('amount, date')
             .eq('payback_goal_id', goal.id)
             .gte('date', goal.start_date)
             .is('deleted_at', null)
 
-          const currentPaid = (transactions || []).reduce((sum, txn) => {
+          const currentPaid = (allTransactions || []).reduce((sum, txn) => {
             return sum + Math.abs(txn.amount)
           }, 0)
+
+          // Calculate monthly paid if filter is active
+          let monthlyPaid = 0
+          if (monthFilter) {
+            const [filterYear, filterMonth] = monthFilter.split('-').map(Number)
+            const monthStart = `${filterYear}-${String(filterMonth).padStart(2, '0')}-01`
+            const monthEnd = `${filterYear}-${String(filterMonth).padStart(2, '0')}-${new Date(filterYear, filterMonth, 0).getDate()}`
+            monthlyPaid = (allTransactions || []).reduce((sum, txn) => {
+              if (txn.date >= monthStart && txn.date <= monthEnd) {
+                return sum + Math.abs(txn.amount)
+              }
+              return sum
+            }, 0)
+          }
 
           const progress = goal.target_amount > 0 
             ? Math.min((currentPaid / goal.target_amount) * 100, 100)
@@ -80,11 +95,12 @@ export function usePaybackGoals(goalType = 'payback') {
           return {
             ...goal,
             current_paid: currentPaid,
+            monthly_paid: monthlyPaid,
             progress,
             remaining: Math.max(goal.target_amount - currentPaid, 0),
             is_completed: isCompleted,
             is_overdue: !isCompleted && new Date(goal.deadline) < new Date(),
-            transaction_count: transactions?.length || 0,  
+            transaction_count: allTransactions?.length || 0,  
             priority_sort_order: goal.priority?.sort_order || 999,  
             priority_name: goal.priority?.name || 'Chưa phân loại',  
             priority_icon: goal.priority?.icon || '❓',            
@@ -206,12 +222,14 @@ export function usePaybackGoals(goalType = 'payback') {
 
   useEffect(() => {
     fetchGoals()
-  }, [goalType])
+  }, [goalType, monthFilter])
 
   return {
     goals,
     loading,
     error,
+    monthFilter,
+    setMonthFilter,
     createGoal,
     updateGoal,
     completeGoal,
