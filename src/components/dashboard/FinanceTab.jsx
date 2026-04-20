@@ -16,8 +16,6 @@ export default function FinanceTab({
   wallets, 
   transactions, 
   trades, 
-  tradePLConverted,
-  monthlyTradePLMap,
   updatingRates,
   updateResult,
   formatLastUpdated,
@@ -31,11 +29,39 @@ export default function FinanceTab({
   // Monthly analytics hook
   const analytics = useMonthlyAnalytics(transactions, selectedMonth, selectedYear)
 
+  // ── Compute trade P&L per month from financial_transactions (Trade category) ──
+  // This uses the transaction `date` (set when the trade was actually closed)
+  // and the VND-converted `amount`, which is more accurate than trades.updated_at
+  const tradePLMap = useMemo(() => {
+    const map = {}
+    ;(transactions || [])
+      .filter(txn => txn.categories?.name === 'Trade')
+      .forEach(txn => {
+        const d = new Date(txn.date)
+        const key = `${d.getFullYear()}-${d.getMonth()}`
+        map[key] = (map[key] || 0) + (txn.amount || 0)
+      })
+    return map
+  }, [transactions])
+
+  // Trade transaction count per month (from financial_transactions with Trade category)
+  const tradeCountMap = useMemo(() => {
+    const map = {}
+    ;(transactions || [])
+      .filter(txn => txn.categories?.name === 'Trade')
+      .forEach(txn => {
+        const d = new Date(txn.date)
+        const key = `${d.getFullYear()}-${d.getMonth()}`
+        map[key] = (map[key] || 0) + 1
+      })
+    return map
+  }, [transactions])
+
   // Enhanced yearly chart data with per-month trade P/L
   const enhancedYearlyData = useMemo(() => {
-    if (!monthlyTradePLMap || Object.keys(monthlyTradePLMap).length === 0) return analytics.yearlyMonthlyData
+    if (Object.keys(tradePLMap).length === 0) return analytics.yearlyMonthlyData
     return analytics.yearlyMonthlyData.map((monthData, i) => {
-      const tradePL = monthlyTradePLMap[`${selectedYear}-${i}`] || 0
+      const tradePL = tradePLMap[`${selectedYear}-${i}`] || 0
       if (tradePL === 0) return monthData
       return {
         ...monthData,
@@ -43,17 +69,17 @@ export default function FinanceTab({
         expense: monthData.expense + (tradePL < 0 ? Math.abs(tradePL) : 0),
       }
     })
-  }, [analytics.yearlyMonthlyData, monthlyTradePLMap, selectedYear])
+  }, [analytics.yearlyMonthlyData, tradePLMap, selectedYear])
 
   // Enhanced 3-month comparison data with trade P/L
   const enhancedThreeMonthData = useMemo(() => {
-    if (!monthlyTradePLMap || Object.keys(monthlyTradePLMap).length === 0) return analytics.threeMonthComparison
+    if (Object.keys(tradePLMap).length === 0) return analytics.threeMonthComparison
     return analytics.threeMonthComparison.map((monthData, i) => {
       // Compute which month this entry represents (selected month minus offset)
       let targetMonth = selectedMonth - (2 - i)
       let targetYear = selectedYear
       if (targetMonth < 0) { targetMonth += 12; targetYear -= 1 }
-      const tradePL = monthlyTradePLMap[`${targetYear}-${targetMonth}`] || 0
+      const tradePL = tradePLMap[`${targetYear}-${targetMonth}`] || 0
       if (tradePL === 0) return monthData
       return {
         ...monthData,
@@ -61,11 +87,11 @@ export default function FinanceTab({
         expense: monthData.expense + (tradePL < 0 ? Math.abs(tradePL) : 0),
       }
     })
-  }, [analytics.threeMonthComparison, monthlyTradePLMap, selectedMonth, selectedYear])
+  }, [analytics.threeMonthComparison, tradePLMap, selectedMonth, selectedYear])
 
   // Enhanced KPI data with trade P/L for selected month
   const enhancedKpiData = useMemo(() => {
-    const tradePL = (monthlyTradePLMap && monthlyTradePLMap[`${selectedYear}-${selectedMonth}`]) || 0
+    const tradePL = tradePLMap[`${selectedYear}-${selectedMonth}`] || 0
     if (tradePL === 0) return analytics.kpiData
 
     const tradeIncome = tradePL > 0 ? tradePL : 0
@@ -82,24 +108,19 @@ export default function FinanceTab({
       balance: newBalance,
       savingsRate: newSavingsRate,
     }
-  }, [analytics.kpiData, monthlyTradePLMap, selectedMonth, selectedYear])
+  }, [analytics.kpiData, tradePLMap, selectedMonth, selectedYear])
 
   // Enhanced top income sources with trade P/L injected
   const enhancedTopIncomes = useMemo(() => {
-    const tradePL = (monthlyTradePLMap && monthlyTradePLMap[`${selectedYear}-${selectedMonth}`]) || 0
+    const selectedKey = `${selectedYear}-${selectedMonth}`
+    const tradePL = tradePLMap[selectedKey] || 0
     if (tradePL <= 0) return analytics.topIncomes
 
-    // Count closed trades in selected month
-    const tradeCount = (trades || []).filter(trade => {
-      if (trade.status !== 'closed' || !trade.updated_at) return false
-      const d = new Date(trade.updated_at)
-      return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear
-    }).length
-
+    const tradeCount = tradeCountMap[selectedKey] || 0
     const tradeEntry = { name: 'Trade P&L', icon: '📈', amount: tradePL, count: tradeCount }
     const merged = [...analytics.topIncomes, tradeEntry]
     return merged.sort((a, b) => b.amount - a.amount).slice(0, 5)
-  }, [analytics.topIncomes, monthlyTradePLMap, selectedMonth, selectedYear, trades])
+  }, [analytics.topIncomes, tradePLMap, tradeCountMap, selectedMonth, selectedYear])
 
   // Available years (current year and last 3 years)
   const availableYears = Array.from({ length: 4 }, (_, i) => now.getFullYear() - i)
@@ -110,6 +131,7 @@ export default function FinanceTab({
 
   // Calculate stats — aligned with selectedMonth / selectedYear filter
   const stats = useMemo(() => {
+    const selectedKey = `${selectedYear}-${selectedMonth}`
     const totalBalance = wallets.reduce((sum, wallet) => sum + (wallet.balance_vnd || 0), 0)
 
     const monthlyTransactions = transactions.filter(txn => {
@@ -117,26 +139,21 @@ export default function FinanceTab({
       return txnDate.getMonth() === selectedMonth && txnDate.getFullYear() === selectedYear
     })
 
-    // Exclude trade-category transactions from income/expense (handled by trade P&L map)
+    // Exclude trade-category transactions from income/expense (handled by tradePLMap)
     const transactionIncome = monthlyTransactions
       .filter(txn => txn.type === 'income' && txn.categories?.name !== 'Trade')
       .reduce((sum, txn) => sum + (txn.amount || 0), 0)
 
-    const incomeCount = monthlyTransactions.filter(txn => txn.type === 'income').length
+    const incomeCount = monthlyTransactions.filter(txn => txn.type === 'income' && txn.categories?.name !== 'Trade').length
 
     const expense = monthlyTransactions
       .filter(txn => txn.type === 'expense' && txn.categories?.name !== 'Trade')
       .reduce((sum, txn) => sum + Math.abs(txn.amount || 0), 0)
 
-    const expenseCount = monthlyTransactions.filter(txn => txn.type === 'expense').length
+    const expenseCount = monthlyTransactions.filter(txn => txn.type === 'expense' && txn.categories?.name !== 'Trade').length
 
-    const monthlyClosedTrades = trades.filter(trade => {
-      if (trade.status !== 'closed' || !trade.updated_at) return false
-      const tradeDate = new Date(trade.updated_at)
-      return tradeDate.getMonth() === selectedMonth && tradeDate.getFullYear() === selectedYear
-    })
-
-    const tradeCount = monthlyClosedTrades.length
+    // Trade count from trade-category transactions (accurate date)
+    const tradeCount = tradeCountMap[selectedKey] || 0
 
     // Top Categories
     const categoryMap = {}
@@ -173,15 +190,14 @@ export default function FinanceTab({
       expenseCount,
       tradePL: 0,
       tradeCount,
-      monthlyClosedTrades,
       topCategories,
       recentTransactions,
       transactionCount: incomeCount + expenseCount
     }
-  }, [wallets, transactions, trades, selectedMonth, selectedYear])
+  }, [wallets, transactions, tradeCountMap, selectedMonth, selectedYear])
 
-  // Use per-month trade P/L from the map, aligned with the selected filter
-  const selectedTradePL = (monthlyTradePLMap && monthlyTradePLMap[`${selectedYear}-${selectedMonth}`]) || 0
+  // Use per-month trade P/L from trade-category transactions (accurate dates)
+  const selectedTradePL = tradePLMap[`${selectedYear}-${selectedMonth}`] || 0
 
   const displayStats = {
     ...stats,

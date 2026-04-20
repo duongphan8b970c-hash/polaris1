@@ -236,11 +236,8 @@ useEffect(() => {
             wallets={wallets}
             transactions={transactions}
             trades={trades}
-            tradePLConverted={tradePLConverted}
-            monthlyTradePLMap={monthlyTradePLMap}
             updatingRates={updatingRates}
             updateResult={updateResult}
-            lastUpdated={lastUpdated}
             formatLastUpdated={formatLastUpdated}
             handleManualUpdate={handleManualUpdate}
           />
