@@ -17,8 +17,6 @@ export default function Dashboard() {
   const [updatingRates, setUpdatingRates] = useState(false)
   const [updateResult, setUpdateResult] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
-  const [tradePLConverted, setTradePLConverted] = useState(0)
-  const [monthlyTradePLMap, setMonthlyTradePLMap] = useState({})
 
   useEffect(() => {
     fetchData()
@@ -138,61 +136,6 @@ export default function Dashboard() {
       setUpdatingRates(false)
     }
   }
-  // Convert trade P&L to VND per month
-useEffect(() => {
-  const computeMonthlyTradePL = async () => {
-    const closedTrades = trades.filter(t => t.status === 'closed' && t.updated_at)
-
-    if (closedTrades.length === 0) {
-      setTradePLConverted(0)
-      setMonthlyTradePLMap({})
-      return
-    }
-
-    // Query all VND rates once
-    const { data: allRates } = await supabase
-      .from('exchange_rates')
-      .select('from_currency, to_currency, rate')
-      .eq('to_currency', 'VND')
-
-    // Build case-insensitive rates map with USDT↔USD cross-lookup
-    const ratesMap = new Map()
-    allRates?.forEach(r => {
-      const key = r.from_currency.toUpperCase()
-      ratesMap.set(key, parseFloat(r.rate))
-    })
-    // Cross-populate: if we have USD but not USDT (or vice versa), use the other
-    if (ratesMap.has('USD') && !ratesMap.has('USDT')) ratesMap.set('USDT', ratesMap.get('USD'))
-    if (ratesMap.has('USDT') && !ratesMap.has('USD')) ratesMap.set('USD', ratesMap.get('USDT'))
-
-    // Compute per-month P/L in VND
-    const plByMonth = {}
-
-    for (const trade of closedTrades) {
-      const tradeDate = new Date(trade.updated_at)
-      const key = `${tradeDate.getFullYear()}-${tradeDate.getMonth()}`
-      const pl = trade.profit_loss || 0
-      const currency = (trade.exit_currency || 'USDT').toUpperCase()
-
-      let plVND = pl
-      if (currency !== 'VND') {
-        const rate = ratesMap.get(currency) || ratesMap.get('USD') || ratesMap.get('USDT') || 25000
-        plVND = pl * rate
-      }
-
-      plByMonth[key] = (plByMonth[key] || 0) + plVND
-    }
-
-    setMonthlyTradePLMap(plByMonth)
-
-    // Current month's trade P/L for backward compatibility
-    const now = new Date()
-    const currentKey = `${now.getFullYear()}-${now.getMonth()}`
-    setTradePLConverted(plByMonth[currentKey] || 0)
-  }
-
-    computeMonthlyTradePL()
-  }, [trades])
 
   if (loading || walletsLoading) {
     return (
