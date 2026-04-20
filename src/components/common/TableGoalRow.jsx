@@ -77,7 +77,7 @@ function GoalInfoStrip({ goal }) {
 
   return (
     <tr>
-      <td colSpan={6} className="p-0">
+      <td colSpan={7} className="p-0">
         <div className="bg-blue-50/60 border-b border-blue-100 px-12 py-2 flex flex-wrap items-center gap-x-4 gap-y-1">
           {goal.description && (
             <span className="text-xs text-gray-600 italic">{goal.description}</span>
@@ -141,7 +141,7 @@ function TaskLoader({ goal, depth }) {
       <>
         <GoalInfoStrip goal={goal} />
         <tr>
-          <td colSpan={6} className="py-2">
+          <td colSpan={7} className="py-2">
             <div className="flex items-center gap-1.5 text-xs text-gray-400 pl-12">
               <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
               Đang tải tasks...
@@ -157,7 +157,7 @@ function TaskLoader({ goal, depth }) {
       <GoalInfoStrip goal={goal} />
       {tasks.length === 0 ? (
         <tr>
-          <td colSpan={6} className="py-1">
+          <td colSpan={7} className="py-1">
             <span className="text-xs text-gray-400 italic pl-16">
               Chưa có task nào
             </span>
@@ -187,7 +187,7 @@ function TaskLoader({ goal, depth }) {
 
       {/* Add task button row */}
       <tr>
-        <td colSpan={6} className="py-1 border-b border-gray-100">
+        <td colSpan={7} className="py-1 border-b border-gray-100">
           <button
             onClick={handleCreate}
             className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded px-2 py-1 transition-colors"
@@ -340,6 +340,33 @@ export default function TableGoalRow({
         {/* Duration: start_date → target_date */}
         <td className="px-3 py-3 whitespace-nowrap">
           <DurationCell goal={goal} timeRemaining={timeRemaining} />
+        </td>
+
+        {/* Countdown */}
+        <td className="px-3 py-3 whitespace-nowrap text-center">
+          {isCompleted ? (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+              ✓ Xong
+            </span>
+          ) : !timeRemaining ? (
+            <span className="text-gray-400 text-xs">—</span>
+          ) : timeRemaining.type === 'overdue' ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-100 text-red-700 rounded-full text-xs font-bold">
+              ⚠ Quá {timeRemaining.days} ngày
+            </span>
+          ) : timeRemaining.type === 'today' ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold">
+              🔥 Hôm nay
+            </span>
+          ) : timeRemaining.type === 'soon' ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold">
+              ⏰ {timeRemaining.days} ngày
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs font-bold">
+              📅 {timeRemaining.days} ngày
+            </span>
+          )}
         </td>
 
         {/* Actions - ALWAYS VISIBLE */}

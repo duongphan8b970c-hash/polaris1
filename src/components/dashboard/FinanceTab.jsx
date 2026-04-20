@@ -108,20 +108,16 @@ export default function FinanceTab({
     'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
   ]
 
-  // Calculate stats
+  // Calculate stats — aligned with selectedMonth / selectedYear filter
   const stats = useMemo(() => {
-    const now = new Date()
-    const currentMonth = now.getMonth()
-    const currentYear = now.getFullYear()
-
     const totalBalance = wallets.reduce((sum, wallet) => sum + (wallet.balance_vnd || 0), 0)
 
     const monthlyTransactions = transactions.filter(txn => {
       const txnDate = new Date(txn.date)
-      return txnDate.getMonth() === currentMonth && txnDate.getFullYear() === currentYear
+      return txnDate.getMonth() === selectedMonth && txnDate.getFullYear() === selectedYear
     })
 
-    // Exclude trade-category transactions from income/expense (handled by tradePLConverted)
+    // Exclude trade-category transactions from income/expense (handled by trade P&L map)
     const transactionIncome = monthlyTransactions
       .filter(txn => txn.type === 'income' && txn.categories?.name !== 'Trade')
       .reduce((sum, txn) => sum + (txn.amount || 0), 0)
@@ -137,7 +133,7 @@ export default function FinanceTab({
     const monthlyClosedTrades = trades.filter(trade => {
       if (trade.status !== 'closed' || !trade.updated_at) return false
       const tradeDate = new Date(trade.updated_at)
-      return tradeDate.getMonth() === currentMonth && tradeDate.getFullYear() === currentYear
+      return tradeDate.getMonth() === selectedMonth && tradeDate.getFullYear() === selectedYear
     })
 
     const tradeCount = monthlyClosedTrades.length
@@ -182,25 +178,49 @@ export default function FinanceTab({
       recentTransactions,
       transactionCount: incomeCount + expenseCount
     }
-  }, [wallets, transactions, trades])
+  }, [wallets, transactions, trades, selectedMonth, selectedYear])
+
+  // Use per-month trade P/L from the map, aligned with the selected filter
+  const selectedTradePL = (monthlyTradePLMap && monthlyTradePLMap[`${selectedYear}-${selectedMonth}`]) || 0
 
   const displayStats = {
     ...stats,
-    tradePL: tradePLConverted,
-    income: stats.income + (tradePLConverted > 0 ? tradePLConverted : 0),
-    expense: stats.expense + (tradePLConverted < 0 ? Math.abs(tradePLConverted) : 0)
+    tradePL: selectedTradePL,
+    income: stats.income + (selectedTradePL > 0 ? selectedTradePL : 0),
+    expense: stats.expense + (selectedTradePL < 0 ? Math.abs(selectedTradePL) : 0)
   }
 
   return (
     <div className="space-y-6">
       {/* HEADER WITH MANUAL UPDATE */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Tổng Quan Tài Chính</h2>
           <p className="text-gray-600 mt-1">Theo dõi thu chi và tài sản của bạn</p>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Month & Year Selectors */}
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(Number(e.target.value))}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              {monthNames.map((name, i) => (
+                <option key={i} value={i}>{name}</option>
+              ))}
+            </select>
+            <select
+              value={selectedYear}
+              onChange={e => setSelectedYear(Number(e.target.value))}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              {availableYears.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
           <div className="text-right">
             <p className="text-sm text-gray-600">Tỷ giá cập nhật</p>
             <p className="text-xs text-gray-500">{formatLastUpdated()}</p>
@@ -290,7 +310,7 @@ export default function FinanceTab({
               +{formatNumber(displayStats.income)}
           </p>
           <p className="text-green-100 text-sm font-medium">
-            VND tháng này {displayStats.tradePL > 0 && '(bao gồm trade)'}
+            VND {monthNames[selectedMonth]} {displayStats.tradePL > 0 && '(bao gồm trade)'}
           </p>
         </div>
 
@@ -310,7 +330,7 @@ export default function FinanceTab({
           <p className="text-2xl md:text-3xl font-bold mb-1 break-words">
             -{formatNumber(displayStats.expense)}
           </p>
-          <p className="text-red-100 text-sm font-medium">VND tháng này</p>
+          <p className="text-red-100 text-sm font-medium">VND {monthNames[selectedMonth]}</p>
         </div>
 
         {/* 4. Trade P&L */}
@@ -329,7 +349,7 @@ export default function FinanceTab({
           <p className="text-2xl md:text-3xl font-bold mb-1 break-words">
             {displayStats.tradePL >= 0 ? '+' : ''}{formatNumber(Math.abs(displayStats.tradePL))}
           </p>
-          <p className="text-purple-100 text-sm font-medium">VND tổng P&L</p>
+          <p className="text-purple-100 text-sm font-medium">VND P&L {monthNames[selectedMonth]}</p>
         </div>
 
         {/* 5. Total Transactions */}
@@ -342,7 +362,7 @@ export default function FinanceTab({
             </div>
             <div className="text-right">
               <p className="text-cyan-100 text-xs font-medium uppercase">Giao Dịch</p>
-              <p className="text-cyan-100 text-xs">Tháng này</p>
+              <p className="text-cyan-100 text-xs">{monthNames[selectedMonth]}</p>
             </div>
           </div>
           <p className="text-2xl md:text-3xl font-bold mb-1">
