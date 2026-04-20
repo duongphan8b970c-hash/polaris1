@@ -16,6 +16,7 @@ export default function FinanceTab({
   wallets, 
   transactions, 
   trades, 
+  exchangeRates,
   updatingRates,
   updateResult,
   formatLastUpdated,
@@ -29,33 +30,40 @@ export default function FinanceTab({
   // Monthly analytics hook
   const analytics = useMonthlyAnalytics(transactions, selectedMonth, selectedYear)
 
-  // ── Compute trade P&L per month from financial_transactions (Trade category) ──
-  // This uses the transaction `date` (set when the trade was actually closed)
-  // and the VND-converted `amount`, which is more accurate than trades.updated_at
+  // ── Compute trade P&L per month directly from trades table ──
+  // Convert each closed trade's profit_loss to VND using exchange rates
   const tradePLMap = useMemo(() => {
     const map = {}
-    ;(transactions || [])
-      .filter(txn => txn.categories?.name === 'Trade')
-      .forEach(txn => {
-        const d = new Date(txn.date)
+    const rates = exchangeRates || {}
+    ;(trades || [])
+      .filter(t => t.status === 'closed' && t.profit_loss != null && t.updated_at)
+      .forEach(trade => {
+        const d = new Date(trade.updated_at)
         const key = `${d.getFullYear()}-${d.getMonth()}`
-        map[key] = (map[key] || 0) + (txn.amount || 0)
+        const pl = trade.profit_loss || 0
+        const currency = (trade.exit_currency || 'USDT').toUpperCase()
+        let plVND = pl
+        if (currency !== 'VND') {
+          const rate = rates[currency] || rates['USD'] || rates['USDT'] || 25000
+          plVND = pl * rate
+        }
+        map[key] = (map[key] || 0) + plVND
       })
     return map
-  }, [transactions])
+  }, [trades, exchangeRates])
 
-  // Trade transaction count per month (from financial_transactions with Trade category)
+  // Trade count per month (from trades table)
   const tradeCountMap = useMemo(() => {
     const map = {}
-    ;(transactions || [])
-      .filter(txn => txn.categories?.name === 'Trade')
-      .forEach(txn => {
-        const d = new Date(txn.date)
+    ;(trades || [])
+      .filter(t => t.status === 'closed' && t.updated_at)
+      .forEach(trade => {
+        const d = new Date(trade.updated_at)
         const key = `${d.getFullYear()}-${d.getMonth()}`
         map[key] = (map[key] || 0) + 1
       })
     return map
-  }, [transactions])
+  }, [trades])
 
   // Enhanced yearly chart data with per-month trade P/L
   const enhancedYearlyData = useMemo(() => {

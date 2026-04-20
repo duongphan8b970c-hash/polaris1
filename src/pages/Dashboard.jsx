@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [updatingRates, setUpdatingRates] = useState(false)
   const [updateResult, setUpdateResult] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
+  const [exchangeRates, setExchangeRates] = useState({})
 
   useEffect(() => {
     fetchData()
@@ -79,8 +80,23 @@ export default function Dashboard() {
       if (rateData) {
         setLastUpdated(rateData.updated_at)
       } else {
-              setLastUpdated(null)  // Table rỗng, chưa có data
-            }
+        setLastUpdated(null)
+      }
+
+      // Fetch all VND exchange rates for currency conversion
+      const { data: allRates } = await supabase
+        .from('exchange_rates')
+        .select('from_currency, rate')
+        .eq('to_currency', 'VND')
+
+      const ratesMap = {}
+      ;(allRates || []).forEach(r => {
+        ratesMap[r.from_currency.toUpperCase()] = parseFloat(r.rate)
+      })
+      // Cross-populate USDT↔USD
+      if (ratesMap['USD'] && !ratesMap['USDT']) ratesMap['USDT'] = ratesMap['USD']
+      if (ratesMap['USDT'] && !ratesMap['USD']) ratesMap['USD'] = ratesMap['USDT']
+      setExchangeRates(ratesMap)
 
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -179,6 +195,7 @@ export default function Dashboard() {
             wallets={wallets}
             transactions={transactions}
             trades={trades}
+            exchangeRates={exchangeRates}
             updatingRates={updatingRates}
             updateResult={updateResult}
             formatLastUpdated={formatLastUpdated}
