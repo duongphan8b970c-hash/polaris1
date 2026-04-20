@@ -59,6 +59,9 @@ export default function TableGoalList({
               <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 Thời lượng
               </th>
+              <th className="px-3 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                Còn lại
+              </th>
               <th className="px-3 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 Thao tác
               </th>
@@ -70,7 +73,7 @@ export default function TableGoalList({
             {activeGoals.length > 0 && (
               <>
                 <tr className="bg-gray-50 border-t-2 border-gray-200">
-                  <td colSpan={6} className="px-4 py-2">
+                  <td colSpan={7} className="px-4 py-2">
                     <div className="flex items-center gap-2 text-xs font-semibold text-gray-600">
                       <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -95,7 +98,7 @@ export default function TableGoalList({
             {completedGoals.length > 0 && (
               <>
                 <tr className="bg-gray-50 border-t-2 border-gray-200">
-                  <td colSpan={6} className="px-4 py-2">
+                  <td colSpan={7} className="px-4 py-2">
                     <div className="flex items-center gap-2 text-xs font-semibold text-gray-600">
                       <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

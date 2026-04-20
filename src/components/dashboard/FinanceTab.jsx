@@ -16,7 +16,7 @@ export default function FinanceTab({
   wallets, 
   transactions, 
   trades, 
-  tradePLConverted,
+  exchangeRates,
   updatingRates,
   updateResult,
   formatLastUpdated,
@@ -30,6 +30,106 @@ export default function FinanceTab({
   // Monthly analytics hook
   const analytics = useMonthlyAnalytics(transactions, selectedMonth, selectedYear)
 
+  // ── Compute trade P&L per month directly from trades table ──
+  // Convert each closed trade's profit_loss to VND using exchange rates
+  const tradePLMap = useMemo(() => {
+    const map = {}
+    const rates = exchangeRates || {}
+    ;(trades || [])
+      .filter(t => t.status === 'closed' && t.profit_loss != null && t.updated_at)
+      .forEach(trade => {
+        const d = new Date(trade.updated_at)
+        const key = `${d.getFullYear()}-${d.getMonth()}`
+        const pl = trade.profit_loss || 0
+        const currency = (trade.exit_currency || 'USDT').toUpperCase()
+        let plVND = pl
+        if (currency !== 'VND') {
+          const rate = rates[currency] || rates['USD'] || rates['USDT'] || 25000
+          plVND = pl * rate
+        }
+        map[key] = (map[key] || 0) + plVND
+      })
+    return map
+  }, [trades, exchangeRates])
+
+  // Trade count per month (from trades table)
+  const tradeCountMap = useMemo(() => {
+    const map = {}
+    ;(trades || [])
+      .filter(t => t.status === 'closed' && t.updated_at)
+      .forEach(trade => {
+        const d = new Date(trade.updated_at)
+        const key = `${d.getFullYear()}-${d.getMonth()}`
+        map[key] = (map[key] || 0) + 1
+      })
+    return map
+  }, [trades])
+
+  // Enhanced yearly chart data with per-month trade P/L
+  const enhancedYearlyData = useMemo(() => {
+    if (Object.keys(tradePLMap).length === 0) return analytics.yearlyMonthlyData
+    return analytics.yearlyMonthlyData.map((monthData, i) => {
+      const tradePL = tradePLMap[`${selectedYear}-${i}`] || 0
+      if (tradePL === 0) return monthData
+      return {
+        ...monthData,
+        income: monthData.income + (tradePL > 0 ? tradePL : 0),
+        expense: monthData.expense + (tradePL < 0 ? Math.abs(tradePL) : 0),
+      }
+    })
+  }, [analytics.yearlyMonthlyData, tradePLMap, selectedYear])
+
+  // Enhanced 3-month comparison data with trade P/L
+  const enhancedThreeMonthData = useMemo(() => {
+    if (Object.keys(tradePLMap).length === 0) return analytics.threeMonthComparison
+    return analytics.threeMonthComparison.map((monthData, i) => {
+      // Compute which month this entry represents (selected month minus offset)
+      let targetMonth = selectedMonth - (2 - i)
+      let targetYear = selectedYear
+      if (targetMonth < 0) { targetMonth += 12; targetYear -= 1 }
+      const tradePL = tradePLMap[`${targetYear}-${targetMonth}`] || 0
+      if (tradePL === 0) return monthData
+      return {
+        ...monthData,
+        income: monthData.income + (tradePL > 0 ? tradePL : 0),
+        expense: monthData.expense + (tradePL < 0 ? Math.abs(tradePL) : 0),
+      }
+    })
+  }, [analytics.threeMonthComparison, tradePLMap, selectedMonth, selectedYear])
+
+  // Enhanced KPI data with trade P/L for selected month
+  const enhancedKpiData = useMemo(() => {
+    const tradePL = tradePLMap[`${selectedYear}-${selectedMonth}`] || 0
+    if (tradePL === 0) return analytics.kpiData
+
+    const tradeIncome = tradePL > 0 ? tradePL : 0
+    const tradeLoss = tradePL < 0 ? Math.abs(tradePL) : 0
+    const newIncome = analytics.kpiData.income + tradeIncome
+    const newExpense = analytics.kpiData.expense + tradeLoss
+    const newBalance = newIncome - newExpense
+    const newSavingsRate = newIncome > 0 ? (newBalance / newIncome) * 100 : 0
+
+    return {
+      ...analytics.kpiData,
+      income: newIncome,
+      expense: newExpense,
+      balance: newBalance,
+      savingsRate: newSavingsRate,
+    }
+  }, [analytics.kpiData, tradePLMap, selectedMonth, selectedYear])
+
+  // Enhanced top income sources with trade P/L injected
+  const enhancedTopIncomes = useMemo(() => {
+    const selectedKey = `${selectedYear}-${selectedMonth}`
+    const tradePL = tradePLMap[selectedKey] || 0
+    if (tradePL <= 0) return analytics.topIncomes
+
+    const tradeCount = tradeCountMap[selectedKey] || 0
+    const tradeEntry = { name: 'Trade P&L', icon: '📈', amount: tradePL, count: tradeCount }
+    const merged = [...analytics.topIncomes, tradeEntry]
+    return merged.sort((a, b) => b.amount - a.amount).slice(0, 5)
+  }, [analytics.topIncomes, tradePLMap, tradeCountMap, selectedMonth, selectedYear])
+
   // Available years (current year and last 3 years)
   const availableYears = Array.from({ length: 4 }, (_, i) => now.getFullYear() - i)
   const monthNames = [
@@ -37,38 +137,31 @@ export default function FinanceTab({
     'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
   ]
 
-  // Calculate stats
+  // Calculate stats — aligned with selectedMonth / selectedYear filter
   const stats = useMemo(() => {
-    const now = new Date()
-    const currentMonth = now.getMonth()
-    const currentYear = now.getFullYear()
-
+    const selectedKey = `${selectedYear}-${selectedMonth}`
     const totalBalance = wallets.reduce((sum, wallet) => sum + (wallet.balance_vnd || 0), 0)
 
     const monthlyTransactions = transactions.filter(txn => {
       const txnDate = new Date(txn.date)
-      return txnDate.getMonth() === currentMonth && txnDate.getFullYear() === currentYear
+      return txnDate.getMonth() === selectedMonth && txnDate.getFullYear() === selectedYear
     })
 
+    // Exclude trade-category transactions from income/expense (handled by tradePLMap)
     const transactionIncome = monthlyTransactions
-      .filter(txn => txn.type === 'income')
+      .filter(txn => txn.type === 'income' && txn.categories?.name !== 'Trade')
       .reduce((sum, txn) => sum + (txn.amount || 0), 0)
 
-    const incomeCount = monthlyTransactions.filter(txn => txn.type === 'income').length
+    const incomeCount = monthlyTransactions.filter(txn => txn.type === 'income' && txn.categories?.name !== 'Trade').length
 
     const expense = monthlyTransactions
-      .filter(txn => txn.type === 'expense')
+      .filter(txn => txn.type === 'expense' && txn.categories?.name !== 'Trade')
       .reduce((sum, txn) => sum + Math.abs(txn.amount || 0), 0)
 
-    const expenseCount = monthlyTransactions.filter(txn => txn.type === 'expense').length
+    const expenseCount = monthlyTransactions.filter(txn => txn.type === 'expense' && txn.categories?.name !== 'Trade').length
 
-    const monthlyClosedTrades = trades.filter(trade => {
-      if (trade.status !== 'closed' || !trade.updated_at) return false
-      const tradeDate = new Date(trade.updated_at)
-      return tradeDate.getMonth() === currentMonth && tradeDate.getFullYear() === currentYear
-    })
-
-    const tradeCount = monthlyClosedTrades.length
+    // Trade count from trade-category transactions (accurate date)
+    const tradeCount = tradeCountMap[selectedKey] || 0
 
     // Top Categories
     const categoryMap = {}
@@ -105,29 +198,53 @@ export default function FinanceTab({
       expenseCount,
       tradePL: 0,
       tradeCount,
-      monthlyClosedTrades,
       topCategories,
       recentTransactions,
       transactionCount: incomeCount + expenseCount
     }
-  }, [wallets, transactions, trades])
+  }, [wallets, transactions, tradeCountMap, selectedMonth, selectedYear])
+
+  // Use per-month trade P/L from trade-category transactions (accurate dates)
+  const selectedTradePL = tradePLMap[`${selectedYear}-${selectedMonth}`] || 0
 
   const displayStats = {
     ...stats,
-    tradePL: tradePLConverted,
-    income: stats.income + (tradePLConverted > 0 ? tradePLConverted : 0)
+    tradePL: selectedTradePL,
+    income: stats.income + (selectedTradePL > 0 ? selectedTradePL : 0),
+    expense: stats.expense + (selectedTradePL < 0 ? Math.abs(selectedTradePL) : 0)
   }
 
   return (
     <div className="space-y-6">
       {/* HEADER WITH MANUAL UPDATE */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Tổng Quan Tài Chính</h2>
           <p className="text-gray-600 mt-1">Theo dõi thu chi và tài sản của bạn</p>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Month & Year Selectors */}
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(Number(e.target.value))}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              {monthNames.map((name, i) => (
+                <option key={i} value={i}>{name}</option>
+              ))}
+            </select>
+            <select
+              value={selectedYear}
+              onChange={e => setSelectedYear(Number(e.target.value))}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              {availableYears.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
           <div className="text-right">
             <p className="text-sm text-gray-600">Tỷ giá cập nhật</p>
             <p className="text-xs text-gray-500">{formatLastUpdated()}</p>
@@ -217,7 +334,7 @@ export default function FinanceTab({
               +{formatNumber(displayStats.income)}
           </p>
           <p className="text-green-100 text-sm font-medium">
-            VND tháng này {displayStats.tradePL > 0 && '(bao gồm trade)'}
+            VND {monthNames[selectedMonth]} {displayStats.tradePL > 0 && '(bao gồm trade)'}
           </p>
         </div>
 
@@ -237,7 +354,7 @@ export default function FinanceTab({
           <p className="text-2xl md:text-3xl font-bold mb-1 break-words">
             -{formatNumber(displayStats.expense)}
           </p>
-          <p className="text-red-100 text-sm font-medium">VND tháng này</p>
+          <p className="text-red-100 text-sm font-medium">VND {monthNames[selectedMonth]}</p>
         </div>
 
         {/* 4. Trade P&L */}
@@ -256,7 +373,7 @@ export default function FinanceTab({
           <p className="text-2xl md:text-3xl font-bold mb-1 break-words">
             {displayStats.tradePL >= 0 ? '+' : ''}{formatNumber(Math.abs(displayStats.tradePL))}
           </p>
-          <p className="text-purple-100 text-sm font-medium">VND tổng P&L</p>
+          <p className="text-purple-100 text-sm font-medium">VND P&L {monthNames[selectedMonth]}</p>
         </div>
 
         {/* 5. Total Transactions */}
@@ -269,7 +386,7 @@ export default function FinanceTab({
             </div>
             <div className="text-right">
               <p className="text-cyan-100 text-xs font-medium uppercase">Giao Dịch</p>
-              <p className="text-cyan-100 text-xs">Tháng này</p>
+              <p className="text-cyan-100 text-xs">{monthNames[selectedMonth]}</p>
             </div>
           </div>
           <p className="text-2xl md:text-3xl font-bold mb-1">
@@ -334,19 +451,19 @@ export default function FinanceTab({
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <MonthlyKPICards kpiData={analytics.kpiData} />
+        {/* KPI Cards - enhanced with trade P/L */}
+        <MonthlyKPICards kpiData={enhancedKpiData} />
 
         {/* Row 1: Income/Expense Bar + Category Pie */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          <IncomeExpenseChart data={analytics.yearlyMonthlyData} />
+          <IncomeExpenseChart data={enhancedYearlyData} />
           <ExpenseCategoryPieChart data={analytics.categoryBreakdown} />
         </div>
 
         {/* Row 2: Cumulative Balance + Top Income Sources */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           <CumulativeBalanceChart data={analytics.dailyBalance} />
-          <TopIncomeSourcesChart data={analytics.topIncomes} />
+          <TopIncomeSourcesChart data={enhancedTopIncomes} />
         </div>
 
         {/* Row 3: Transaction Frequency + Expense Heat Map */}
@@ -358,7 +475,7 @@ export default function FinanceTab({
         {/* Row 4: Weekly Category Stacked + 3-Month Comparison */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           <WeeklyCategoryChart data={analytics.weeklyCategories} />
-          <ThreeMonthComparisonChart data={analytics.threeMonthComparison} />
+          <ThreeMonthComparisonChart data={enhancedThreeMonthData} />
         </div>
 
         {/* Row 5: Top Transactions Table (full width) */}

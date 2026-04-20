@@ -12,7 +12,7 @@ import { formatNumber } from '../../utils'
 
 export default function PaybackTracking({ goalType = 'payback' }) {
   const navigate = useNavigate()
-  const { goals, loading, error, createGoal, updateGoal, completeGoal, deleteGoal, refetch } = usePaybackGoals(goalType)
+  const { goals, loading, error, monthFilter, setMonthFilter, createGoal, updateGoal, completeGoal, deleteGoal, refetch } = usePaybackGoals(goalType)
   const { priorities } = usePaybackPriorities()
   
   const isPlan = goalType === 'plan'
@@ -28,15 +28,39 @@ export default function PaybackTracking({ goalType = 'payback' }) {
   const activeGoals = goals.filter(g => g.status === 'active')
   const completedGoals = goals.filter(g => g.status === 'completed')
 
-  // Calculate summary stats (chỉ cho active)
+  // Calculate summary stats (tính cả active + completed)
+  const today = new Date()
   const stats = {
     total: goals.length,
     active: activeGoals.length,
     completed: completedGoals.length,
-    totalDebt: activeGoals.reduce((sum, g) => sum + g.target_amount, 0),
-    totalPaid: activeGoals.reduce((sum, g) => sum + g.current_paid, 0),
-    totalRemaining: activeGoals.reduce((sum, g) => sum + g.remaining, 0)
+    totalDebt: goals.reduce((sum, g) => sum + g.target_amount, 0),
+    totalPaid: goals.reduce((sum, g) => sum + g.current_paid, 0),
+    totalRemaining: goals.reduce((sum, g) => sum + g.remaining, 0),
+    // Monthly stats (only when filter is active)
+    monthlyPaid: monthFilter ? goals.reduce((sum, g) => sum + (g.monthly_paid || 0), 0) : 0,
+    // Countdown: nearest deadline among active goals
+    nearestDeadline: activeGoals.length > 0
+      ? activeGoals.reduce((nearest, g) => {
+          const deadline = new Date(g.deadline)
+          return !nearest || deadline < nearest.date ? { date: deadline, name: g.name } : nearest
+        }, null)
+      : null,
+    overdueCount: activeGoals.filter(g => g.is_overdue).length,
   }
+
+  // Generate month options for filter
+  const monthOptions = (() => {
+    const options = [{ value: '', label: 'Tất cả (All-time)' }]
+    const now = new Date()
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const label = `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`
+      options.push({ value, label })
+    }
+    return options
+  })()
 
   // ✅ Filter active goals by priority (only for payback)
   const filteredActiveGoals = selectedPriority === 'all'
@@ -155,6 +179,32 @@ export default function PaybackTracking({ goalType = 'payback' }) {
         </button>
       </div>
 
+      {/* Month Filter - only for payback */}
+      {!isPlan && (
+        <div className="mb-6">
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">📅 Lọc theo tháng:</label>
+            <select
+              value={monthFilter || ''}
+              onChange={(e) => setMonthFilter(e.target.value || null)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              {monthOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            {monthFilter && (
+              <button
+                onClick={() => setMonthFilter(null)}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                ✕ Xóa filter
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Summary Stats */}
       {stats.active > 0 && (
         isPlan ? (
@@ -183,8 +233,8 @@ export default function PaybackTracking({ goalType = 'payback' }) {
             </div>
           </div>
         ) : (
-          /* Payback tab: full 4-card stats */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          /* Payback tab: full 5-card stats */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-blue-100 text-sm font-medium">Đang theo dõi</p>
@@ -228,8 +278,144 @@ export default function PaybackTracking({ goalType = 'payback' }) {
               <p className="text-3xl font-bold">{formatNumber(stats.totalRemaining)}</p>
               <p className="text-orange-100 text-xs">VND</p>
             </div>
+
+            {/* Countdown / Nearest Deadline Card */}
+            <div className={`bg-gradient-to-br ${stats.overdueCount > 0 ? 'from-rose-500 to-rose-600' : 'from-indigo-500 to-indigo-600'} rounded-xl p-4 text-white shadow-lg`}>
+              <div className="flex items-center justify-between mb-2">
+                <p className={`${stats.overdueCount > 0 ? 'text-rose-100' : 'text-indigo-100'} text-sm font-medium`}>
+                  {stats.overdueCount > 0 ? '⚠ Quá hạn' : '⏰ Deadline gần nhất'}
+                </p>
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              {stats.overdueCount > 0 ? (
+                <>
+                  <p className="text-3xl font-bold">{stats.overdueCount}</p>
+                  <p className="text-rose-100 text-xs">mục tiêu quá hạn</p>
+                </>
+              ) : stats.nearestDeadline ? (
+                <>
+                  <p className="text-3xl font-bold">
+                    {(() => {
+                      const days = Math.ceil((stats.nearestDeadline.date - today) / (1000 * 60 * 60 * 24))
+                      return days === 0 ? 'Hôm nay' : `${days} ngày`
+                    })()}
+                  </p>
+                  <p className="text-indigo-100 text-xs truncate" title={stats.nearestDeadline.name}>
+                    {stats.nearestDeadline.name}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold">—</p>
+                  <p className="text-indigo-100 text-xs">Không có deadline</p>
+                </>
+              )}
+            </div>
           </div>
         )
+      )}
+
+      {/* Countdown Overview - all active goals' deadlines */}
+      {!isPlan && activeGoals.length > 0 && (
+        <div className="mb-6 bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">⏰</span>
+            <h3 className="text-sm font-bold text-slate-900">Countdown tất cả mục tiêu</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[...activeGoals]
+              .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+              .map(goal => {
+                const deadline = new Date(goal.deadline)
+                const daysLeft = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24))
+                const isOverdue = daysLeft < 0
+                const isUrgent = daysLeft >= 0 && daysLeft <= 7
+                const isToday = daysLeft === 0
+
+                return (
+                  <div
+                    key={goal.id}
+                    className={`bg-white rounded-lg p-3 border ${
+                      isOverdue ? 'border-red-300 bg-red-50' :
+                      isToday ? 'border-orange-300 bg-orange-50' :
+                      isUrgent ? 'border-yellow-300 bg-yellow-50' :
+                      'border-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-semibold text-gray-900 truncate flex-1 mr-2" title={goal.name}>
+                        💳 {goal.name}
+                      </p>
+                      <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                        isOverdue ? 'bg-red-100 text-red-700' :
+                        isToday ? 'bg-orange-100 text-orange-700' :
+                        isUrgent ? 'bg-yellow-100 text-yellow-700' :
+                        daysLeft <= 30 ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {isOverdue ? `⚠ Quá ${Math.abs(daysLeft)} ngày` :
+                         isToday ? '🔥 Hôm nay' :
+                         `📅 ${daysLeft} ngày`}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>Hạn: {deadline.toLocaleDateString('vi-VN')}</span>
+                      <span className="font-medium">{goal.progress.toFixed(0)}% hoàn thành</span>
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* Monthly Stats Card - only when month filter is active */}
+      {!isPlan && monthFilter && stats.active > 0 && (
+        <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">📊</span>
+            <h3 className="text-sm font-bold text-indigo-900">
+              Thống kê tháng {monthFilter.split('-')[1]}/{monthFilter.split('-')[0]}
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-3 border border-indigo-100">
+              <p className="text-xs text-gray-500 mb-1">Đã trả trong tháng</p>
+              <p className="text-xl font-bold text-indigo-600">{formatNumber(stats.monthlyPaid)} ₫</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-indigo-100">
+              <p className="text-xs text-gray-500 mb-1">Tổng đã trả (all-time)</p>
+              <p className="text-xl font-bold text-green-600">{formatNumber(stats.totalPaid)} ₫</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-indigo-100">
+              <p className="text-xs text-gray-500 mb-1">Tiến độ tổng</p>
+              <p className="text-xl font-bold text-gray-900">
+                {stats.totalDebt > 0 ? ((stats.totalPaid / stats.totalDebt) * 100).toFixed(1) : 0}%
+              </p>
+            </div>
+          </div>
+          {/* Per-goal monthly breakdown */}
+          <div className="mt-3 space-y-2">
+            {activeGoals.filter(g => g.monthly_paid > 0).map(goal => (
+              <div key={goal.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-indigo-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">💳</span>
+                  <span className="text-sm font-medium text-gray-900">{goal.name}</span>
+                </div>
+                <span className="text-sm font-bold text-indigo-600">
+                  {formatNumber(goal.monthly_paid)} ₫
+                </span>
+              </div>
+            ))}
+            {activeGoals.filter(g => g.monthly_paid > 0).length === 0 && (
+              <p className="text-sm text-gray-500 text-center py-2">
+                Chưa có giao dịch payback nào trong tháng này
+              </p>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Priority Filter Buttons - only for payback */}

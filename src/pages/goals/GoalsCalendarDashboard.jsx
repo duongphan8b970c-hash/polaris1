@@ -226,6 +226,7 @@ export default function GoalsCalendarDashboard() {
           <TodayTasksPanel
             date={selectedDate}
             items={todayItems}
+            allMonthItems={filteredItems}
             onRefresh={refetch}
           />
         </>
