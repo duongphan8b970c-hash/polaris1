@@ -69,7 +69,7 @@ export default function Login() {
               {/* App Title */}
               <div className="text-center mb-8">
                 <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 drop-shadow-lg">
-                  Our Milky Way
+                  私たちの銀河
                 </h1>
                 <div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-purple-400 mx-auto rounded-full"></div>
               </div>
