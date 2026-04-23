@@ -74,12 +74,13 @@ function matchesRecurrencePattern(date, rule, startDate) {
   const { frequency, interval = 1, days_of_week } = rule
 
   switch (frequency) {
-    case 'daily':
+    case 'daily': {
       // Check if date is N days after start
       const daysDiff = Math.floor((date - startDate) / (1000 * 60 * 60 * 24))
       return daysDiff % interval === 0
+    }
 
-    case 'weekly':
+    case 'weekly': {
       // Check if day of week matches
       if (!days_of_week || days_of_week.length === 0) {
         // If no days specified, use start date's day of week
@@ -95,8 +96,9 @@ function matchesRecurrencePattern(date, rule, startDate) {
       // Check if it's the right week interval
       const weeksDiff = Math.floor((date - startDate) / (1000 * 60 * 60 * 24 * 7))
       return weeksDiff % interval === 0
+    }
 
-    case 'monthly':
+    case 'monthly': {
       // Check if same day of month
       if (date.getDate() !== startDate.getDate()) return false
 
@@ -105,6 +107,7 @@ function matchesRecurrencePattern(date, rule, startDate) {
         (date.getFullYear() - startDate.getFullYear()) * 12 + 
         (date.getMonth() - startDate.getMonth())
       return monthsDiff % interval === 0
+    }
 
     default:
       return false

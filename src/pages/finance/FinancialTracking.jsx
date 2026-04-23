@@ -10,12 +10,24 @@ import TransactionForm from '../../components/transactions/TransactionForm'
 import CategoryList from '../../components/transactions/CategoryList'
 import CategoryForm from '../../components/transactions/CategoryForm'
 import BudgetForm from '../../components/budgets/BudgetForm' 
+import BudgetSummaryModal from '../../components/budgets/BudgetSummaryModal'
 import Modal from '../../components/common/Modal'
 import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
-import { formatCurrency, formatDate, formatNumber } from '../../utils'
+import { formatCurrency, formatDate } from '../../utils'
 import { getBudgetPeriodRange } from '../../utils/budgetPeriod'
+
+const getCurrentMonthRange = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const date_from = firstDay.toISOString().split('T')[0]
+  const lastDay = new Date(year, month + 1, 0)
+  const date_to = lastDay.toISOString().split('T')[0]
+  return { date_from, date_to }
+}
 
 export default function FinancialTracking() {
   const [activeTab, setActiveTab] = useState('transactions')
@@ -24,12 +36,15 @@ export default function FinancialTracking() {
   const { notifyBudgetExceeded, notifyBudgetWarning } = useNotifications()
   
   // Filters state
-  const [filters, setFilters] = useState({
-    wallet_id: '',
-    type: '',
-    category_ids: [],
-    date_from: '',
-    date_to: ''
+  const [filters, setFilters] = useState(() => {
+    const { date_from, date_to } = getCurrentMonthRange()
+    return {
+      wallet_id: '',
+      type: '',
+      category_ids: [],
+      date_from,
+      date_to
+    }
   })
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
@@ -56,12 +71,9 @@ export default function FinancialTracking() {
 
   const {
     budgets,
-    loading: budgetsLoading,
-    error: budgetsError,
     createBudget,
     updateBudget,
     deleteBudget,
-    refetch: refetchBudgets
   } = useBudgets()
   
   // ✅ Fetch all categories for filter dropdown
@@ -106,8 +118,7 @@ export default function FinancialTracking() {
   const [editingBudget, setEditingBudget] = useState(null)
   const [submittingBudget, setSubmittingBudget] = useState(false)
   const [budgetCategoryPreset, setBudgetCategoryPreset] = useState(null)
-
-  const [breakdownView, setBreakdownView] = useState('month')
+  const [showBudgetSummary, setShowBudgetSummary] = useState(false)
 
   // Filter handlers
   const handleFilterChange = (e) => {
@@ -128,12 +139,13 @@ export default function FinancialTracking() {
   }
 
   const handleClearFilters = () => {
+    const { date_from, date_to } = getCurrentMonthRange()
     setFilters({
       wallet_id: '',
       type: '',
       category_ids: [],
-      date_from: '',
-      date_to: ''
+      date_from,
+      date_to
     })
     setCategoryDropdownOpen(false)
   }
@@ -337,11 +349,6 @@ const filteredStats = useMemo(() => {
     }
   }
 
- const handleCreateBudget = () => {
-    setEditingBudget(null)
-    setShowBudgetForm(true)
-  }
-
   const handleEditBudget = (budget) => {
     setEditingBudget(budget)
     setShowBudgetForm(true)
@@ -392,7 +399,7 @@ const filteredStats = useMemo(() => {
 
   // ✅ SAFE DEFAULTS - Ensure arrays are never undefined
   const safeWallets = Array.isArray(wallets) ? wallets : []
-  const safeAllCategories = Array.isArray(allCategories) ? allCategories : []
+  const safeAllCategories = useMemo(() => Array.isArray(allCategories) ? allCategories : [], [allCategories])
   const safeTransactions = Array.isArray(transactions) ? transactions : []
   const safeCategories = Array.isArray(categories) ? categories : []
   const selectedCategoryIds = filters.category_ids || []
@@ -818,12 +825,25 @@ const filteredStats = useMemo(() => {
               </button>
             </div>
 
-            <button onClick={handleCreateCategory} className="btn btn-primary">
-              <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Thêm danh mục
-            </button>
+            <div className="flex gap-2">
+              {budgets.length > 0 && (
+                <button 
+                  onClick={() => setShowBudgetSummary(true)} 
+                  className="btn btn-secondary"
+                >
+                  <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Tổng hợp
+                </button>
+              )}
+              <button onClick={handleCreateCategory} className="btn btn-primary">
+                <svg className="w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Thêm danh mục
+              </button>
+            </div>
           </div>
 
           <CategoryList
@@ -864,6 +884,13 @@ const filteredStats = useMemo(() => {
           loading={submittingBudget}
         />
       </Modal>
+
+      {/* Budget Summary Modal */}
+      <BudgetSummaryModal
+        budgets={budgets}
+        isOpen={showBudgetSummary}
+        onClose={() => setShowBudgetSummary(false)}
+      />
     </div>
   )
 }

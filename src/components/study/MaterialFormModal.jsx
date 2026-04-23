@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import RichTextEditor from './RichTextEditor'
 
 const CATEGORIES = [
@@ -11,35 +11,23 @@ const CATEGORIES = [
 export default function MaterialFormModal({ isOpen, onClose, onSave, onUploadImage, material }) {
   const isEditing = !!material
 
-  const [form, setForm] = useState({
-    title: '',
-    category: 'general',
-    content: '',
-    tags: [],
-    images: [],
+  const [form, setForm] = useState(() => {
+    if (material) {
+      return {
+        title: material.title || '',
+        category: material.category || 'general',
+        content: material.content || '',
+        tags: material.tags || [],
+        images: material.images || [],
+      }
+    }
+    return { title: '', category: 'general', content: '', tags: [], images: [] }
   })
   const [tagInput, setTagInput] = useState('')
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
-
-  // Sync form when editing an existing material
-  useEffect(() => {
-    if (material) {
-      setForm({
-        title: material.title || '',
-        category: material.category || 'general',
-        content: material.content || '',
-        tags: material.tags || [],
-        images: material.images || [],
-      })
-    } else {
-      setForm({ title: '', category: 'general', content: '', tags: [], images: [] })
-    }
-    setTagInput('')
-    setError(null)
-  }, [material, isOpen])
 
   if (!isOpen) return null
 

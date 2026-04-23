@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { recalculateAllWalletBalances } from '../../utils/walletBalance'
 
 export function useWallets() {
   const [wallets, setWallets] = useState([])
@@ -127,8 +128,6 @@ export function useWallets() {
 
   const resetWalletBalance = async (walletId, newBalance) => {
   try {
-    console.log('🔄 Resetting wallet balance:', { walletId, newBalance })
-
     // 1. Get wallet info
     const { data: wallet, error: fetchError } = await supabase
       .from('wallets')
@@ -141,12 +140,6 @@ export function useWallets() {
     const currentBalance = parseFloat(wallet.current_amount || 0)
     const parsedNewBalance = parseFloat(newBalance)
     const difference = parsedNewBalance - currentBalance
-
-    console.log('💰 Balance change:', {
-      current: currentBalance,
-      new: parsedNewBalance,
-      difference: difference
-    })
 
     if (difference === 0) {
       return { success: false, error: 'Số dư mới giống số dư hiện tại' }
@@ -168,17 +161,14 @@ export function useWallets() {
       throw new Error(`Không tìm thấy danh mục ${transactionType}. Vui lòng tạo ít nhất 1 danh mục trước.`)
     }
 
-    console.log(`📂 Using ${transactionType} category:`, category.id)
-
     // 3. Create Balance Correction transaction
-    // ✅ CRITICAL: Let the database trigger calculate the balance
-    // DO NOT manually update current_amount
-    const { data: transaction, error: transactionError } = await supabase
+    const { error: transactionError } = await supabase
       .from('financial_transactions')
       .insert({
         wallet_id: walletId,
         category_id: category.id,
         type: transactionType,
+        currency: wallet.currency,
         amount: isIncrease 
           ? Math.abs(difference)   // Income: positive
           : -Math.abs(difference), // Expense: NEGATIVE
@@ -189,29 +179,20 @@ export function useWallets() {
       .select()
       .single()
 
-    if (transactionError) {
-      console.error('❌ Transaction error:', transactionError)
-      throw transactionError
-    }
+    if (transactionError) throw transactionError
 
-    console.log('✅ Balance correction transaction created:', transaction.id)
-
-    // 4. Recalculate wallet balances (triggers will auto-update)
-    const { error: recalcError } = await supabase.rpc('recalculate_all_wallet_balances')
-    
-    if (recalcError) {
-      console.error('⚠️ Recalculation warning:', recalcError)
-    }
+    // 4. Recalculate wallet balances
+    await recalculateAllWalletBalances()
 
     // 5. Refetch wallets
     await fetchWallets()
     
     return { 
       success: true, 
-      message: `✅ Đã điều chỉnh số dư ${isIncrease ? '+' : ''}${difference.toLocaleString()} ${wallet.currency}`
+      message: `Đã điều chỉnh số dư ${isIncrease ? '+' : ''}${difference.toLocaleString()} ${wallet.currency}`
     }
   } catch (err) {
-    console.error('❌ Error resetting wallet balance:', err)
+    console.error('Error resetting wallet balance:', err)
     return { success: false, error: err.message }
   }
 }
@@ -253,15 +234,27 @@ export function useWallets() {
     }
   }
 
+  const recalculateBalances = async () => {
+    try {
+      const updatedCount = await recalculateAllWalletBalances()
+      await fetchWallets()
+      return { success: true, updatedCount }
+    } catch (err) {
+      console.error('Error recalculating balances:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
   return {
     wallets,
     loading,
     error,
     createWallet,
     updateWallet,
-    resetWalletBalance, // ✅ Export this
+    resetWalletBalance,
     deleteWallet,
     getMonthlyReport,
+    recalculateBalances,
     refetch: fetchWallets
   }
 }

@@ -3,7 +3,7 @@ import { useWallets } from '../hooks/finance/useWallets'
 import { supabase } from '../lib/supabase'
 import FinanceTab from '../components/dashboard/FinanceTab'
 import Loading from '../components/common/Loading'
-import { formatDateTime, getRelativeTime } from '../utils'
+import { getRelativeTime } from '../utils'
 
 export default function Dashboard() {
   // ✅ State cho active tab
@@ -17,7 +17,7 @@ export default function Dashboard() {
   const [updatingRates, setUpdatingRates] = useState(false)
   const [updateResult, setUpdateResult] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
-  const [tradePLConverted, setTradePLConverted] = useState(0)
+  const [exchangeRates, setExchangeRates] = useState({})
 
   useEffect(() => {
     fetchData()
@@ -25,25 +25,43 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const { data: txnData } = await supabase
+      // Fetch transactions without FK joins (works even without FK constraints)
+      const { data: txnData, error: txnError } = await supabase
         .from('financial_transactions')
-        .select(`
-          *,
-          categories (
-            id,
-            name,
-            icon,
-            type
-          ),
-          payback_goal:payback_goals!payback_goal_id (
-            id,
-            name
-          )
-        `)
+        .select('*')
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
 
-      setTransactions(txnData || [])
+      if (txnError) {
+        console.error('Transaction query error:', txnError)
+      }
+
+      const txns = txnData || []
+
+      // Fetch related data in parallel
+      const categoryIds = [...new Set(txns.map(t => t.category_id).filter(Boolean))]
+      const goalIds = [...new Set(txns.map(t => t.payback_goal_id).filter(Boolean))]
+
+      const [categoriesRes, goalsRes] = await Promise.all([
+        categoryIds.length > 0
+          ? supabase.from('categories').select('id, name, icon, type').in('id', categoryIds)
+          : { data: [] },
+        goalIds.length > 0
+          ? supabase.from('payback_goals').select('id, name').in('id', goalIds)
+          : { data: [] },
+      ])
+
+      const categoryMap = Object.fromEntries((categoriesRes.data || []).map(c => [c.id, c]))
+      const goalMap = Object.fromEntries((goalsRes.data || []).map(g => [g.id, g]))
+
+      // Merge related data onto transactions
+      const merged = txns.map(txn => ({
+        ...txn,
+        categories: txn.category_id ? categoryMap[txn.category_id] || null : null,
+        payback_goal: txn.payback_goal_id ? goalMap[txn.payback_goal_id] || null : null,
+      }))
+
+      setTransactions(merged)
 
       const { data: tradeData } = await supabase
         .from('trades')
@@ -62,8 +80,23 @@ export default function Dashboard() {
       if (rateData) {
         setLastUpdated(rateData.updated_at)
       } else {
-              setLastUpdated(null)  // Table rỗng, chưa có data
-            }
+        setLastUpdated(null)
+      }
+
+      // Fetch all VND exchange rates for currency conversion
+      const { data: allRates } = await supabase
+        .from('exchange_rates')
+        .select('from_currency, rate')
+        .eq('to_currency', 'VND')
+
+      const ratesMap = {}
+      ;(allRates || []).forEach(r => {
+        ratesMap[r.from_currency.toUpperCase()] = parseFloat(r.rate)
+      })
+      // Cross-populate USDT↔USD
+      if (ratesMap['USD'] && !ratesMap['USDT']) ratesMap['USDT'] = ratesMap['USD']
+      if (ratesMap['USDT'] && !ratesMap['USD']) ratesMap['USD'] = ratesMap['USDT']
+      setExchangeRates(ratesMap)
 
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -119,58 +152,6 @@ export default function Dashboard() {
       setUpdatingRates(false)
     }
   }
-  // Convert trade P&L to VND
-useEffect(() => {
-  const convertTradePL = async () => {
-    const now = new Date()
-    const currentMonth = now.getMonth()
-    const currentYear = now.getFullYear()
-
-    const monthlyClosedTrades = trades.filter(trade => {
-      if (trade.status !== 'closed' || !trade.updated_at) return false
-      const tradeDate = new Date(trade.updated_at)
-      return tradeDate.getMonth() === currentMonth && tradeDate.getFullYear() === currentYear
-    })
-
-    if (monthlyClosedTrades.length === 0) {
-      setTradePLConverted(0)
-      return
-    }
-
-    // ✅ FIX: Query tất cả rates một lần duy nhất
-    const { data: allRates } = await supabase
-      .from('exchange_rates')
-      .select('from_currency, to_currency, rate')
-      .eq('to_currency', 'VND')
-
-    // Tạo Map để lookup nhanh
-    const ratesMap = new Map()
-    allRates?.forEach(r => {
-      ratesMap.set(r.from_currency, parseFloat(r.rate))
-    })
-
-    // Tính tổng với cached rates
-    let totalVND = 0
-
-    for (const trade of monthlyClosedTrades) {
-      const pl = trade.profit_loss || 0
-      const currency = (trade.exit_currency || 'USDT').toUpperCase()
-
-      if (currency === 'VND') {
-        totalVND += pl
-        continue
-      }
-
-      // Lấy rate từ Map (nhanh hơn nhiều)
-      const rate = ratesMap.get(currency) || (currency === 'USD' || currency === 'USDT' ? 24000 : 1)
-      totalVND += pl * rate
-    }
-
-    setTradePLConverted(totalVND)
-  }
-
-    convertTradePL()
-  }, [trades])
 
   if (loading || walletsLoading) {
     return (
@@ -214,10 +195,9 @@ useEffect(() => {
             wallets={wallets}
             transactions={transactions}
             trades={trades}
-            tradePLConverted={tradePLConverted}
+            exchangeRates={exchangeRates}
             updatingRates={updatingRates}
             updateResult={updateResult}
-            lastUpdated={lastUpdated}
             formatLastUpdated={formatLastUpdated}
             handleManualUpdate={handleManualUpdate}
           />

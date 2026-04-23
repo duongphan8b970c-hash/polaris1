@@ -53,7 +53,7 @@ export function getCompletionByDate(tasks, startDate, endDate) {
   tasks.forEach(task => {
     if (task.completed_date) {
       const dateKey = new Date(task.completed_date).toISOString().split('T')[0]
-      if (dateMap.hasOwnProperty(dateKey)) {
+      if (Object.hasOwn(dateMap, dateKey)) {
         dateMap[dateKey]++
       }
     }

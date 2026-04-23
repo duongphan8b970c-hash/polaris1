@@ -26,41 +26,25 @@ function ChevronIcon({ expanded }) {
   )
 }
 
-// Duration cell: shows start_date → target_date range
-function DurationCell({ goal, timeRemaining }) {
+// Duration cell: shows start_date → target_date range (dates only)
+function DurationCell({ goal }) {
   if (!goal.start_date && !goal.target_date) {
     return <span className="text-gray-400">—</span>
   }
   return (
-    <div className="flex flex-col gap-0.5 text-xs">
-      <div className="flex items-center gap-1 text-gray-600">
-        {goal.start_date ? (
-          <span>{new Date(goal.start_date).toLocaleDateString('vi-VN')}</span>
-        ) : (
-          <span className="text-gray-400">?</span>
-        )}
-        <span className="text-gray-400">→</span>
-        {goal.target_date ? (
-          <span className={`font-medium ${
-            timeRemaining?.type === 'overdue' ? 'text-red-600' :
-            timeRemaining?.type === 'today'   ? 'text-yellow-600' :
-            timeRemaining?.type === 'soon'    ? 'text-orange-600' :
-            'text-gray-700'
-          }`}>
-            {new Date(goal.target_date).toLocaleDateString('vi-VN')}
-          </span>
-        ) : (
-          <span className="text-gray-400">?</span>
-        )}
-      </div>
-      {timeRemaining?.type === 'overdue' && (
-        <span className="text-red-500">(quá hạn {timeRemaining.days} ngày)</span>
+    <div className="flex items-center gap-1 text-xs text-gray-600">
+      {goal.start_date ? (
+        <span>{new Date(goal.start_date).toLocaleDateString('vi-VN')}</span>
+      ) : (
+        <span className="text-gray-400">?</span>
       )}
-      {timeRemaining?.type === 'today' && (
-        <span className="text-yellow-600">(hôm nay)</span>
-      )}
-      {timeRemaining?.type === 'soon' && (
-        <span className="text-orange-500">(còn {timeRemaining.days} ngày)</span>
+      <span className="text-gray-400">→</span>
+      {goal.target_date ? (
+        <span className="font-medium text-gray-700">
+          {new Date(goal.target_date).toLocaleDateString('vi-VN')}
+        </span>
+      ) : (
+        <span className="text-gray-400">?</span>
       )}
     </div>
   )
@@ -77,7 +61,7 @@ function GoalInfoStrip({ goal }) {
 
   return (
     <tr>
-      <td colSpan={6} className="p-0">
+      <td colSpan={7} className="p-0">
         <div className="bg-blue-50/60 border-b border-blue-100 px-12 py-2 flex flex-wrap items-center gap-x-4 gap-y-1">
           {goal.description && (
             <span className="text-xs text-gray-600 italic">{goal.description}</span>
@@ -141,7 +125,7 @@ function TaskLoader({ goal, depth }) {
       <>
         <GoalInfoStrip goal={goal} />
         <tr>
-          <td colSpan={6} className="py-2">
+          <td colSpan={7} className="py-2">
             <div className="flex items-center gap-1.5 text-xs text-gray-400 pl-12">
               <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
               Đang tải tasks...
@@ -157,7 +141,7 @@ function TaskLoader({ goal, depth }) {
       <GoalInfoStrip goal={goal} />
       {tasks.length === 0 ? (
         <tr>
-          <td colSpan={6} className="py-1">
+          <td colSpan={7} className="py-1">
             <span className="text-xs text-gray-400 italic pl-16">
               Chưa có task nào
             </span>
@@ -187,7 +171,7 @@ function TaskLoader({ goal, depth }) {
 
       {/* Add task button row */}
       <tr>
-        <td colSpan={6} className="py-1 border-b border-gray-100">
+        <td colSpan={7} className="py-1 border-b border-gray-100">
           <button
             onClick={handleCreate}
             className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded px-2 py-1 transition-colors"
@@ -235,19 +219,15 @@ export default function TableGoalRow({
   const progress = parseFloat(goal.progress) || 0
   const priority = PRIORITY_CONFIG[goal.priority]
 
-  const getTimeRemaining = () => {
+  const getDaysRemaining = () => {
     if (!goal.target_date) return null
-    if (isCompleted) return null
     const diffDays = Math.ceil(
       (new Date(goal.target_date) - new Date()) / (1000 * 60 * 60 * 24)
     )
-    if (diffDays < 0) return { type: 'overdue', days: Math.abs(diffDays) }
-    if (diffDays === 0) return { type: 'today' }
-    if (diffDays <= 7) return { type: 'soon', days: diffDays }
-    return { type: 'normal', days: diffDays }
+    return diffDays
   }
 
-  const timeRemaining = getTimeRemaining()
+  const daysRemaining = getDaysRemaining()
 
   const handleRowClick = () => setExpanded((v) => !v)
   const handleExpandClick = (e) => { e.stopPropagation(); setExpanded((v) => !v) }
@@ -339,7 +319,30 @@ export default function TableGoalRow({
 
         {/* Duration: start_date → target_date */}
         <td className="px-3 py-3 whitespace-nowrap">
-          <DurationCell goal={goal} timeRemaining={timeRemaining} />
+          <DurationCell goal={goal} />
+        </td>
+
+        {/* Countdown: days remaining for ALL goals */}
+        <td className="px-3 py-3 whitespace-nowrap text-center">
+          {daysRemaining === null ? (
+            <span className="text-gray-400 text-xs">—</span>
+          ) : isCompleted ? (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
+              ✓ Xong
+            </span>
+          ) : daysRemaining < 0 ? (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 rounded-full text-xs font-medium">
+              Quá {Math.abs(daysRemaining)} ngày
+            </span>
+          ) : daysRemaining === 0 ? (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-600 rounded-full text-xs font-medium">
+              Hôm nay
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+              {daysRemaining} ngày
+            </span>
+          )}
         </td>
 
         {/* Actions - ALWAYS VISIBLE */}

@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react'
-
 export default function NotificationToast({ notifications = [], onDismiss }) {
   if (!notifications.length) return null
 

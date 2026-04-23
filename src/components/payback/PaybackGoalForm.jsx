@@ -1,22 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { usePaybackPriorities } from '../../hooks/finance/usePaybackPriorities' 
 
 export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, onCancel, loading }) {
   const { priorities } = usePaybackPriorities()
   const isPlan = goalType === 'plan'
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    target_amount: '',
-    initial_amount: '',
-    start_date: new Date().toISOString().split('T')[0],
-    deadline: '',
-    priority_id: ''
-  })
-
-  useEffect(() => {
+  const [formData, setFormData] = useState(() => {
     if (goal) {
-      setFormData({
+      return {
         name: goal.name,
         description: goal.description || '',
         target_amount: goal.target_amount,
@@ -24,9 +14,18 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
         start_date: goal.start_date,
         deadline: goal.deadline,
         priority_id: goal.priority_id || ''
-      })
+      }
     }
-  }, [goal])
+    return {
+      name: '',
+      description: '',
+      target_amount: '',
+      initial_amount: '',
+      start_date: new Date().toISOString().split('T')[0],
+      deadline: '',
+      priority_id: ''
+    }
+  })
 
   const handleChange = (e) => {
     const { name, value } = e.target

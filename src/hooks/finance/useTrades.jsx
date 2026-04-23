@@ -88,16 +88,52 @@ export function useTrades(filters = {}) {
     const isProfit = profitLoss > 0
     const transactionType = isProfit ? 'income' : 'expense'
 
-    const { data: category, error: categoryError } = await supabase
+    // Try to find "Trade" category first, then fall back to first matching type
+    let category = null
+    const { data: tradeCategory } = await supabase
       .from('categories')
       .select('id')
+      .eq('name', 'Trade')
       .eq('type', transactionType)
       .limit(1)
       .single()
 
-    if (categoryError || !category) {
-      console.warn(`No ${transactionType} category found, skipping wallet transaction`)
-      return
+    if (tradeCategory) {
+      category = tradeCategory
+    } else {
+      const { data: fallbackCategory, error: categoryError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('type', transactionType)
+        .limit(1)
+        .single()
+
+      if (categoryError || !fallbackCategory) {
+        console.warn(`No ${transactionType} category found, skipping wallet transaction`)
+        return
+      }
+      category = fallbackCategory
+    }
+
+    // Convert profit_loss to VND
+    const currency = (trade.exit_currency || trade.wallet?.currency || 'USDT').toUpperCase()
+    let amountVND = Math.abs(profitLoss)
+
+    if (currency !== 'VND') {
+      // Try to get exchange rate from DB
+      const { data: rateData } = await supabase
+        .from('exchange_rates')
+        .select('rate')
+        .eq('from_currency', currency)
+        .eq('to_currency', 'VND')
+        .limit(1)
+        .single()
+
+      const rate = rateData?.rate
+        ? parseFloat(rateData.rate)
+        : (currency === 'USD' || currency === 'USDT' ? 25000 : 1)
+
+      amountVND = Math.abs(profitLoss) * rate
     }
 
     const { error: txError } = await supabase
@@ -106,8 +142,8 @@ export function useTrades(filters = {}) {
         wallet_id: trade.wallet_id,
         category_id: category.id,
         type: transactionType,
-        amount: isProfit ? Math.abs(profitLoss) : -Math.abs(profitLoss),
-        description: `Trade ${trade.symbol} - ${isProfit ? 'Win' : 'Loss'} (${trade.leverage || 1}x)`,
+        amount: isProfit ? amountVND : -amountVND,
+        description: `Trade ${trade.symbol} - ${isProfit ? 'Win' : 'Loss'} (${trade.leverage || 1}x) [${Math.abs(profitLoss)} ${currency}]`,
         date: new Date().toISOString().split('T')[0],
         time: new Date().toTimeString().slice(0, 8),
       })

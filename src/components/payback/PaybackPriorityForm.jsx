@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 const ICON_OPTIONS = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪', '📌', '⭐', '🔥', '⚡', '💰', '💳']
 
@@ -13,23 +13,22 @@ const COLOR_PRESETS = [
 ]
 
 export default function PaybackPriorityForm({ priority, onSubmit, onCancel, loading }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    color: '#6B7280',
-    icon: '📌',
-    sort_order: 999
-  })
-
-  useEffect(() => {
+  const [formData, setFormData] = useState(() => {
     if (priority) {
-      setFormData({
+      return {
         name: priority.name,
         color: priority.color || '#6B7280',
         icon: priority.icon || '📌',
         sort_order: priority.sort_order || 999
-      })
+      }
     }
-  }, [priority])
+    return {
+      name: '',
+      color: '#6B7280',
+      icon: '📌',
+      sort_order: 999
+    }
+  })
 
   const handleChange = (e) => {
     const { name, value } = e.target

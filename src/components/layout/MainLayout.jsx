@@ -7,7 +7,11 @@ import { TradeDarkModeProvider, useTradeDarkMode } from '../../hooks/useTradeDar
 function MainLayoutInner() {
   const location = useLocation()
   const mainContentRef = useRef(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('sidebarOpen')
+    if (saved !== null) return JSON.parse(saved)
+    return window.innerWidth >= 1024
+  })
   const { darkMode, setDarkMode } = useTradeDarkMode()
 
   // Auto-enable dark mode on /trades, auto-disable when leaving
@@ -18,20 +22,10 @@ function MainLayoutInner() {
     }
   }, [location.pathname, darkMode, setDarkMode])
 
-  // ✅ Initialize sidebar state on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('sidebarOpen')
-    if (saved !== null) {
-      setSidebarOpen(JSON.parse(saved))
-    } else {
-      // Default: open on desktop
-      setSidebarOpen(window.innerWidth >= 1024)
-    }
-  }, [])
-
   // ✅ Auto-close on mobile when route changes
   useEffect(() => {
     if (window.innerWidth < 1024) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSidebarOpen(false)
     }
   }, [location.pathname])

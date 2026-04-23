@@ -8,6 +8,8 @@ export default function UserProfile() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
 
+  const [uploading, setUploading] = useState(false)
+
   const [formData, setFormData] = useState({
     full_name: '',
     avatar_url: '',
@@ -76,6 +78,46 @@ export default function UserProfile() {
       ...prev,
       [e.target.name]: e.target.value
     }))
+  }
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'File quá lớn. Tối đa 2MB.' })
+      return
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Chỉ chấp nhận file ảnh.' })
+      return
+    }
+
+    try {
+      setUploading(true)
+      const { data: { user } } = await supabase.auth.getUser()
+
+      const fileExt = file.name.split('.').pop()
+      const filePath = `avatars/${user.id}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+
+      setFormData(prev => ({ ...prev, avatar_url: publicUrl }))
+      setMessage({ type: 'success', text: 'Tải ảnh lên thành công!' })
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Lỗi tải ảnh: ' + error.message })
+    } finally {
+      setUploading(false)
+    }
   }
 
   if (loading) return <Loading message="Loading profile..." />
