@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import RichTextEditor from './RichTextEditor'
 
 const CATEGORIES = [
@@ -9,6 +9,7 @@ const CATEGORIES = [
 ]
 
 export default function MaterialFormModal({ isOpen, onClose, onSave, onUploadImage, material }) {
+  const EMPTY_FORM = { title: '', category: 'general', content: '', tags: [], images: [] }
   const isEditing = !!material
 
   const [form, setForm] = useState(() => {
