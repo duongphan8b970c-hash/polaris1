@@ -30,6 +30,26 @@ export default function MaterialFormModal({ isOpen, onClose, onSave, onUploadIma
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
 
+  // Re-sync form state whenever the modal opens or the target material changes.
+  // The useState initializer above only runs on first mount, which would otherwise
+  // leave the form empty when reopened to edit an existing material.
+  useEffect(() => {
+    if (!isOpen) return
+    if (material) {
+      setForm({
+        title: material.title || '',
+        category: material.category || 'general',
+        content: material.content || '',
+        tags: material.tags || [],
+        images: material.images || [],
+      })
+    } else {
+      setForm(EMPTY_FORM)
+    }
+    setTagInput('')
+    setError(null)
+  }, [isOpen, material])
+
   if (!isOpen) return null
 
   const handleAddTag = () => {
