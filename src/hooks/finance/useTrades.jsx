@@ -115,25 +115,23 @@ export function useTrades(filters = {}) {
       category = fallbackCategory
     }
 
-    // Convert profit_loss to VND
-    const currency = (trade.exit_currency || trade.wallet?.currency || 'USDT').toUpperCase()
-    let amountVND = Math.abs(profitLoss)
+    // Convert profit_loss to the wallet's currency (not always VND)
+    const tradeCurrency = (trade.exit_currency || trade.wallet?.currency || 'USDT').toUpperCase()
+    const walletCurrency = (trade.wallet?.currency || tradeCurrency).toUpperCase()
+    let amountInWalletCurrency = Math.abs(profitLoss)
 
-    if (currency !== 'VND') {
+    if (tradeCurrency !== walletCurrency) {
       // Try to get exchange rate from DB
       const { data: rateData } = await supabase
         .from('exchange_rates')
         .select('rate')
-        .eq('from_currency', currency)
-        .eq('to_currency', 'VND')
+        .eq('from_currency', tradeCurrency)
+        .eq('to_currency', walletCurrency)
         .limit(1)
         .single()
 
-      const rate = rateData?.rate
-        ? parseFloat(rateData.rate)
-        : (currency === 'USD' || currency === 'USDT' ? 25000 : 1)
-
-      amountVND = Math.abs(profitLoss) * rate
+      const rate = rateData?.rate ? parseFloat(rateData.rate) : 1
+      amountInWalletCurrency = Math.abs(profitLoss) * rate
     }
 
     const { error: txError } = await supabase
@@ -142,8 +140,9 @@ export function useTrades(filters = {}) {
         wallet_id: trade.wallet_id,
         category_id: category.id,
         type: transactionType,
-        amount: isProfit ? amountVND : -amountVND,
-        description: `Trade ${trade.symbol} - ${isProfit ? 'Win' : 'Loss'} (${trade.leverage || 1}x) [${Math.abs(profitLoss)} ${currency}]`,
+        amount: isProfit ? amountInWalletCurrency : -amountInWalletCurrency,
+        currency: walletCurrency,
+        description: `Trade ${trade.symbol} - ${isProfit ? 'Win' : 'Loss'} (${trade.leverage || 1}x) [${Math.abs(profitLoss)} ${tradeCurrency}]`,
         date: new Date().toISOString().split('T')[0],
         time: new Date().toTimeString().slice(0, 8),
       })
