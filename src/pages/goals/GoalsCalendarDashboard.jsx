@@ -99,11 +99,11 @@ export default function GoalsCalendarDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
             🎯 Goals Management
           </h1>
           <p className="text-gray-600 mt-1">
@@ -163,7 +163,7 @@ export default function GoalsCalendarDashboard() {
 
       {/* ✅ NEW: Tab Navigation */}
       <div className="border-b border-gray-200">
-        <nav className="flex gap-8">
+        <nav className="flex gap-5">
           <button
             onClick={() => setActiveTab('calendar')}
             className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${
@@ -240,7 +240,7 @@ export default function GoalsCalendarDashboard() {
           ) : analytics ? (
             <>
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatsCard
                   icon="📋"
                   label="Tổng số tasks"
@@ -272,7 +272,7 @@ export default function GoalsCalendarDashboard() {
               </div>
 
               {/* Secondary Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <StatsCard
                   icon="🎯"
                   label="Goals đang thực hiện"
@@ -297,10 +297,10 @@ export default function GoalsCalendarDashboard() {
               </div>
 
               {/* Charts Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Priority Distribution */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
                     📊 Phân bố theo độ ưu tiên
                   </h3>
                   <div className="space-y-3">
@@ -334,8 +334,8 @@ export default function GoalsCalendarDashboard() {
                 </div>
 
                 {/* Status Distribution */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
                     📈 Trạng thái công việc
                   </h3>
                   <div className="space-y-3">

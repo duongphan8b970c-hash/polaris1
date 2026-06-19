@@ -17,11 +17,11 @@ export default function AnalyticsDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
             📊 Analytics & Insights
           </h1>
           <p className="text-gray-600 mt-1">
@@ -53,7 +53,7 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Tasks */}
         <StatsCard
           icon="📋"
@@ -92,7 +92,7 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Secondary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Active Goals */}
         <StatsCard
           icon="🎯"
@@ -122,10 +122,10 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Charts Section - Will add in next step */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Priority Distribution */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
             📊 Phân bố theo độ ưu tiên
           </h3>
           <div className="space-y-3">
@@ -159,8 +159,8 @@ export default function AnalyticsDashboard() {
         </div>
 
         {/* Status Distribution */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
             📈 Trạng thái công việc
           </h3>
           <div className="space-y-3">
@@ -197,8 +197,8 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Completion Trend - Placeholder for chart */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
           📈 Xu hướng hoàn thành công việc
         </h3>
         <div className="h-64 flex items-center justify-center text-gray-500">

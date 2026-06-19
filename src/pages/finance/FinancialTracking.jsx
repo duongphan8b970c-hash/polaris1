@@ -456,9 +456,9 @@ const filteredStats = useMemo(() => {
       />
 
       {/* Tabs */}
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
+          <nav className="-mb-px flex space-x-5">
             <button
               onClick={() => setActiveTab('transactions')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
@@ -493,14 +493,14 @@ const filteredStats = useMemo(() => {
       {activeTab === 'transactions' && (
         <>
           {/* Filters + Add Button */}
-          <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 mb-6">
+          <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 mb-4">
             
             {/* Filter Header Row */}
             <div className="flex items-stretch">
               {/* Left: Filter Toggle (clickable) */}
               <button
                 onClick={() => setFiltersOpen(!filtersOpen)}
-                className="flex-1 px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
+                className="flex-1 px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
               >
                 <div className="flex items-center gap-3">
                   <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -546,7 +546,7 @@ const filteredStats = useMemo(() => {
               </button>
 
               {/* Right: Add Button (separate, not nested in toggle button) */}
-              <div className="flex items-center px-6 py-4 border-l border-gray-200 bg-gray-50">
+              <div className="flex items-center px-4 py-4 border-l border-gray-200 bg-gray-50">
                 <button 
                   onClick={handleCreateTransaction}
                   type="button"
@@ -562,8 +562,8 @@ const filteredStats = useMemo(() => {
 
             {/* Filter Content - Collapsible */}
             {filtersOpen && (
-              <div className="px-6 pb-6 border-t border-gray-200 animate-slideIn overflow-visible">
-                
+              <div className="px-4 pb-4 border-t border-gray-200 animate-slideIn overflow-visible">
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 overflow-visible">
                   
                   {/* Wallet Filter */}
@@ -706,7 +706,7 @@ const filteredStats = useMemo(() => {
             )}
           </div>
             {/* ✅ SUMMARY STATISTICS */}
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
       {/* Total Income */}
       <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-md">
         <div className="flex items-center justify-between mb-2">
@@ -801,7 +801,7 @@ const filteredStats = useMemo(() => {
       {/* Categories Tab Content */}
       {activeTab === 'categories' && (
         <>
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between">
             <div className="flex space-x-4">
               <button
                 onClick={() => setCategoryType('expense')}

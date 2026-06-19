@@ -13,10 +13,10 @@ export default function TradePlanning() {
         subtitle="Theo dõi phân tích và cập nhật tin tức thị trường để đưa ra quyết định tốt hơn"
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
         {/* Timeline — wider column */}
         <div className="xl:col-span-3">
-          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
             <TradeTimeline
               analyses={analyses}
               onAdd={addAnalysis}

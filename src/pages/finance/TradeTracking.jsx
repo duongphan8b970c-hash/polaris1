@@ -191,8 +191,8 @@ export default function TradeTracking() {
   const dm = {
     text: darkMode ? 'text-gray-100' : 'text-gray-900',
     subtext: darkMode ? 'text-gray-400' : 'text-gray-500',
-    card: darkMode ? 'bg-[#111827]/80 backdrop-blur-sm border border-[#1e293b] rounded-xl shadow-md p-6' : 'card',
-    statCard: darkMode ? 'bg-[#111827]/80 backdrop-blur-sm border-l-4 rounded-xl shadow-md p-6' : 'stat-card',
+    card: darkMode ? 'bg-[#111827]/80 backdrop-blur-sm border border-[#1e293b] rounded-xl shadow-md p-4' : 'card',
+    statCard: darkMode ? 'bg-[#111827]/80 backdrop-blur-sm border-l-4 rounded-xl shadow-md p-4' : 'stat-card',
     input: darkMode
       ? 'bg-[#0f172a] border-[#334155] text-gray-100 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
       : 'input',
@@ -220,7 +220,7 @@ export default function TradeTracking() {
             </button>
             <button
               onClick={() => setShowCalculator(true)}
-              className={`text-sm font-bold px-6 py-3 rounded-xl transition-all shadow-sm hover:shadow-md ${
+              className={`text-sm font-bold px-4 py-2 rounded-xl transition-all shadow-sm hover:shadow-md ${
                 darkMode
                   ? 'bg-[#1e293b] border border-[#334155] text-gray-200 hover:bg-[#334155]'
                   : 'bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -268,7 +268,7 @@ export default function TradeTracking() {
           {' '}({(isAllTime ? trades : filteredTrades).length} trades)
         </p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {/* Open Trades */}
         <div className={`${dm.statCard} border-blue-500`}>
           <p className={`text-sm ${dm.subtext}`}>Đang mở {isAllTime && <span className="text-purple-500 text-xs">(All-Time)</span>}</p>
@@ -310,7 +310,7 @@ export default function TradeTracking() {
 
       {/* Best / Worst Trade */}
       {(stats.bestTrade || stats.worstTrade) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           {stats.bestTrade && (
             <div className={`${dm.statCard} border-green-400`}>
               <p className={`text-sm ${dm.subtext}`}>Best Trade</p>
@@ -340,8 +340,8 @@ export default function TradeTracking() {
 
       {/* Live Open Trades Section */}
       {filteredTrades.filter(t => t.status === 'open').length > 0 && (
-        <div className="mb-6">
-          <h2 className={`text-xl font-bold ${dm.text} mb-4 flex items-center gap-2`}>
+        <div className="mb-4">
+          <h2 className={`text-base sm:text-lg font-bold ${dm.text} mb-4 flex items-center gap-2`}>
             📈 Open Positions - Live Tracking
             <span className={`text-sm font-normal ${dm.subtext}`}>
               ({filteredTrades.filter(t => t.status === 'open').length} active)

@@ -276,7 +276,7 @@ export default function KanjiComparator() {
   const isCompact = viewMode === VIEW_COMPACT
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <PageHeader
         title="🎌 Kanji Group & Comparator"
@@ -287,7 +287,7 @@ export default function KanjiComparator() {
       <KanjiCompareZone onAddToGroup={handleCompareAddToGroup} />
 
       {/* ── Add Kanji to Group Form ── */}
-      <div className="card p-6">
+      <div className="card p-4">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xl">📁</span>
           <h2 className="text-base font-bold text-gray-900">Thêm Kanji vào nhóm</h2>
@@ -299,13 +299,13 @@ export default function KanjiComparator() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Paste Kanji from Jisho.org (e.g., 話, 語, 読)"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
               disabled={adding}
             />
             <button
               type="submit"
               disabled={adding || !inputValue.trim()}
-              className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {adding ? (
                 <span className="flex items-center gap-2">
@@ -417,19 +417,19 @@ export default function KanjiComparator() {
         </div>
       ) : (
         /* Grouped display: Section (Radical / Custom) → Subgroups → Cards */
-        <div className="space-y-6">
+        <div className="space-y-4">
           {Object.entries(groupedCards).map(([section, groupsInSection]) => {
             const isCustom = section === CUSTOM_GROUP_RADICAL
             const count = sectionCardCount(section)
             return (
-            <div key={section} className={`card ${isCompact ? 'p-4' : 'p-6'} border ${isCustom ? 'border-purple-200' : 'border-gray-200'}`}>
+            <div key={section} className={`card ${isCompact ? 'p-4' : 'p-4'} border ${isCustom ? 'border-purple-200' : 'border-gray-200'}`}>
               {/* Section header — larger for better zoom-out readability */}
               <div className="flex items-center gap-3 mb-5">
                 <span className={isCompact ? 'text-3xl' : 'text-5xl'}>
                   {isCustom ? '🏷️' : section !== 'No Radical' ? section : '🔤'}
                 </span>
                 <div>
-                  <h2 className={`${isCompact ? 'text-lg' : 'text-2xl'} font-bold text-gray-900`}>
+                  <h2 className={`${isCompact ? 'text-lg' : 'text-lg sm:text-xl'} font-bold text-gray-900`}>
                     {isCustom ? 'Nhóm tùy chọn' : `Radical: ${section}`}
                   </h2>
                   <p className="text-sm text-gray-500">

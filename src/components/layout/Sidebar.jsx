@@ -185,7 +185,7 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
       <aside
         className={`fixed top-0 left-0 z-50 h-screen transition-all duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } w-64 ${
+        } w-60 ${
           darkMode
             ? 'bg-[#0b0e1a]/95 backdrop-blur-md border-r border-[#1e293b]'
             : 'bg-white border-r border-gray-200'
@@ -193,14 +193,14 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className={`flex items-center justify-between px-4 py-5 border-b ${
+          <div className={`flex items-center justify-between px-3 py-3 border-b ${
             darkMode ? 'border-[#1e293b]' : 'border-gray-200'
           }`}>
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white text-xl">⭐</span>
+              <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white text-base">⭐</span>
               </div>
-              <span className={`text-xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Polaris</span>
+              <span className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Polaris</span>
             </Link>
             
             <button
@@ -222,8 +222,8 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-3 py-4">
-            <ul className="space-y-1">
+          <nav className="flex-1 overflow-y-auto px-2 py-3">
+            <ul className="space-y-0.5">
               {menuSections.map((section) => (
                 <li key={section.id}>
                   {section.submenu ? (
@@ -231,7 +231,7 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
                       {/* Parent with submenu */}
                       <button
                         onClick={() => toggleMenu(section.id)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors text-sm ${
                           expandedMenu === section.id
                             ? darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-700'
                             : hasActiveChild(section)
@@ -239,7 +239,7 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
                             : darkMode ? 'text-gray-300 hover:bg-[#1e293b]' : 'text-gray-700 hover:bg-gray-100'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2.5">
                           {section.icon}
                           <span className="font-medium">{section.name}</span>
                         </div>
@@ -257,12 +257,12 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
 
                       {/* Submenu */}
                       {expandedMenu === section.id && (
-                        <ul className="mt-1 ml-4 space-y-1">
+                        <ul className="mt-0.5 ml-3 space-y-0.5">
                           {section.submenu.map((item) => (
                             <li key={item.path}>
                               <Link
                                 to={item.path}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
+                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-sm ${
                                   isActiveRoute(item.path)
                                     ? darkMode ? 'bg-blue-500/10 text-blue-400 font-medium' : 'bg-blue-50 text-blue-700 font-medium'
                                     : darkMode ? 'text-gray-400 hover:bg-[#1e293b] hover:text-gray-200' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -280,7 +280,7 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
                     /* Simple link without submenu */
                     <Link
                       to={section.path}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-colors text-sm ${
                         isActiveRoute(section.path)
                           ? darkMode ? 'bg-blue-500/10 text-blue-400 font-medium' : 'bg-blue-50 text-blue-700 font-medium'
                           : darkMode ? 'text-gray-300 hover:bg-[#1e293b]' : 'text-gray-700 hover:bg-gray-100'

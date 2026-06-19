@@ -137,7 +137,7 @@ export default function TaskDetails() {
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-2xl font-bold text-gray-900">{task.title}</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900">{task.title}</h1>
               <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${
                 statusOption.value === 'completed' ? 'bg-green-100 text-green-700' :
                 statusOption.value === 'in_progress' ? 'bg-blue-100 text-blue-700' :
@@ -198,7 +198,7 @@ export default function TaskDetails() {
       <div className="card">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xl">📝</span>
-          <h2 className="text-xl font-bold">Subtasks</h2>
+          <h2 className="text-base sm:text-lg font-bold">Subtasks</h2>
           <span className="text-sm text-gray-500">
             ({completedSubtasks}/{subtasks.length})
           </span>

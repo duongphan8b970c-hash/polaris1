@@ -79,7 +79,7 @@ export default function WalletHistory() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Lịch sử giao dịch"
         subtitle="Theo dõi chi tiết các giao dịch theo từng ví"

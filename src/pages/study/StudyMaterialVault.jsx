@@ -33,7 +33,7 @@ function formatDateLabel(dateKey) {
 function TimelineSidebar({ dates, selectedDate, onSelectDate }) {
   return (
     <div className="hidden lg:block shrink-0 w-32 xl:w-36">
-      <div className="sticky top-6">
+      <div className="sticky top-4">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">Timeline</p>
         <div className="relative">
           {dates.length > 1 && (
@@ -258,7 +258,7 @@ export default function StudyMaterialVault() {
       )}
 
       {/* Main layout: content + timeline */}
-      <div className="flex gap-6">
+      <div className="flex gap-4">
         {/* Content area */}
         <div className="flex-1 min-w-0">
           {/* Empty state */}
@@ -285,7 +285,7 @@ export default function StudyMaterialVault() {
 
           {/* Materials grouped by date */}
           {groupedByDate.map(([dateKey, dayMaterials]) => (
-            <div key={dateKey} className="mb-8">
+            <div key={dateKey} className="mb-5">
               {/* Date group header */}
               <div className="flex items-center gap-3 mb-3">
                 <h2 className="text-sm font-semibold text-gray-600 whitespace-nowrap">{formatDateLabel(dateKey)}</h2>
@@ -359,7 +359,7 @@ export default function StudyMaterialVault() {
       {/* Delete confirmation */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+          <div className="bg-white rounded-xl shadow p-4 w-full max-w-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Material</h3>
             <p className="text-sm text-gray-600 mb-5">
               Are you sure you want to delete <strong>{deleteConfirm.title}</strong>? This action cannot be undone.

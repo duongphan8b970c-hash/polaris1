@@ -19,22 +19,22 @@ export default function Header({ onMenuClick, darkMode = false }) {
   }
 
   return (
-    <header className={`h-16 px-4 md:px-6 flex items-center justify-between sticky top-0 z-30 transition-colors duration-300 ${
+    <header className={`h-12 md:h-14 px-3 md:px-4 flex items-center justify-between sticky top-0 z-30 transition-colors duration-300 ${
       darkMode
         ? 'bg-[#0b0e1a]/90 backdrop-blur-md border-b border-[#1e293b]'
         : 'bg-white border-b border-gray-200'
     }`}>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         {/* ✅ Menu Button - SHOW ON ALL SCREENS */}
         <button
           onClick={onMenuClick}
-          className={`p-2 rounded-lg transition-colors ${
+          className={`p-1.5 rounded-lg transition-colors ${
             darkMode ? 'hover:bg-[#1e293b] text-gray-300' : 'hover:bg-gray-100'
           }`}
           aria-label="Toggle menu"
           title="Mở/Đóng menu"
         >
-          <svg className={`w-6 h-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
@@ -49,12 +49,12 @@ export default function Header({ onMenuClick, darkMode = false }) {
       <div className="relative">
         <button
           onClick={() => setShowUserMenu(!showUserMenu)}
-          className={`flex items-center space-x-3 p-2 rounded-lg transition-colors ${
+          className={`flex items-center space-x-2 p-1.5 rounded-lg transition-colors ${
             darkMode ? 'hover:bg-[#1e293b]' : 'hover:bg-gray-100'
           }`}
         >
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-            <span className="text-white font-semibold text-sm">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+            <span className="text-white font-semibold text-xs">
               {user?.email?.charAt(0).toUpperCase() || 'U'}
             </span>
           </div>

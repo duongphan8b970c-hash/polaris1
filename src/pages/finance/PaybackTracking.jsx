@@ -147,7 +147,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
   return (
     <div>
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-4">
         <button
           onClick={() => setShowCalendar(true)}
           className={`btn btn-secondary ${isPlan ? 'bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100' : 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100'}`}
@@ -181,7 +181,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
 
       {/* Month Filter - only for payback */}
       {!isPlan && (
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="flex items-center gap-3">
             <label className="text-sm font-medium text-gray-700">📅 Lọc theo tháng:</label>
             <select
@@ -209,8 +209,8 @@ export default function PaybackTracking({ goalType = 'payback' }) {
       {stats.active > 0 && (
         isPlan ? (
           /* Plan tab: only total goals + estimated spending in teal tone */
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white shadow-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white shadow">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-teal-100 text-sm font-medium">Tổng mục tiêu</p>
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -221,7 +221,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
               <p className="text-teal-100 text-xs">kế hoạch</p>
             </div>
 
-            <div className="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl p-4 text-white shadow-lg">
+            <div className="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl p-4 text-white shadow">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-emerald-100 text-sm font-medium">Dự kiến chi tiêu</p>
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -234,8 +234,8 @@ export default function PaybackTracking({ goalType = 'payback' }) {
           </div>
         ) : (
           /* Payback tab: full 5-card stats */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-blue-100 text-sm font-medium">Đang theo dõi</p>
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -246,7 +246,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
               <p className="text-blue-100 text-xs">mục tiêu</p>
             </div>
 
-            <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 text-white shadow-lg">
+            <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 text-white shadow">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-red-100 text-sm font-medium">Tổng tiền</p>
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -257,7 +257,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
               <p className="text-red-100 text-xs">VND</p>
             </div>
 
-            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg">
+            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-green-100 text-sm font-medium">Đã trả</p>
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -268,7 +268,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
               <p className="text-green-100 text-xs">VND</p>
             </div>
 
-            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white shadow-lg">
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white shadow">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-orange-100 text-sm font-medium">Còn lại</p>
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -280,7 +280,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
             </div>
 
             {/* Countdown / Nearest Deadline Card */}
-            <div className={`bg-gradient-to-br ${stats.overdueCount > 0 ? 'from-rose-500 to-rose-600' : 'from-indigo-500 to-indigo-600'} rounded-xl p-4 text-white shadow-lg`}>
+            <div className={`bg-gradient-to-br ${stats.overdueCount > 0 ? 'from-rose-500 to-rose-600' : 'from-indigo-500 to-indigo-600'} rounded-xl p-4 text-white shadow`}>
               <div className="flex items-center justify-between mb-2">
                 <p className={`${stats.overdueCount > 0 ? 'text-rose-100' : 'text-indigo-100'} text-sm font-medium`}>
                   {stats.overdueCount > 0 ? '⚠ Quá hạn' : '⏰ Deadline gần nhất'}
@@ -319,7 +319,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
 
       {/* Countdown Overview - all active goals' deadlines */}
       {!isPlan && activeGoals.length > 0 && (
-        <div className="mb-6 bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 rounded-xl p-4">
+        <div className="mb-4 bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">⏰</span>
             <h3 className="text-sm font-bold text-slate-900">Countdown tất cả mục tiêu</h3>
@@ -373,7 +373,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
 
       {/* Monthly Stats Card - only when month filter is active */}
       {!isPlan && monthFilter && stats.active > 0 && (
-        <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4">
+        <div className="mb-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">📊</span>
             <h3 className="text-sm font-bold text-indigo-900">
@@ -420,7 +420,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
 
       {/* Priority Filter Buttons - only for payback */}
       {!isPlan && activeGoals.length > 0 && (
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div className="mb-4 flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedPriority('all')}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
@@ -464,7 +464,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
 
       {/* Status Filter - only for plan */}
       {isPlan && goals.length > 0 && (
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div className="mb-4 flex flex-wrap gap-2">
           <button
             onClick={() => setPlanStatusFilter('all')}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
@@ -503,10 +503,10 @@ export default function PaybackTracking({ goalType = 'payback' }) {
 
       {/* ✅ ACTIVE GOALS SECTION */}
       {activeGoals.length > 0 && (!isPlan || planStatusFilter === 'all' || planStatusFilter === 'active') && (
-        <div className="mb-8">
+        <div className="mb-5">
           {/* Only show section header when not filtering specific status for plans */}
           {(!isPlan || planStatusFilter === 'all') && (
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <svg className={`w-6 h-6 ${isPlan ? 'text-teal-500' : 'text-orange-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -528,7 +528,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
             Object.entries(groupedActiveGoals)
               .sort(([a], [b]) => parseInt(a) - parseInt(b))
               .map(([sortOrder, { priority, goals: priorityGoals }]) => (
-                <div key={sortOrder} className="mb-6">
+                <div key={sortOrder} className="mb-4">
                   <div className="flex items-center gap-3 mb-4">
                     <div 
                       className="px-3 py-1.5 rounded-lg font-medium text-sm"
@@ -585,9 +585,9 @@ export default function PaybackTracking({ goalType = 'payback' }) {
 
       {/* ✅ COMPLETED GOALS SECTION */}
       {completedGoals.length > 0 && (!isPlan || planStatusFilter === 'all' || planStatusFilter === 'completed') && (
-        <div className="mb-8">
+        <div className="mb-5">
           {(!isPlan || planStatusFilter === 'all') && (
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <svg className="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -612,10 +612,10 @@ export default function PaybackTracking({ goalType = 'payback' }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">
             {isPlan ? 'Chưa có kế hoạch nào' : 'Chưa có mục tiêu nào'}
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 mb-4">
             {isPlan ? 'Tạo kế hoạch chi tiêu đầu tiên' : 'Tạo mục tiêu đầu tiên để bắt đầu theo dõi'}
           </p>
           <button onClick={handleCreate} className={`btn ${isPlan ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white' : 'btn-primary'}`}>

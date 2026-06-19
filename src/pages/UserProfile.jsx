@@ -125,12 +125,12 @@ export default function UserProfile() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="card">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-4">
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-2xl font-bold">
             {formData.full_name?.charAt(0)?.toUpperCase() || profile?.email?.charAt(0)?.toUpperCase() || 'U'}
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">User Profile</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900">User Profile</h1>
             <p className="text-gray-600">{profile?.email}</p>
           </div>
         </div>

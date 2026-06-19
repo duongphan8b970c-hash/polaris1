@@ -120,7 +120,7 @@ export default function GoalDetails() {
 
       {/* ✅ COLORFUL Header Card with Gradient Background */}
       <div 
-        className="card mb-6 p-6 relative overflow-hidden"
+        className="card mb-4 p-4 relative overflow-hidden"
         style={{
           background: `linear-gradient(135deg, ${goal.color}15 0%, ${goal.color}05 100%)`,
           borderTop: `3px solid ${goal.color}`
@@ -149,7 +149,7 @@ export default function GoalDetails() {
               
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-bold text-gray-900">{goal.name}</h1>
+                  <h1 className="text-lg sm:text-xl font-bold text-gray-900">{goal.name}</h1>
                   {isCompleted && (
                     <span 
                       className="px-3 py-1 rounded-full text-sm font-medium shadow-sm"
@@ -272,10 +272,10 @@ export default function GoalDetails() {
       <div className="card">
         {/* Tabs Navigation */}
         <div className="flex justify-center border-b border-gray-200">
-          <div className="flex gap-8">
+          <div className="flex gap-5">
             <button
               onClick={() => setActiveTab('tasks')}
-              className={`relative px-6 py-3 font-semibold text-sm transition-all duration-200 ${
+              className={`relative px-4 py-2 font-semibold text-sm transition-all duration-200 ${
                 activeTab === 'tasks'
                   ? 'text-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -291,7 +291,7 @@ export default function GoalDetails() {
             
             <button
               onClick={() => setActiveTab('history')}
-              className={`relative px-6 py-3 font-semibold text-sm transition-all duration-200 ${
+              className={`relative px-4 py-2 font-semibold text-sm transition-all duration-200 ${
                 activeTab === 'history'
                   ? 'text-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -308,12 +308,12 @@ export default function GoalDetails() {
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4">
           {/* Tasks Tab */}
           {activeTab === 'tasks' && (
             <div className="space-y-4">
               {/* ✅ ENHANCED: Filters in Single Row, Smaller Size */}
-              <div className="flex items-center justify-between gap-6">
+              <div className="flex items-center justify-between gap-4">
                 {/* Status Filter */}
                 <div className="flex items-center gap-3">
                   <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">

@@ -133,7 +133,7 @@ export default function WalletConfig() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Page Header */}
       <PageHeader 
         title="Cấu hình ví" 
@@ -204,7 +204,7 @@ export default function WalletConfig() {
                   {/* Section Header */}
                   <button
                     onClick={() => toggleSection(type)}
-                    className={`w-full flex items-center justify-between px-5 py-4 bg-gradient-to-r ${gradient} text-white hover:brightness-105 transition-all duration-200`}
+                    className={`w-full flex items-center justify-between px-4 py-4 bg-gradient-to-r ${gradient} text-white hover:brightness-105 transition-all duration-200`}
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{typeInfo.icon}</span>
