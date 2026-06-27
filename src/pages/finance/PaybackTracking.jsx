@@ -362,6 +362,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
                     </div>
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>Hạn: {deadline.toLocaleDateString('vi-VN')}</span>
+                      <span className="font-medium">{goal.progress.toFixed(0)}% hoàn thành</span>
                     </div>
                   </div>
                 )
