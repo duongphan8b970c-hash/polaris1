@@ -35,7 +35,6 @@ export function usePaybackPriorities() {
         .from('payback_priorities')
         .insert([{
           name: priorityData.name,
-          description: priorityData.description || null,
           color: priorityData.color || '#6B7280',
           icon: priorityData.icon || '📌',
           sort_order: priorityData.sort_order || 999
@@ -59,7 +58,6 @@ export function usePaybackPriorities() {
         .from('payback_priorities')
         .update({
           name: priorityData.name,
-          description: priorityData.description || null,
           color: priorityData.color || '#6B7280',
           icon: priorityData.icon || '📌',
           sort_order: priorityData.sort_order || 999,
