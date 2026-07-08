@@ -22,6 +22,7 @@ import WalletHistory from './pages/finance/WalletHistory'
 import KanjiComparator from './pages/study/KanjiComparator'
 import StudyMaterialVault from './pages/study/StudyMaterialVault'
 import TradePlanning from './pages/finance/TradePlanning'
+import UnifiedCalendarDashboard from './pages/UnifiedCalendarDashboard'
 
 // ✅ Create ProtectedRoute component
 function ProtectedRoute({ children, session }) {
@@ -94,7 +95,8 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/goals/calendar" replace />} />
+          <Route index element={<Navigate to="/overview" replace />} />
+          <Route path="overview" element={<UnifiedCalendarDashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="transactions" element={<FinancialTracking />} />
           <Route path="trades" element={<TradeTracking />} />
