@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react' // useEffect kept for textarea resize
+import { useState } from 'react'
 import UserSelector from './UserSelector'
 
 const PRIORITY_OPTIONS = [
@@ -19,13 +19,10 @@ export default function TaskForm({ task, onSubmit, onCancel, loading }) {
     if (task) {
       return {
         title: task.title,
-        description: task.description || '',
         start_date: task.start_date || '',
         due_date: task.due_date || '',
         priority: task.priority || 'medium',
         status: task.status || 'todo',
-        tags: task.tags || [],
-        estimated_hours: task.estimated_hours || '',
         assigned_to: task.assigned_to || [],
         scheduled_date: task.scheduled_date || '',
         is_calendar_visible: task.is_calendar_visible || false,
@@ -33,56 +30,21 @@ export default function TaskForm({ task, onSubmit, onCancel, loading }) {
     }
     return {
       title: '',
-      description: '',
       start_date: '',
       due_date: '',
       priority: 'medium',
       status: 'todo',
-      tags: [],
-      estimated_hours: '',
       assigned_to: [],
       scheduled_date: '',
       is_calendar_visible: false,
     }
   })
 
-  const [tagInput, setTagInput] = useState('')
-  const descriptionRef = useRef(null)
-
-  const resizeTextarea = () => {
-    if (descriptionRef.current) {
-      descriptionRef.current.style.height = 'auto'
-      descriptionRef.current.style.height = descriptionRef.current.scrollHeight + 'px'
-    }
-  }
-
-  // Auto-resize description textarea whenever its value changes
-  useEffect(() => {
-    resizeTextarea()
-  }, [formData.description])
-
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
       [name]: value
-    }))
-  }
-
-  const handleAddTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, tagInput.trim()]
-      }))
-      setTagInput('')
-    }
-  }
-
-  const handleRemoveTag = (tag) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(t => t !== tag)
     }))
   }
 
@@ -135,23 +97,6 @@ export default function TaskForm({ task, onSubmit, onCancel, loading }) {
           required
           disabled={loading}
           autoFocus
-        />
-      </div>
-
-      {/* Description */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Mô tả
-        </label>
-        <textarea
-          ref={descriptionRef}
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          className="input"
-          placeholder="Mô tả chi tiết về công việc cần làm..."
-          disabled={loading}
-          style={{ overflow: 'hidden', resize: 'none', minHeight: '80px' }}
         />
       </div>
 
@@ -274,70 +219,6 @@ export default function TaskForm({ task, onSubmit, onCancel, loading }) {
         placeholder="Select users to assign..."
         disabled={loading}
       />
-      {/* Estimated Hours */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Thời gian ước tính (giờ)
-        </label>
-        <input
-          type="number"
-          name="estimated_hours"
-          value={formData.estimated_hours}
-          onChange={handleChange}
-          className="input"
-          placeholder="Ví dụ: 8"
-          step="0.5"
-          min="0"
-          disabled={loading}
-        />
-      </div>
-
-      {/* Tags */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Tags
-        </label>
-        <div className="flex gap-2 mb-2">
-          <input
-            type="text"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-            className="input flex-1"
-            placeholder="Nhập tag và Enter"
-            disabled={loading}
-          />
-          <button
-            type="button"
-            onClick={handleAddTag}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
-            disabled={loading}
-          >
-            Thêm
-          </button>
-        </div>
-        {formData.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {formData.tags.map((tag, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
-              >
-                <span>{tag}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveTag(tag)}
-                  className="hover:text-blue-900"
-                  disabled={loading}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Action Buttons */}
       <div className="flex gap-3 pt-4">
         <button

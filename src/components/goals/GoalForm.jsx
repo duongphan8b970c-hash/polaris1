@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react' // useEffect kept for textarea resize
+import { useState } from 'react'
 import UserSelector from './UserSelector'
 import { PRIORITY_OPTIONS } from '../../constants'
 import SmartEndDateInput from './SmartEndDateInput'
@@ -16,7 +16,6 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
     if (goal) {
       return {
         name: goal.name,
-        description: goal.description || '',
         icon: goal.icon || '🎯',
         color: goal.color || '#3b82f6',
         category: goal.category || 'personal',
@@ -28,7 +27,6 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
     }
     return {
       name: '',
-      description: '',
       icon: '🎯',
       color: '#3b82f6',
       category: 'personal',
@@ -42,20 +40,6 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
       assigned_to: [],
     }
   })
-
-  const descriptionRef = useRef(null)
-
-  const resizeTextarea = () => {
-    if (descriptionRef.current) {
-      descriptionRef.current.style.height = 'auto'
-      descriptionRef.current.style.height = descriptionRef.current.scrollHeight + 'px'
-    }
-  }
-
-  // Auto-resize description textarea whenever its value changes
-  useEffect(() => {
-    resizeTextarea()
-  }, [formData.description])
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -121,23 +105,6 @@ export default function GoalForm({ goal, onSubmit, onCancel, loading }) {
           required
           disabled={loading}
           autoFocus
-        />
-      </div>
-
-      {/* Description */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Mô tả
-        </label>
-        <textarea
-          ref={descriptionRef}
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          className="input"
-          placeholder="Mô tả chi tiết về mục tiêu..."
-          disabled={loading}
-          style={{ overflow: 'hidden', resize: 'none', minHeight: '80px' }}
         />
       </div>
 
