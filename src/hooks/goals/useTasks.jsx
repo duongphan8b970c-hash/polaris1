@@ -105,7 +105,6 @@ export function useTasks(goalId = null, filters = {}) {
           start_date: taskData.start_date || null,
           priority: taskData.priority || 'medium',
           status: 'todo',
-          tags: taskData.tags || [],
           assigned_to: taskData.assigned_to || [],
           scheduled_date: taskData.scheduled_date || null,
           recurrence_rule: taskData.recurrence_rule || null,
