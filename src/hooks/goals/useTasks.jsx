@@ -108,9 +108,7 @@ export function useTasks(goalId = null, filters = {}) {
           priority: taskData.priority || 'medium',
           status: 'todo',
           tags: taskData.tags || [],
-          estimated_hours: taskData.estimated_hours ? parseFloat(taskData.estimated_hours) : null,
           assigned_to: taskData.assigned_to || [],
-          // ✅ ADD: New fields
           scheduled_date: taskData.scheduled_date || null,
           recurrence_rule: taskData.recurrence_rule || null,
           is_calendar_visible: taskData.is_calendar_visible || false
