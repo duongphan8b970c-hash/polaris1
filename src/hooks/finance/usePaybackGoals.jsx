@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { recalculateAllWalletBalances } from '../../utils/walletBalance'
 
 export function usePaybackGoals(goalType = 'payback') {
   const [goals, setGoals] = useState([])
@@ -136,7 +137,8 @@ export function usePaybackGoals(goalType = 'payback') {
           deadline: goalData.deadline,
           status: 'active',
           priority_id: goalData.priority_id || null,
-          goal_type: goalType
+          goal_type: goalType,
+          recurrence: goalData.recurrence || 'none'
         }])
         .select()
         .single()
@@ -163,7 +165,8 @@ export function usePaybackGoals(goalType = 'payback') {
           initial_amount: parseFloat(goalData.initial_amount) || 0,
           deadline: goalData.deadline,
           status: goalData.status,
-          priority_id: goalData.priority_id || null
+          priority_id: goalData.priority_id || null,
+          recurrence: goalData.recurrence || 'none'
         })
         .eq('id', id)
         .select()
@@ -202,6 +205,139 @@ export function usePaybackGoals(goalType = 'payback') {
     }
   }
 
+  // Tìm (hoặc tạo mới nếu chưa có) category chi tiêu theo tên.
+  const getOrCreateExpenseCategory = async (name, icon) => {
+    const { data: existing } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('name', name)
+      .eq('type', 'expense')
+      .is('deleted_at', null)
+      .limit(1)
+
+    if (existing && existing.length > 0) return existing[0].id
+
+    // Chưa có -> tạo mặc định (best-effort). category_id cho phép null nên nếu
+    // tạo thất bại vẫn không chặn việc ghi giao dịch.
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: created, error: createErr } = await supabase
+      .from('categories')
+      .insert([{
+        name,
+        type: 'expense',
+        icon,
+        description: `${name} (tự động)`,
+        display_order: 0,
+        is_active: true,
+        created_by: user?.id
+      }])
+      .select('id')
+      .single()
+
+    if (createErr) {
+      console.warn(`Không thể tạo category "${name}":`, createErr.message)
+      return null
+    }
+    return created.id
+  }
+
+  // Với plan có recurrence: tạo plan kế tiếp (theo tuần/tháng) khi plan cũ xong.
+  const createNextRecurrence = async (goal) => {
+    const recurrence = goal.recurrence
+    if (!recurrence || recurrence === 'none') return
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const base = new Date(goal.deadline)
+    if (recurrence === 'weekly') base.setDate(base.getDate() + 7)
+    else if (recurrence === 'monthly') base.setMonth(base.getMonth() + 1)
+    const nextDeadline = base.toISOString().split('T')[0]
+    const today = new Date().toISOString().split('T')[0]
+
+    await supabase
+      .from('payback_goals')
+      .insert([{
+        user_id: user.id,
+        name: goal.name,
+        description: goal.description,
+        target_amount: goal.target_amount,
+        initial_amount: goal.initial_amount || 0,
+        start_date: today,
+        deadline: nextDeadline,
+        status: 'active',
+        priority_id: null,
+        goal_type: 'plan',
+        recurrence
+      }])
+  }
+
+  // Xác nhận đã thanh toán: tạo giao dịch chi tiêu tự động (category Payback/Plan,
+  // mô tả = tên mục tiêu, gán payback_goal_id để cập nhật tiến độ).
+  // isFull = true -> thanh toán hết phần còn lại và đánh dấu hoàn thành.
+  const confirmPayment = async (goal, { amount, walletId, isFull }) => {
+    try {
+      const payAmount = Math.round(parseFloat(amount))
+      if (!walletId) throw new Error('Vui lòng chọn ví')
+      if (!payAmount || payAmount <= 0) throw new Error('Số tiền không hợp lệ')
+
+      const isPlan = goal.goal_type === 'plan'
+      const categoryId = await getOrCreateExpenseCategory(
+        isPlan ? 'Plan' : 'Payback',
+        isPlan ? '📋' : '💳'
+      )
+
+      // Lấy tiền tệ của ví để ghi vào giao dịch.
+      const { data: wallet, error: walletErr } = await supabase
+        .from('wallets')
+        .select('currency')
+        .eq('id', walletId)
+        .single()
+      if (walletErr || !wallet) throw new Error('Không tìm thấy ví')
+
+      const today = new Date().toISOString().split('T')[0]
+      const now = new Date().toTimeString().slice(0, 5)
+
+      const { error: insertErr } = await supabase
+        .from('financial_transactions')
+        .insert([{
+          wallet_id: walletId,
+          type: 'expense',
+          amount: -Math.abs(payAmount),
+          fee: 0,
+          currency: wallet.currency,
+          category_id: categoryId,
+          payback_goal_id: goal.id,
+          description: goal.name,
+          date: today,
+          time: now
+        }])
+      if (insertErr) throw insertErr
+
+      await recalculateAllWalletBalances()
+
+      // Xác định hoàn thành: thanh toán hết hoặc đã đủ target.
+      const newPaid = (goal.current_paid || 0) + payAmount
+      const completed = isFull || newPaid >= goal.target_amount
+
+      if (completed) {
+        await supabase
+          .from('payback_goals')
+          .update({ status: 'completed', completed_date: today })
+          .eq('id', goal.id)
+
+        // Plan có recurrence -> tạo plan kế tiếp.
+        if (isPlan) await createNextRecurrence(goal)
+      }
+
+      await fetchGoals()
+      return { success: true, completed }
+    } catch (err) {
+      console.error('Error confirming payment:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
   // Soft delete payback goal
   const deleteGoal = async (id) => {
     try {
@@ -233,6 +369,7 @@ export function usePaybackGoals(goalType = 'payback') {
     createGoal,
     updateGoal,
     completeGoal,
+    confirmPayment,
     deleteGoal,
     refetch: fetchGoals
   }

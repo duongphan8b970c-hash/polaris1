@@ -4,10 +4,9 @@ import { useCategories } from '../../hooks/finance/useCategories'
 import { usePaybackGoals } from '../../hooks/finance/usePaybackGoals'
 import { supabase } from '../../lib/supabase'
 
-// Số tiền hiển thị = số tiền thực / hệ số. Khi ví là VND và bật chế độ "nghìn",
-// người dùng gõ 50 nghĩa là 50.000 ₫ (hệ số 1000).
-const computeMultiplier = (currency, thousandsMode) =>
-  currency === 'VND' && thousandsMode ? 1000 : 1
+// Số tiền hiển thị = số tiền thực / hệ số. Tự động theo tiền tệ của ví:
+// ví VND -> nhập theo đơn vị nghìn (gõ 50 = 50.000 ₫), tiền tệ khác -> nhập chính xác.
+const computeMultiplier = (currency) => (currency === 'VND' ? 1000 : 1)
 
 // Chuyển số tiền thực (đã lưu) sang chuỗi hiển thị theo hệ số hiện tại.
 const actualToRaw = (actual, multiplier) => {
@@ -46,19 +45,17 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
   const selectedWallet = wallets.find(w => w.id === formData.wallet_id)
   const walletCurrency = selectedWallet?.currency || transaction?.currency || 'VND'
   const isVND = walletCurrency === 'VND'
-
-  const [thousandsMode, setThousandsMode] = useState(true)
-  const multiplier = computeMultiplier(walletCurrency, thousandsMode)
+  const multiplier = computeMultiplier(walletCurrency)
 
   // Chuỗi hiển thị của ô nhập (giữ đúng những gì người dùng gõ, tránh nhảy số).
   const [amountRaw, setAmountRaw] = useState(() =>
-    actualToRaw(transaction?.amount ? Math.abs(transaction.amount) : '', computeMultiplier(transaction?.currency || 'VND', true))
+    actualToRaw(transaction?.amount ? Math.abs(transaction.amount) : '', computeMultiplier(transaction?.currency || 'VND'))
   )
   const [feeRaw, setFeeRaw] = useState(() =>
-    actualToRaw(transaction?.fee || '', computeMultiplier(transaction?.currency || 'VND', true))
+    actualToRaw(transaction?.fee || '', computeMultiplier(transaction?.currency || 'VND'))
   )
 
-  // Đồng bộ lại chuỗi hiển thị khi hệ số thay đổi (đổi ví VND↔khác, bật/tắt chế độ nghìn).
+  // Đồng bộ lại chuỗi hiển thị khi hệ số thay đổi (đổi ví VND↔tiền tệ khác).
   const syncRawToMultiplier = (newMultiplier) => {
     setAmountRaw(actualToRaw(formData.amount, newMultiplier))
     setFeeRaw(actualToRaw(formData.fee, newMultiplier))
@@ -69,12 +66,6 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
     else setFeeRaw(rawValue)
     const actual = rawValue === '' ? '' : String(parseFloat(rawValue) * multiplier)
     setFormData(prev => ({ ...prev, [field]: actual }))
-  }
-
-  const toggleThousandsMode = () => {
-    const next = !thousandsMode
-    setThousandsMode(next)
-    syncRawToMultiplier(computeMultiplier(walletCurrency, next))
   }
 
   // ===== Gợi ý mô tả gần nhất theo cùng danh mục =====
@@ -119,7 +110,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
       // Đổi ví có thể đổi tiền tệ -> đồng bộ lại chuỗi hiển thị theo hệ số mới.
       const nextWallet = wallets.find(w => w.id === value)
       const nextCurrency = nextWallet?.currency || 'VND'
-      const newMultiplier = computeMultiplier(nextCurrency, thousandsMode)
+      const newMultiplier = computeMultiplier(nextCurrency)
       setFormData(prev => ({ ...prev, wallet_id: value }))
       syncRawToMultiplier(newMultiplier)
       return
@@ -231,22 +222,16 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
     )
   }
 
-  // Nhãn + nút bật/tắt đơn vị nghìn (chỉ hiện với VND).
-  const renderThousandsToggle = () => {
+  // Nhãn cho biết đang nhập theo đơn vị nghìn (tự động khi ví là VND).
+  const renderThousandsBadge = () => {
     if (!isVND) return null
     return (
-      <button
-        type="button"
-        onClick={toggleThousandsMode}
-        className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
-          thousandsMode
-            ? 'bg-blue-100 text-blue-700 border-blue-300'
-            : 'bg-gray-100 text-gray-500 border-gray-300'
-        }`}
-        title="Bật: gõ theo đơn vị nghìn (50 = 50.000). Tắt: nhập số tiền chính xác."
+      <span
+        className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-300"
+        title="Ví VND: nhập theo đơn vị nghìn (gõ 50 = 50.000 ₫)"
       >
-        {thousandsMode ? '× nghìn (bật)' : '× nghìn (tắt)'}
-      </button>
+        đơn vị: nghìn
+      </span>
     )
   }
 
@@ -383,7 +368,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
                 <label className="block text-sm font-medium text-gray-700">
                   Số tiền chuyển <span className="text-red-500">*</span>
                 </label>
-                {renderThousandsToggle()}
+                {renderThousandsBadge()}
               </div>
               <input
                 type="number"
@@ -530,7 +515,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
               <label className="block text-sm font-medium text-gray-700">
                 Số tiền <span className="text-red-500">*</span>
               </label>
-              {renderThousandsToggle()}
+              {renderThousandsBadge()}
             </div>
             <input
               type="number"

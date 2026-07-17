@@ -13,7 +13,8 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
         initial_amount: goal.initial_amount || 0,
         start_date: goal.start_date,
         deadline: goal.deadline,
-        priority_id: goal.priority_id || ''
+        priority_id: goal.priority_id || '',
+        recurrence: goal.recurrence || 'none'
       }
     }
     return {
@@ -23,7 +24,8 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
       initial_amount: '',
       start_date: new Date().toISOString().split('T')[0],
       deadline: '',
-      priority_id: ''
+      priority_id: '',
+      recurrence: 'none'
     }
   })
 
@@ -62,9 +64,9 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
     }
 
     // For plan mode, auto-set start_date to today
-    const submitData = isPlan 
+    const submitData = isPlan
       ? { ...formData, start_date: new Date().toISOString().split('T')[0], priority_id: null }
-      : formData
+      : { ...formData, recurrence: 'none' }
 
     onSubmit(submitData)
   }
@@ -214,6 +216,41 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
           <p className="text-xs text-gray-500 mt-1">
             📅 Ngày lên kế hoạch chi tiêu
           </p>
+
+          {/* Recurrence - plan only */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Lặp lại
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { value: 'none', icon: '🚫', label: 'Không lặp' },
+                { value: 'weekly', icon: '🔁', label: 'Hàng tuần' },
+                { value: 'monthly', icon: '🗓️', label: 'Hàng tháng' }
+              ].map(opt => {
+                const isSelected = formData.recurrence === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, recurrence: opt.value }))}
+                    className={`p-3 rounded-lg border-2 transition-all text-center ${
+                      isSelected
+                        ? 'border-teal-500 bg-teal-50 text-teal-700 ring-2 ring-offset-2 ring-teal-500'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                    disabled={loading}
+                  >
+                    <div className="text-2xl mb-1">{opt.icon}</div>
+                    <div className="text-sm font-semibold">{opt.label}</div>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              🔄 Khi đánh dấu đã xong, một kế hoạch tương tự sẽ tự động được tạo cho kỳ kế tiếp
+            </p>
+          </div>
         </div>
       ) : (
         /* Payback: start_date + deadline */

@@ -5,6 +5,7 @@ import { usePaybackPriorities } from '../../hooks/finance/usePaybackPriorities'
 import PaybackGoalList from '../../components/payback/PaybackGoalList'
 import PaybackGoalForm from '../../components/payback/PaybackGoalForm'
 import PaybackCalendarModal from '../../components/payback/PaybackCalendarModal'
+import PaymentConfirmModal from '../../components/payback/PaymentConfirmModal'
 import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
@@ -12,7 +13,7 @@ import { formatNumber } from '../../utils'
 
 export default function PaybackTracking({ goalType = 'payback' }) {
   const navigate = useNavigate()
-  const { goals, loading, error, monthFilter, setMonthFilter, createGoal, updateGoal, completeGoal, deleteGoal, refetch } = usePaybackGoals(goalType)
+  const { goals, loading, error, monthFilter, setMonthFilter, createGoal, updateGoal, completeGoal, confirmPayment, deleteGoal, refetch } = usePaybackGoals(goalType)
   const { priorities } = usePaybackPriorities()
   
   const isPlan = goalType === 'plan'
@@ -23,6 +24,8 @@ export default function PaybackTracking({ goalType = 'payback' }) {
   const [selectedPriority, setSelectedPriority] = useState('all')
   const [showCalendar, setShowCalendar] = useState(false)
   const [planStatusFilter, setPlanStatusFilter] = useState('all')
+  const [payingGoal, setPayingGoal] = useState(null)
+  const [payingSubmitting, setPayingSubmitting] = useState(false)
 
   // ✅ Separate active and completed
   const activeGoals = goals.filter(g => g.status === 'active')
@@ -110,6 +113,25 @@ export default function PaybackTracking({ goalType = 'payback' }) {
     const result = await completeGoal(goal.id)
     if (result.success) {
       alert('🎉 Chúc mừng! Bạn đã hoàn thành mục tiêu!')
+    } else {
+      alert('Lỗi: ' + result.error)
+    }
+  }
+
+  const handlePay = (goal) => {
+    setPayingGoal(goal)
+  }
+
+  const handleConfirmPayment = async (payload) => {
+    setPayingSubmitting(true)
+    const result = await confirmPayment(payingGoal, payload)
+    setPayingSubmitting(false)
+
+    if (result.success) {
+      setPayingGoal(null)
+      if (result.completed) {
+        alert(isPlan ? '✅ Đã ghi nhận chi tiêu và hoàn thành kế hoạch!' : '🎉 Đã thanh toán xong mục tiêu!')
+      }
     } else {
       alert('Lỗi: ' + result.error)
     }
@@ -468,6 +490,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onComplete={handleComplete}
+              onPay={handlePay}
             />
           ) : selectedPriority === 'all' ? (
             /* Grouped by priority */
@@ -496,6 +519,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onComplete={handleComplete}
+                    onPay={handlePay}
                   />
                 </div>
               ))
@@ -508,6 +532,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onComplete={handleComplete}
+                onPay={handlePay}
               />
             ) : (
               <div className="card text-center py-12">
@@ -546,6 +571,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onComplete={handleComplete}
+            onPay={handlePay}
           />
         </div>
       )}
@@ -594,6 +620,17 @@ export default function PaybackTracking({ goalType = 'payback' }) {
           goals={goals}
           goalType={goalType}
           onClose={() => setShowCalendar(false)}
+        />
+      )}
+
+      {/* Payment Confirmation Modal */}
+      {payingGoal && (
+        <PaymentConfirmModal
+          goal={payingGoal}
+          goalType={goalType}
+          onConfirm={handleConfirmPayment}
+          onClose={() => setPayingGoal(null)}
+          loading={payingSubmitting}
         />
       )}
     </div>

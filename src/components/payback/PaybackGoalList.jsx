@@ -1,6 +1,6 @@
 import { formatNumber, formatDate } from '../../utils'
 
-export default function PaybackGoalList({ goals, goalType = 'payback', onEdit, onDelete, onComplete }) {
+export default function PaybackGoalList({ goals, goalType = 'payback', onEdit, onDelete, onComplete, onPay }) {
   const isPlan = goalType === 'plan'
 
   if (goals.length === 0) {
@@ -60,6 +60,7 @@ export default function PaybackGoalList({ goals, goalType = 'payback', onEdit, o
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onComplete={onComplete}
+                onPay={onPay}
               />
             ))}
           </tbody>
@@ -69,7 +70,7 @@ export default function PaybackGoalList({ goals, goalType = 'payback', onEdit, o
   )
 }
 
-function PaybackGoalRow({ goal, goalType = 'payback', onEdit, onDelete, onComplete }) {
+function PaybackGoalRow({ goal, goalType = 'payback', onEdit, onDelete, onComplete, onPay }) {
   const isPlan = goalType === 'plan'
   const isCompleted = goal.status === 'completed'
   const isOverdue = goal.is_overdue && !isCompleted
@@ -216,7 +217,20 @@ function PaybackGoalRow({ goal, goalType = 'payback', onEdit, onDelete, onComple
       {/* Actions */}
       <td className="px-4 py-3 whitespace-nowrap text-right">
         <div className="flex items-center justify-end gap-1 transition-opacity">
-          {!isCompleted && (isPlan || goal.progress >= 100) && (
+          {/* Xác nhận đã thanh toán -> tạo giao dịch tự động */}
+          {!isCompleted && onPay && (
+            <button
+              onClick={() => onPay(goal)}
+              className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+              title={isPlan ? 'Xác nhận đã chi tiêu' : 'Xác nhận đã thanh toán'}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </button>
+          )}
+          {/* Đánh dấu hoàn thành trực tiếp (payback đã đủ tiến độ) - không tạo giao dịch mới */}
+          {!isCompleted && !isPlan && goal.progress >= 100 && (
             <button
               onClick={() => onComplete(goal)}
               className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
