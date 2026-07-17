@@ -1,20 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
 import { useCategories } from '../../hooks/finance/useCategories'
 import { usePaybackGoals } from '../../hooks/finance/usePaybackGoals'
+import { supabase } from '../../lib/supabase'
+
+// Số tiền hiển thị = số tiền thực / hệ số. Khi ví là VND và bật chế độ "nghìn",
+// người dùng gõ 50 nghĩa là 50.000 ₫ (hệ số 1000).
+const computeMultiplier = (currency, thousandsMode) =>
+  currency === 'VND' && thousandsMode ? 1000 : 1
+
+// Chuyển số tiền thực (đã lưu) sang chuỗi hiển thị theo hệ số hiện tại.
+const actualToRaw = (actual, multiplier) => {
+  if (actual === '' || actual == null || isNaN(parseFloat(actual))) return ''
+  const value = parseFloat(actual) / multiplier
+  // Bỏ số 0 thừa sau dấu thập phân (50.0 -> 50)
+  return String(parseFloat(value.toFixed(6)))
+}
 
 export default function TransactionForm({ transaction, onSubmit, onCancel, loading }) {
   const { wallets } = useWallets()
   const { goals: paybackGoals } = usePaybackGoals()
   const isEditingTransfer = transaction && transaction.type === 'transfer'
-  
+
   const [formData, setFormData] = useState({
     type: transaction?.type || 'expense',
     wallet_id: transaction?.wallet_id || '',
     to_wallet_id: transaction?.to_wallet_id || '',
     category_id: transaction?.category_id || '',
-    amount: transaction?.amount ? Math.abs(transaction.amount) : '',
-    fee: transaction?.fee || '', // ✅ ADD: Fee field
+    amount: transaction?.amount ? Math.abs(transaction.amount) : '', // luôn là số tiền THỰC
+    fee: transaction?.fee || '', // luôn là số tiền THỰC
     description: transaction?.description || '',
     payback_goal_id: transaction?.payback_goal_id || '',
     date: transaction?.date ? transaction.date.split('T')[0] : new Date().toISOString().split('T')[0],
@@ -27,8 +41,89 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
   const selectedCategory = categories.find(c => c.id === formData.category_id)
   const isPaybackCategory = selectedCategory?.name === 'Payback' && formData.type === 'expense'
 
+  // ===== Số tiền theo đơn vị nghìn (VND) =====
+  // Tiền tệ được lấy từ ví nguồn (áp dụng cho cả giao dịch thường lẫn chuyển khoản).
+  const selectedWallet = wallets.find(w => w.id === formData.wallet_id)
+  const walletCurrency = selectedWallet?.currency || transaction?.currency || 'VND'
+  const isVND = walletCurrency === 'VND'
+
+  const [thousandsMode, setThousandsMode] = useState(true)
+  const multiplier = computeMultiplier(walletCurrency, thousandsMode)
+
+  // Chuỗi hiển thị của ô nhập (giữ đúng những gì người dùng gõ, tránh nhảy số).
+  const [amountRaw, setAmountRaw] = useState(() =>
+    actualToRaw(transaction?.amount ? Math.abs(transaction.amount) : '', computeMultiplier(transaction?.currency || 'VND', true))
+  )
+  const [feeRaw, setFeeRaw] = useState(() =>
+    actualToRaw(transaction?.fee || '', computeMultiplier(transaction?.currency || 'VND', true))
+  )
+
+  // Đồng bộ lại chuỗi hiển thị khi hệ số thay đổi (đổi ví VND↔khác, bật/tắt chế độ nghìn).
+  const syncRawToMultiplier = (newMultiplier) => {
+    setAmountRaw(actualToRaw(formData.amount, newMultiplier))
+    setFeeRaw(actualToRaw(formData.fee, newMultiplier))
+  }
+
+  const handleAmountChange = (field, rawValue) => {
+    if (field === 'amount') setAmountRaw(rawValue)
+    else setFeeRaw(rawValue)
+    const actual = rawValue === '' ? '' : String(parseFloat(rawValue) * multiplier)
+    setFormData(prev => ({ ...prev, [field]: actual }))
+  }
+
+  const toggleThousandsMode = () => {
+    const next = !thousandsMode
+    setThousandsMode(next)
+    syncRawToMultiplier(computeMultiplier(walletCurrency, next))
+  }
+
+  // ===== Gợi ý mô tả gần nhất theo cùng danh mục =====
+  const [recentDescriptions, setRecentDescriptions] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    const catId = formData.category_id
+    const fetchRecent = async () => {
+      if (!catId || formData.type === 'transfer') {
+        if (!cancelled) setRecentDescriptions([])
+        return
+      }
+      const { data, error } = await supabase
+        .from('financial_transactions')
+        .select('description, date, time')
+        .eq('category_id', catId)
+        .not('description', 'is', null)
+        .neq('description', '')
+        .order('date', { ascending: false })
+        .order('time', { ascending: false })
+        .limit(40)
+      if (error || cancelled) return
+      const seen = new Set()
+      const unique = []
+      for (const row of data || []) {
+        const desc = (row.description || '').trim()
+        if (!desc || seen.has(desc)) continue
+        seen.add(desc)
+        unique.push(desc)
+        if (unique.length >= 5) break
+      }
+      setRecentDescriptions(unique)
+    }
+    fetchRecent()
+    return () => { cancelled = true }
+  }, [formData.category_id, formData.type])
+
   const handleChange = (e) => {
     const { name, value } = e.target
+    if (name === 'wallet_id') {
+      // Đổi ví có thể đổi tiền tệ -> đồng bộ lại chuỗi hiển thị theo hệ số mới.
+      const nextWallet = wallets.find(w => w.id === value)
+      const nextCurrency = nextWallet?.currency || 'VND'
+      const newMultiplier = computeMultiplier(nextCurrency, thousandsMode)
+      setFormData(prev => ({ ...prev, wallet_id: value }))
+      syncRawToMultiplier(newMultiplier)
+      return
+    }
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -37,7 +132,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
+
     if (!formData.wallet_id) {
       alert('Vui lòng chọn ví')
       return
@@ -82,7 +177,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
 
     const submitData = {
       ...formData,
-      amount: formData.type === 'expense' 
+      amount: formData.type === 'expense'
         ? -Math.abs(parseFloat(formData.amount))
         : Math.abs(parseFloat(formData.amount)),
       fee: fee // ✅ ADD: Include fee
@@ -94,7 +189,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
     } else {
       delete submitData.to_wallet_id
       delete submitData.fee // ✅ Fee only for transfers
-      
+
       if (!isPaybackCategory) {
         delete submitData.payback_goal_id
       }
@@ -124,9 +219,40 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
     )
   }
 
+  // Helper hiển thị số tiền thực đã quy đổi bên dưới ô nhập.
+  const renderResolvedHint = (rawValue) => {
+    if (!isVND || multiplier === 1 || !rawValue) return null
+    const actual = parseFloat(rawValue) * multiplier
+    if (isNaN(actual)) return null
+    return (
+      <p className="mt-1 text-xs text-blue-600 font-medium">
+        = {actual.toLocaleString('vi-VN')} ₫
+      </p>
+    )
+  }
+
+  // Nhãn + nút bật/tắt đơn vị nghìn (chỉ hiện với VND).
+  const renderThousandsToggle = () => {
+    if (!isVND) return null
+    return (
+      <button
+        type="button"
+        onClick={toggleThousandsMode}
+        className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+          thousandsMode
+            ? 'bg-blue-100 text-blue-700 border-blue-300'
+            : 'bg-gray-100 text-gray-500 border-gray-300'
+        }`}
+        title="Bật: gõ theo đơn vị nghìn (50 = 50.000). Tắt: nhập số tiền chính xác."
+      >
+        {thousandsMode ? '× nghìn (bật)' : '× nghìn (tắt)'}
+      </button>
+    )
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      
+
       {/* Type Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -210,7 +336,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
               {formData.wallet_id && (
                 <p className="mt-1 text-xs text-gray-500">
                   Số dư: <span className="font-semibold text-gray-700">
-                    {wallets.find(w => w.id === formData.wallet_id)?.current_amount?.toLocaleString('vi-VN') || '0'} 
+                    {wallets.find(w => w.id === formData.wallet_id)?.current_amount?.toLocaleString('vi-VN') || '0'}
                     {' '}{wallets.find(w => w.id === formData.wallet_id)?.currency}
                   </span>
                 </p>
@@ -253,20 +379,24 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
           <div className="grid grid-cols-2 gap-4">
             {/* Amount */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Số tiền chuyển <span className="text-red-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Số tiền chuyển <span className="text-red-500">*</span>
+                </label>
+                {renderThousandsToggle()}
+              </div>
               <input
                 type="number"
                 name="amount"
-                value={formData.amount}
-                onChange={handleChange}
-                step="0.01"
+                value={amountRaw}
+                onChange={(e) => handleAmountChange('amount', e.target.value)}
+                step={multiplier === 1 ? '0.01' : 'any'}
                 min="0"
-                placeholder="0.00"
+                placeholder={multiplier === 1 ? '0.00' : 'VD: 50 = 50.000'}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
+              {renderResolvedHint(amountRaw)}
               <p className="mt-1 text-xs text-gray-500">
                 💰 Số tiền người nhận sẽ nhận được
               </p>
@@ -280,13 +410,14 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
               <input
                 type="number"
                 name="fee"
-                value={formData.fee}
-                onChange={handleChange}
-                step="0.01"
+                value={feeRaw}
+                onChange={(e) => handleAmountChange('fee', e.target.value)}
+                step={multiplier === 1 ? '0.01' : 'any'}
                 min="0"
-                placeholder="0.00"
+                placeholder={multiplier === 1 ? '0.00' : 'VD: 5 = 5.000'}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
+              {renderResolvedHint(feeRaw)}
               <p className="mt-1 text-xs text-gray-500">
                 💸 Phí sẽ bị trừ từ ví nguồn
               </p>
@@ -313,16 +444,16 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
                   </p>
                   {formData.fee && parseFloat(formData.fee) > 0 && (
                     <p className="text-xs font-semibold text-red-700 mt-1">
-                      Tổng trừ: -{(parseFloat(formData.amount) + parseFloat(formData.fee)).toLocaleString('vi-VN')} 
+                      Tổng trừ: -{(parseFloat(formData.amount) + parseFloat(formData.fee)).toLocaleString('vi-VN')}
                       {' '}{wallets.find(w => w.id === formData.wallet_id)?.currency}
                     </p>
                   )}
                 </div>
-                
+
                 <svg className="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
-                
+
                 <div className="text-sm text-right">
                   <p className="text-gray-600 mb-1">Đến:</p>
                   <p className="font-semibold text-gray-900">
@@ -359,42 +490,60 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
             </select>
           </div>
 
+          {/* Danh mục dạng icon bấm chọn */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Danh mục <span className="text-red-500">*</span>
             </label>
-            <select
-              name="category_id"
-              value={formData.category_id}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            >
-              <option value="">Chọn danh mục</option>
-              {categories.map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.icon} {category.name}
-                </option>
-              ))}
-            </select>
+            {categories.length === 0 ? (
+              <p className="text-sm text-gray-400 py-2">Chưa có danh mục nào.</p>
+            ) : (
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                {categories.map(category => {
+                  const active = formData.category_id === category.id
+                  return (
+                    <button
+                      key={category.id}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, category_id: category.id }))}
+                      className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg border-2 transition-all ${
+                        active
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-transparent bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                      title={category.name}
+                    >
+                      <span className="text-2xl leading-none">{category.icon || '📁'}</span>
+                      <span className="text-[11px] leading-tight text-center line-clamp-2">
+                        {category.name}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Amount for regular transactions */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Số tiền <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Số tiền <span className="text-red-500">*</span>
+              </label>
+              {renderThousandsToggle()}
+            </div>
             <input
               type="number"
               name="amount"
-              value={formData.amount}
-              onChange={handleChange}
-              step="0.01"
+              value={amountRaw}
+              onChange={(e) => handleAmountChange('amount', e.target.value)}
+              step={multiplier === 1 ? '0.01' : 'any'}
               min="0"
-              placeholder="0.00"
+              placeholder={multiplier === 1 ? '0.00' : 'VD: 50 = 50.000'}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             />
+            {renderResolvedHint(amountRaw)}
           </div>
         </>
       )}
@@ -417,12 +566,12 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
               .filter(g => g.status === 'active')
               .map(goal => (
                 <option key={goal.id} value={goal.id}>
-                  {goal.name} - {goal.progress.toFixed(0)}% 
+                  {goal.name} - {goal.progress.toFixed(0)}%
                   (Còn {goal.remaining.toLocaleString('vi-VN')} ₫)
                 </option>
               ))}
           </select>
-          
+
           {paybackGoals.filter(g => g.status === 'active').length === 0 ? (
             <p className="text-xs text-amber-600 mt-2">
               ⚠️ Chưa có mục tiêu nào. Tạo mục tiêu trước để theo dõi tiến độ.
@@ -440,15 +589,37 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Mô tả
         </label>
+
+        {/* Gợi ý 5 mô tả gần nhất của cùng danh mục */}
+        {recentDescriptions.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {recentDescriptions.map((desc, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, description: desc }))}
+                className={`text-xs px-2.5 py-1 rounded-full border transition-colors max-w-[220px] truncate ${
+                  formData.description === desc
+                    ? 'bg-blue-100 text-blue-700 border-blue-300'
+                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                }`}
+                title={desc}
+              >
+                {desc}
+              </button>
+            ))}
+          </div>
+        )}
+
         <textarea
           name="description"
           value={formData.description}
           onChange={handleChange}
           rows="3"
           placeholder={
-            formData.type === 'transfer' 
-              ? 'Ghi chú chuyển khoản...' 
-              : 'Ghi chú giao dịch...'
+            formData.type === 'transfer'
+              ? 'Ghi chú chuyển khoản...'
+              : 'Chọn gợi ý phía trên hoặc nhập ghi chú...'
           }
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
