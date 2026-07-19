@@ -151,7 +151,6 @@ export default function UnifiedCalendarDashboard() {
     <div className="space-y-4">
       <PageHeader
         title="🗓️ Tổng quan"
-        subtitle="Công việc, payback và kế hoạch chi tiêu trong cùng một lịch"
         action={
           <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
             <button
@@ -199,9 +198,8 @@ export default function UnifiedCalendarDashboard() {
           <p className="text-blue-100 text-xs">{stats.taskCompleted} hoàn thành</p>
         </div>
         <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 text-white shadow">
-          <p className="text-indigo-100 text-sm font-medium">Khoản đến hạn</p>
+          <p className="text-indigo-100 text-sm font-medium">Các khoản đã lên kế hoạch</p>
           <p className="text-3xl font-bold mt-1">{stats.financeCount}</p>
-          <p className="text-indigo-100 text-xs">payback + plan</p>
         </div>
         <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white shadow">
           <p className="text-teal-100 text-sm font-medium">Tổng tiền</p>
