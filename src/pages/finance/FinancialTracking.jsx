@@ -64,9 +64,10 @@ export default function FinancialTracking() {
     categories, 
     loading: categoriesLoading, 
     error: categoriesError, 
-    createCategory, 
-    updateCategory, 
-    refetch: refetchCategories 
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    refetch: refetchCategories
   } = useCategories(categoryType)
 
   const {
@@ -331,6 +332,18 @@ const filteredStats = useMemo(() => {
   const handleCloseCategoryForm = () => {
     setShowCategoryForm(false)
     setEditingCategory(null)
+  }
+
+  const handleDeleteCategory = async (category) => {
+    if (!confirm(
+      `Xóa danh mục "${category.name}"?\n\n` +
+      'Các giao dịch cũ vẫn giữ nguyên danh mục này, nhưng bạn sẽ không thể chọn nó cho giao dịch mới.'
+    )) return
+
+    const result = await deleteCategory(category.id)
+    if (!result.success) {
+      alert('Lỗi: ' + result.error)
+    }
   }
 
   const handleSubmitCategory = async (formData) => {
@@ -850,6 +863,7 @@ const filteredStats = useMemo(() => {
             categories={safeCategories}
             budgets={budgets}
             onEdit={handleEditCategory}
+            onDelete={handleDeleteCategory}
             onSetBudget={handleSetBudgetForCategory}
             onEditBudget={handleEditBudget}
             onDeleteBudget={handleDeleteBudget}

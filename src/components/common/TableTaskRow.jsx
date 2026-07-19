@@ -94,6 +94,7 @@ function SubtaskLoader({ taskId, depth }) {
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
   const [isAdding, setIsAdding] = useState(false)
   const [showInput, setShowInput] = useState(false)
+  const [showCompleted, setShowCompleted] = useState(false)
   const inputRef = useRef(null)
 
   useEffect(() => {
@@ -139,13 +140,9 @@ function SubtaskLoader({ taskId, depth }) {
           </td>
         </tr>
       ) : (
-        [...subtasks]
-          .sort((a, b) => {
-            if (a.is_completed && !b.is_completed) return 1
-            if (!a.is_completed && b.is_completed) return -1
-            return 0
-          })
-          .map((st) => (
+        <>
+          {/* Active subtasks */}
+          {subtasks.filter(st => !st.is_completed).map((st) => (
             <TableSubTaskRow
               key={st.id}
               subtask={st}
@@ -154,7 +151,40 @@ function SubtaskLoader({ taskId, depth }) {
               onUpdate={updateSubtask}
               onDelete={(id) => deleteSubtask(id)}
             />
-          ))
+          ))}
+
+          {/* Completed subtasks (collapsible) */}
+          {subtasks.filter(st => st.is_completed).length > 0 && (
+            <>
+              <tr className="cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setShowCompleted(prev => !prev)}>
+                <td colSpan={6} className="py-1.5">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500" style={{ paddingLeft: `${(depth + 1) * 28 + 8}px` }}>
+                    <svg
+                      className={`w-3.5 h-3.5 text-gray-400 transition-transform ${showCompleted ? 'rotate-90' : ''}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                    <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Đã hoàn thành ({subtasks.filter(st => st.is_completed).length})
+                  </div>
+                </td>
+              </tr>
+              {showCompleted && subtasks.filter(st => st.is_completed).map((st) => (
+                <TableSubTaskRow
+                  key={st.id}
+                  subtask={st}
+                  depth={depth + 1}
+                  onToggle={(id, current) => toggleSubtask(id, current)}
+                  onUpdate={updateSubtask}
+                  onDelete={(id) => deleteSubtask(id)}
+                />
+              ))}
+            </>
+          )}
+        </>
       )}
 
       {/* Add subtask row */}

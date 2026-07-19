@@ -79,6 +79,24 @@ export function useCategories(type = null) {
     }
   }
 
+  // Soft delete: giữ lại lịch sử giao dịch cũ (transactions vẫn tham chiếu được tên danh mục).
+  const deleteCategory = async (id) => {
+    try {
+      const { error: deleteError } = await supabase
+        .from('categories')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id)
+
+      if (deleteError) throw deleteError
+
+      setCategories(prev => prev.filter(c => c.id !== id))
+      return { success: true }
+    } catch (err) {
+      console.error('Error deleting category:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
   useEffect(() => {
     fetchCategories()
   }, [type])
@@ -89,6 +107,7 @@ export function useCategories(type = null) {
     error,
     createCategory,
     updateCategory,
+    deleteCategory,
     refetch: fetchCategories,
   }
 }

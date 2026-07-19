@@ -5,7 +5,7 @@ import { NotificationProvider } from './contexts/NotificationContext'
 import MainLayout from './components/layout/MainLayout'
 import Dashboard from './pages/Dashboard'
 import FinancialTracking from './pages/finance/FinancialTracking'
-import TradeTracking from './pages/finance/TradeTracking'
+import Trade from './pages/finance/Trade'
 import Wallets from './pages/finance/WalletConfig'
 import Reports from './pages/Reports'
 import Login from './pages/Login'
@@ -21,7 +21,6 @@ import AnalyticsDashboard from './pages/analytics/AnalyticsDashboard'
 import WalletHistory from './pages/finance/WalletHistory'
 import KanjiComparator from './pages/study/KanjiComparator'
 import StudyMaterialVault from './pages/study/StudyMaterialVault'
-import TradePlanning from './pages/finance/TradePlanning'
 import UnifiedCalendarDashboard from './pages/UnifiedCalendarDashboard'
 
 // ✅ Create ProtectedRoute component
@@ -99,8 +98,8 @@ function App() {
           <Route path="overview" element={<UnifiedCalendarDashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="transactions" element={<FinancialTracking />} />
-          <Route path="trades" element={<TradeTracking />} />
-          <Route path="trades/planning" element={<TradePlanning />} />
+          <Route path="trades" element={<Trade />} />
+          <Route path="trades/planning" element={<Navigate to="/trades" replace />} />
           <Route path="wallets" element={<Wallets />} />
           <Route path="wallets/history" element={<WalletHistory />} />
           <Route path="reports" element={<Reports />} />

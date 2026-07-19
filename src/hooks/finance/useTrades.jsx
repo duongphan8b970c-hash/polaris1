@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { recalculateAllWalletBalances } from '../../utils/walletBalance'
 
 export function useTrades(filters = {}) {
   const [trades, setTrades] = useState([])
@@ -149,7 +150,11 @@ export function useTrades(filters = {}) {
 
     if (txError) {
       console.error('Error creating trade transaction:', txError)
+      return
     }
+
+    // Cập nhật lại số dư ví sau khi ghi nhận lời/lỗ của trade.
+    await recalculateAllWalletBalances()
   }
 
   const updateTrade = async (id, tradeData) => {

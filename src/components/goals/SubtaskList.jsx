@@ -7,6 +7,10 @@ export default function SubtaskList({ subtasks, onAdd, onToggle, onEdit, onDelet
   const [isAdding, setIsAdding] = useState(false)
   const [showRecurrenceModal, setShowRecurrenceModal] = useState(false)
   const [selectedSubtask, setSelectedSubtask] = useState(null)
+  const [showCompleted, setShowCompleted] = useState(false)
+
+  const activeSubtasks = subtasks.filter(s => !s.is_completed)
+  const completedSubtasks = subtasks.filter(s => s.is_completed)
 
   const handleAdd = async () => {
     if (!newSubtaskTitle.trim()) return
@@ -41,7 +45,8 @@ export default function SubtaskList({ subtasks, onAdd, onToggle, onEdit, onDelet
         {/* Subtasks List */}
         {subtasks.length > 0 ? (
           <div className="space-y-1.5">
-            {subtasks.map(subtask => (
+            {/* Active subtasks */}
+            {activeSubtasks.map(subtask => (
               <SubtaskItem
                 key={subtask.id}
                 subtask={subtask}
@@ -51,6 +56,42 @@ export default function SubtaskList({ subtasks, onAdd, onToggle, onEdit, onDelet
                 onOpenRecurrence={handleOpenRecurrence}
               />
             ))}
+
+            {/* Completed subtasks (collapsible) */}
+            {completedSubtasks.length > 0 && (
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowCompleted(prev => !prev)}
+                  className="flex items-center gap-1.5 w-full text-xs font-semibold text-gray-500 hover:text-gray-700 py-1.5 transition-colors"
+                >
+                  <svg
+                    className={`w-3.5 h-3.5 text-gray-400 transition-transform ${showCompleted ? 'rotate-90' : ''}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Đã hoàn thành ({completedSubtasks.length})
+                </button>
+                {showCompleted && (
+                  <div className="space-y-1.5 mt-1">
+                    {completedSubtasks.map(subtask => (
+                      <SubtaskItem
+                        key={subtask.id}
+                        subtask={subtask}
+                        onToggle={onToggle}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        onOpenRecurrence={handleOpenRecurrence}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-xs text-gray-500 text-center py-3">

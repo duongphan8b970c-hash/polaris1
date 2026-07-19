@@ -27,6 +27,7 @@ export default function GoalDetails() {
   const [submittingTask, setSubmittingTask] = useState(false)
   const [submittingGoal, setSubmittingGoal] = useState(false)
   const [activeTab, setActiveTab] = useState('tasks')
+  const [showCompletedTasks, setShowCompletedTasks] = useState(false)
 
   const goal = goals.find(g => g.id === goalId)
 
@@ -455,23 +456,57 @@ export default function GoalDetails() {
                       </tr>
                     </thead>
                     <tbody>
-                      {[...tasks]
-                        .sort((a, b) => {
-                          if (a.status === 'completed' && b.status !== 'completed') return 1
-                          if (a.status !== 'completed' && b.status === 'completed') return -1
-                          return 0
-                        })
-                        .map((task) => (
-                          <TableTaskRow
-                            key={task.id}
-                            task={task}
-                            depth={0}
-                            goalId={goalId}
-                            onEdit={handleEditTask}
-                            onDelete={(task) => deleteTask(task.id)}
-                            onToggle={handleToggleTask}
-                          />
-                        ))}
+                      {/* Active tasks */}
+                      {tasks.filter(t => t.status !== 'completed').map((task) => (
+                        <TableTaskRow
+                          key={task.id}
+                          task={task}
+                          depth={0}
+                          goalId={goalId}
+                          onEdit={handleEditTask}
+                          onDelete={(task) => deleteTask(task.id)}
+                          onToggle={handleToggleTask}
+                        />
+                      ))}
+
+                      {/* Completed tasks (collapsible) */}
+                      {tasks.filter(t => t.status === 'completed').length > 0 && (
+                        <>
+                          <tr
+                            className="bg-gray-50 border-t border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors"
+                            onClick={() => setShowCompletedTasks(prev => !prev)}
+                          >
+                            <td colSpan={6} className="px-4 py-2">
+                              <div className="flex items-center gap-2 text-xs font-semibold text-gray-600">
+                                <svg
+                                  className={`w-3.5 h-3.5 text-gray-400 transition-transform ${showCompletedTasks ? 'rotate-90' : ''}`}
+                                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Đã hoàn thành ({tasks.filter(t => t.status === 'completed').length})
+                                <span className="ml-1 font-normal text-gray-400">
+                                  {showCompletedTasks ? '— nhấn để thu gọn' : '— nhấn để xem'}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                          {showCompletedTasks && tasks.filter(t => t.status === 'completed').map((task) => (
+                            <TableTaskRow
+                              key={task.id}
+                              task={task}
+                              depth={0}
+                              goalId={goalId}
+                              onEdit={handleEditTask}
+                              onDelete={(task) => deleteTask(task.id)}
+                              onToggle={handleToggleTask}
+                            />
+                          ))}
+                        </>
+                      )}
                     </tbody>
                   </table>
                 </div>

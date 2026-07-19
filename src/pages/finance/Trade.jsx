@@ -1,21 +1,20 @@
 import { useState } from 'react'
-import PaybackTracking from './PaybackTracking'
-import PageHeader from '../../components/layout/PageHeader'
+import TradePlanning from './TradePlanning'
+import TradeTracking from './TradeTracking'
 
 const TABS = [
-  { id: 'payback', label: 'Payback', icon: '💳', description: 'Theo dõi các khoản cần trả' },
-  { id: 'plan', label: 'Plan', icon: '📋', description: 'Kế hoạch chi tiêu hàng tháng' }
+  { id: 'planning', label: 'Kế hoạch Trade', icon: '📋' },
+  { id: 'tracking', label: 'Quản lý Trade', icon: '📈' }
 ]
 
-export default function ABetterDay() {
-  const [activeTab, setActiveTab] = useState('plan')
+export default function Trade() {
+  // Mặc định mở tab "Kế hoạch Trade"
+  const [activeTab, setActiveTab] = useState('planning')
 
   return (
     <div>
-      <PageHeader title="A Better Day" />
-
       {/* Tab Navigation */}
-      <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1">
+      <div className="flex gap-1 mb-4 bg-gray-100 rounded-xl p-1">
         {TABS.map(tab => (
           <button
             key={tab.id}
@@ -33,7 +32,7 @@ export default function ABetterDay() {
       </div>
 
       {/* Tab Content */}
-      <PaybackTracking goalType={activeTab} />
+      {activeTab === 'planning' ? <TradePlanning /> : <TradeTracking />}
     </div>
   )
 }

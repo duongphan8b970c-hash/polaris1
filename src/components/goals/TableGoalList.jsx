@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import TableGoalRow from '../common/TableGoalRow'
 
 export default function TableGoalList({
@@ -8,6 +9,8 @@ export default function TableGoalList({
   onComplete,
 }) {
   const safeGoals = Array.isArray(goals) ? goals : []
+  // Khi lọc riêng "đã hoàn thành" thì mở sẵn nhóm này.
+  const [showCompleted, setShowCompleted] = useState(statusFilter === 'completed')
 
   let filteredGoals
   if (statusFilter === 'completed') {
@@ -94,20 +97,32 @@ export default function TableGoalList({
               </>
             )}
 
-            {/* Completed goals section */}
+            {/* Completed goals section (collapsible) */}
             {completedGoals.length > 0 && (
               <>
-                <tr className="bg-gray-50 border-t-2 border-gray-200">
+                <tr
+                  className="bg-gray-50 border-t-2 border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => setShowCompleted(prev => !prev)}
+                >
                   <td colSpan={7} className="px-4 py-2">
                     <div className="flex items-center gap-2 text-xs font-semibold text-gray-600">
+                      <svg
+                        className={`w-3.5 h-3.5 text-gray-400 transition-transform ${showCompleted ? 'rotate-90' : ''}`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                       <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Đã hoàn thành ({completedGoals.length})
+                      <span className="ml-1 font-normal text-gray-400">
+                        {showCompleted ? '— nhấn để thu gọn' : '— nhấn để xem'}
+                      </span>
                     </div>
                   </td>
                 </tr>
-                {completedGoals.map((goal) => (
+                {showCompleted && completedGoals.map((goal) => (
                   <TableGoalRow
                     key={goal.id}
                     goal={goal}
