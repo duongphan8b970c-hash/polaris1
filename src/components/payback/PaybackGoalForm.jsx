@@ -1,9 +1,12 @@
 import { useState } from 'react'
-import { usePaybackPriorities } from '../../hooks/finance/usePaybackPriorities' 
+import { usePaybackPriorities } from '../../hooks/finance/usePaybackPriorities'
+import { useCategories } from '../../hooks/finance/useCategories'
 
 export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, onCancel, loading }) {
   const { priorities } = usePaybackPriorities()
   const isPlan = goalType === 'plan'
+  // Danh mục chi tiêu để plan gắn vào giao dịch tự động.
+  const { categories } = useCategories(isPlan ? 'expense' : null)
   const [formData, setFormData] = useState(() => {
     if (goal) {
       return {
@@ -14,7 +17,8 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
         start_date: goal.start_date,
         deadline: goal.deadline,
         priority_id: goal.priority_id || '',
-        recurrence: goal.recurrence || 'none'
+        recurrence: goal.recurrence || 'none',
+        category_id: goal.category_id || ''
       }
     }
     return {
@@ -25,7 +29,8 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
       start_date: new Date().toISOString().split('T')[0],
       deadline: '',
       priority_id: '',
-      recurrence: 'none'
+      recurrence: 'none',
+      category_id: ''
     }
   })
 
@@ -57,6 +62,11 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
       return
     }
 
+    if (isPlan && !formData.category_id) {
+      alert('Vui lòng chọn danh mục cho kế hoạch')
+      return
+    }
+
     // Check deadline is after start_date (only for payback)
     if (!isPlan && new Date(formData.deadline) <= new Date(formData.start_date)) {
       alert('Ngày hạn phải sau ngày bắt đầu')
@@ -66,7 +76,7 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
     // For plan mode, auto-set start_date to today
     const submitData = isPlan
       ? { ...formData, start_date: new Date().toISOString().split('T')[0], priority_id: null }
-      : { ...formData, recurrence: 'none' }
+      : { ...formData, recurrence: 'none', category_id: null }
 
     onSubmit(submitData)
   }
@@ -216,6 +226,44 @@ export default function PaybackGoalForm({ goal, goalType = 'payback', onSubmit, 
           <p className="text-xs text-gray-500 mt-1">
             📅 Ngày lên kế hoạch chi tiêu
           </p>
+
+          {/* Category - plan only (dùng cho giao dịch tự động) */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Danh mục <span className="text-red-500">*</span>
+            </label>
+            {categories.length === 0 ? (
+              <p className="text-sm text-gray-400 py-2">Chưa có danh mục chi tiêu nào.</p>
+            ) : (
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                {categories.map(category => {
+                  const active = formData.category_id === category.id
+                  return (
+                    <button
+                      key={category.id}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, category_id: category.id }))}
+                      className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg border-2 transition-all ${
+                        active
+                          ? 'border-teal-500 bg-teal-50 text-teal-700'
+                          : 'border-transparent bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                      title={category.name}
+                      disabled={loading}
+                    >
+                      <span className="text-2xl leading-none">{category.icon || '📁'}</span>
+                      <span className="text-[11px] leading-tight text-center line-clamp-2">
+                        {category.name}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              🏷️ Giao dịch tự động khi hoàn thành sẽ dùng danh mục này
+            </p>
+          </div>
 
           {/* Recurrence - plan only */}
           <div className="mt-4">

@@ -138,7 +138,8 @@ export function usePaybackGoals(goalType = 'payback') {
           status: 'active',
           priority_id: goalData.priority_id || null,
           goal_type: goalType,
-          recurrence: goalData.recurrence || 'none'
+          recurrence: goalData.recurrence || 'none',
+          category_id: goalData.category_id || null
         }])
         .select()
         .single()
@@ -166,7 +167,8 @@ export function usePaybackGoals(goalType = 'payback') {
           deadline: goalData.deadline,
           status: goalData.status,
           priority_id: goalData.priority_id || null,
-          recurrence: goalData.recurrence || 'none'
+          recurrence: goalData.recurrence || 'none',
+          category_id: goalData.category_id || null
         })
         .eq('id', id)
         .select()
@@ -268,7 +270,8 @@ export function usePaybackGoals(goalType = 'payback') {
         status: 'active',
         priority_id: null,
         goal_type: 'plan',
-        recurrence
+        recurrence,
+        category_id: goal.category_id || null
       }])
   }
 
@@ -282,10 +285,11 @@ export function usePaybackGoals(goalType = 'payback') {
       if (!payAmount || payAmount <= 0) throw new Error('Số tiền không hợp lệ')
 
       const isPlan = goal.goal_type === 'plan'
-      const categoryId = await getOrCreateExpenseCategory(
-        isPlan ? 'Plan' : 'Payback',
-        isPlan ? '📋' : '💳'
-      )
+      // Plan dùng category do người dùng chọn; payback vẫn dùng category 'Payback'.
+      // Nếu plan chưa chọn category thì để trống (không dùng category 'Plan' nữa).
+      const categoryId = isPlan
+        ? (goal.category_id || null)
+        : await getOrCreateExpenseCategory('Payback', '💳')
 
       // Lấy tiền tệ của ví để ghi vào giao dịch.
       const { data: wallet, error: walletErr } = await supabase

@@ -5,6 +5,8 @@
 ALTER TABLE payback_goals
 ADD COLUMN IF NOT EXISTS recurrence TEXT NOT NULL DEFAULT 'none';
 
--- Note: the default 'Plan' expense category is created on demand by the app
--- (usePaybackGoals.getOrCreateExpenseCategory) the first time a plan payment
--- is confirmed, so no seed row is required here.
+-- Category chosen for a plan. When a plan payment is confirmed, the auto-created
+-- expense transaction uses this category (instead of a generic 'Plan' category).
+-- Nullable: payback goals leave it null and keep using the 'Payback' category.
+ALTER TABLE payback_goals
+ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES public.categories(id);

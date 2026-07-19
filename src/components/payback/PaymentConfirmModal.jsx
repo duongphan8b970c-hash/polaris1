@@ -1,11 +1,17 @@
 import { useState } from 'react'
 import { useWallets } from '../../hooks/finance/useWallets'
+import { useCategories } from '../../hooks/finance/useCategories'
 import Modal from '../common/Modal'
 import { formatNumber } from '../../utils'
 
 export default function PaymentConfirmModal({ goal, goalType = 'payback', onConfirm, onClose, loading }) {
   const { wallets } = useWallets()
   const isPlan = goalType === 'plan'
+  const { categories } = useCategories(isPlan ? 'expense' : null)
+  const planCategory = isPlan ? categories.find(c => c.id === goal.category_id) : null
+  const categoryLabel = isPlan
+    ? (planCategory ? `${planCategory.icon || ''} ${planCategory.name}`.trim() : '(chưa chọn)')
+    : 'Payback'
 
   // Phần còn lại cần trả (payback) / dự kiến chi (plan).
   const remaining = Math.max(
@@ -152,7 +158,7 @@ export default function PaymentConfirmModal({ goal, goalType = 'payback', onConf
         {/* Info about auto transaction */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600">
           💡 Một giao dịch chi tiêu sẽ được tạo tự động với danh mục{' '}
-          <span className="font-semibold">{isPlan ? 'Plan' : 'Payback'}</span> và mô tả{' '}
+          <span className="font-semibold">{categoryLabel}</span> và mô tả{' '}
           <span className="font-semibold">"{goal.name}"</span>.
           {isPlan && goal.recurrence && goal.recurrence !== 'none' && (
             <> Sau khi hoàn thành, một kế hoạch {goal.recurrence === 'weekly' ? 'hàng tuần' : 'hàng tháng'} mới sẽ được tạo.</>
