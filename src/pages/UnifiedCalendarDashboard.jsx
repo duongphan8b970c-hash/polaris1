@@ -200,6 +200,7 @@ export default function UnifiedCalendarDashboard() {
         <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 text-white shadow">
           <p className="text-indigo-100 text-sm font-medium">Các khoản đã lên kế hoạch</p>
           <p className="text-3xl font-bold mt-1">{stats.financeCount}</p>
+          <p className="text-teal-100 text-xs">khoản</p>
         </div>
         <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white shadow">
           <p className="text-teal-100 text-sm font-medium">Tổng tiền</p>

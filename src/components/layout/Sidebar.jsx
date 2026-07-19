@@ -198,7 +198,7 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
             darkMode ? 'border-[#1e293b]' : 'border-gray-200'
           }`}>
             <Link to="/" className="flex items-center gap-2">
-              <link rel="icon" type="image/png" href="/logo.png" />
+              <img rel="icon" type="image/png" href="/logo.png" />
               <span className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Polaris</span>
             </Link>
             
