@@ -38,6 +38,8 @@ export default function PaybackTracking({ goalType = 'payback' }) {
     active: activeGoals.length,
     completed: completedGoals.length,
     totalDebt: goals.reduce((sum, g) => sum + g.target_amount, 0),
+    // Dự kiến chi tiêu: chỉ tính các mục đang pending (active), không tính completed
+    activeDebt: activeGoals.reduce((sum, g) => sum + g.target_amount, 0),
     totalPaid: goals.reduce((sum, g) => sum + g.current_paid, 0),
     totalRemaining: goals.reduce((sum, g) => sum + g.remaining, 0),
     // Monthly stats (only when filter is active)
@@ -250,7 +252,7 @@ export default function PaybackTracking({ goalType = 'payback' }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <p className="text-3xl font-bold">{formatNumber(stats.totalDebt)}</p>
+              <p className="text-3xl font-bold">{formatNumber(stats.activeDebt)}</p>
               <p className="text-emerald-100 text-xs">VND</p>
             </div>
           </div>
