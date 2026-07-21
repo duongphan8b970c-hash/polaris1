@@ -58,7 +58,6 @@ export function useGoals() {
       const insertPayload = {
         user_id: user.id,
         name: goalData.name,
-        description: goalData.description || null,
         icon: goalData.icon,
         color: goalData.color,
         category: goalData.category,
@@ -66,11 +65,6 @@ export function useGoals() {
         start_date: goalData.start_date || null,
         target_date: goalData.target_date || null,
         end_date: goalData.end_date || null,
-        current_value: 0,
-        is_checkin_enabled: goalData.is_checkin_enabled || false,
-        checkin_frequency: goalData.checkin_frequency || 'daily',
-        checkin_days_per_week: goalData.checkin_days_per_week || 7,
-        checkin_target_days: goalData.checkin_target_days || null,
         assigned_to: goalData.assigned_to || [],
       }
 
