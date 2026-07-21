@@ -139,8 +139,6 @@ export function useTasks(goalId = null, filters = {}) {
           due_date: taskData.due_date,
           priority: taskData.priority,
           status: taskData.status,
-          tags: taskData.tags,
-          estimated_hours: taskData.estimated_hours ? parseFloat(taskData.estimated_hours) : null,
           assigned_to: taskData.assigned_to || []
         }
 
