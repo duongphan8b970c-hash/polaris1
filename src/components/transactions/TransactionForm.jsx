@@ -96,7 +96,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
         if (!desc || seen.has(desc)) continue
         seen.add(desc)
         unique.push(desc)
-        if (unique.length >= 5) break
+        if (unique.length >= 10) break
       }
       setRecentDescriptions(unique)
     }
