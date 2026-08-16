@@ -84,9 +84,6 @@ export default function FinanceCalendar() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">💳 Finance</h2>
-        </div>
         <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
           {[
             { value: 'all', label: 'Tất cả' },

@@ -10,7 +10,7 @@ export default function UnifiedCalendarDashboard() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="🗓️ Tổng quan"
+        title="Tổng quan"
       />
 
       <div className="border-b border-gray-200">
