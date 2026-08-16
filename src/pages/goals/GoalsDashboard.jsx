@@ -188,7 +188,7 @@ export default function GoalsDashboard() {
       {/* Health Filter */}
       <div className="flex flex-wrap items-center gap-3 mb-3">
         <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-          Sức khỏe mục tiêu:
+          Tổng quan mục tiêu:
         </label>
         <div className="inline-flex flex-wrap rounded-lg border border-gray-300 bg-white p-0.5 shadow-sm gap-0.5">
           <button
