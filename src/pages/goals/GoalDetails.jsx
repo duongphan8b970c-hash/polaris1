@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useGoals } from '../../hooks/goals/useGoals'
 import { useTasks } from '../../hooks/goals/useTasks'
@@ -11,6 +11,8 @@ import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import UserAvatar from '../../components/common/UserAvatar'
 import Breadcrumb from '../../components/common/Breadcrumb'
+import GoalHealthBadge from '../../components/common/GoalHealthBadge'
+import { computeGoalHealth, sortTasksByUrgency } from '../../utils/taskHealth'
 
 
 export default function GoalDetails() {
@@ -30,6 +32,15 @@ export default function GoalDetails() {
   const [showCompletedTasks, setShowCompletedTasks] = useState(false)
 
   const goal = goals.find(g => g.id === goalId)
+
+  // Health is derived from the tasks loaded on this page, so it stays in sync
+  // with the (possibly filtered) list the user is looking at.
+  const health = useMemo(() => (goal ? computeGoalHealth(goal, tasks) : null), [goal, tasks])
+
+  // High priority + near deadline first
+  const sortedTasks = useMemo(() => sortTasksByUrgency(tasks), [tasks])
+  const activeTasks = sortedTasks.filter(t => t.status !== 'completed')
+  const completedTasks = sortedTasks.filter(t => t.status === 'completed')
 
   const handleCreateTask = () => {
     setEditingTask(null)
@@ -234,7 +245,10 @@ export default function GoalDetails() {
           {/* ✅ Colorful Progress Bar */}
           <div className="pt-4 border-t border-white/40">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-700 font-semibold">Tiến độ</span>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-700 font-semibold">Tiến độ</span>
+                <GoalHealthBadge health={health} />
+              </div>
               <span className="font-bold" style={{ color: goal.color }}>{progress.toFixed(1)}%</span>
             </div>
             <div className="w-full bg-white/60 backdrop-blur-sm rounded-full h-3 overflow-hidden shadow-inner">
@@ -257,6 +271,25 @@ export default function GoalDetails() {
                 />
               </div>
             </div>
+
+            {/* Health reasons + forecast completion date */}
+            {health && (
+              <div className="mt-3 flex flex-wrap items-start gap-x-6 gap-y-1">
+                <div className="space-y-0.5">
+                  {health.reasons.map((reason) => (
+                    <p key={reason} className="text-xs text-gray-700">• {reason}</p>
+                  ))}
+                </div>
+                {health.forecastDate && (
+                  <p className="text-xs text-gray-700">
+                    📈 Dự báo hoàn thành: <strong>{health.forecastDate.toLocaleDateString('vi-VN')}</strong>
+                    {health.forecastSlipDays > 0 && (
+                      <span className="text-red-600"> (trễ {health.forecastSlipDays} ngày)</span>
+                    )}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -456,8 +489,8 @@ export default function GoalDetails() {
                       </tr>
                     </thead>
                     <tbody>
-                      {/* Active tasks */}
-                      {tasks.filter(t => t.status !== 'completed').map((task) => (
+                      {/* Active tasks — sorted by priority + deadline */}
+                      {activeTasks.map((task) => (
                         <TableTaskRow
                           key={task.id}
                           task={task}
@@ -470,7 +503,7 @@ export default function GoalDetails() {
                       ))}
 
                       {/* Completed tasks (collapsible) */}
-                      {tasks.filter(t => t.status === 'completed').length > 0 && (
+                      {completedTasks.length > 0 && (
                         <>
                           <tr
                             className="bg-gray-50 border-t border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors"
@@ -487,14 +520,14 @@ export default function GoalDetails() {
                                 <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                Đã hoàn thành ({tasks.filter(t => t.status === 'completed').length})
+                                Đã hoàn thành ({completedTasks.length})
                                 <span className="ml-1 font-normal text-gray-400">
                                   {showCompletedTasks ? '— nhấn để thu gọn' : '— nhấn để xem'}
                                 </span>
                               </div>
                             </td>
                           </tr>
-                          {showCompletedTasks && tasks.filter(t => t.status === 'completed').map((task) => (
+                          {showCompletedTasks && completedTasks.map((task) => (
                             <TableTaskRow
                               key={task.id}
                               task={task}
@@ -533,6 +566,7 @@ export default function GoalDetails() {
         <TaskForm
           task={editingTask}
           goalId={goalId}
+          siblingTasks={tasks}
           onSubmit={handleSubmitTask}
           onCancel={handleCloseTaskForm}
           loading={submittingTask}

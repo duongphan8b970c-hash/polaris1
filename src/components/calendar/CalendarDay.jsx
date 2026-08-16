@@ -3,15 +3,22 @@ import { isToday, getItemsForDate } from '../../utils/calendar'
 export default function CalendarDay({ day, items, isSelected, onClick }) {
   // Get items for this specific date
   const dateItems = getItemsForDate(items, day.date)
-  
+
   // Calculate stats
   const total = dateItems.length
-  const completed = dateItems.filter(item => 
-    item.type === 'task' 
-      ? item.status === 'completed' 
+  const completed = dateItems.filter(item =>
+    item.type === 'task'
+      ? item.status === 'completed'
       : item.is_completed === true
   ).length
   const percentage = total > 0 ? (completed / total) * 100 : 0
+
+  // Risk signals: what on this day needs attention?
+  const overdue = dateItems.filter(item => item.type === 'task' && item.is_overdue).length
+  const blocked = dateItems.filter(
+    item => item.type === 'task' && item.status !== 'completed' && (item.is_blocked || item.status === 'blocked')
+  ).length
+  const dueSoon = dateItems.filter(item => item.type === 'task' && item.is_due_soon).length
 
   // Determine color based on completion
   let color = 'gray'
@@ -26,11 +33,6 @@ export default function CalendarDay({ day, items, isSelected, onClick }) {
   }
 
   const today = isToday(day.date)
-
-  // Check if any multi-day task
-  const hasMultiDay = dateItems.some(item => 
-    item.type === 'task' && item.total_duration > 1
-  )
 
   // Color classes for border
   const colorClasses = {
@@ -51,12 +53,24 @@ export default function CalendarDay({ day, items, isSelected, onClick }) {
   return (
     <button
       onClick={onClick}
+      title={
+        total === 0
+          ? undefined
+          : [
+              `${completed}/${total} việc hoàn thành`,
+              overdue > 0 ? `${overdue} task quá hạn` : null,
+              dueSoon > 0 ? `${dueSoon} task sắp đến hạn` : null,
+              blocked > 0 ? `${blocked} task bị chặn` : null,
+            ]
+              .filter(Boolean)
+              .join('\n')
+      }
       className={`
-        relative h-20 border-2 rounded-lg transition-all hover:shadow-md
+        relative h-24 border-2 rounded-lg transition-all hover:shadow-md
         ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-100'}
         ${isSelected ? 'ring-2 ring-blue-500 border-blue-500' : colorClasses[color]}
         ${today ? 'ring-2 ring-blue-400' : ''}
-        ${hasMultiDay ? 'border-l-4 border-l-purple-500' : ''}
+        ${overdue > 0 && !isSelected ? 'border-l-4 border-l-red-500' : ''}
       `}
     >
       {/* Date Number */}
@@ -68,6 +82,35 @@ export default function CalendarDay({ day, items, isSelected, onClick }) {
           {day.date.getDate()}
         </span>
       </div>
+
+      {/* Risk flags */}
+      <div className="absolute top-1 right-1 flex items-center gap-0.5">
+        {today && <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse" />}
+        {overdue > 0 && (
+          <span className="text-[10px] bg-red-100 text-red-700 px-1 rounded font-bold leading-tight">
+            ⚠️{overdue}
+          </span>
+        )}
+        {blocked > 0 && (
+          <span className="text-[10px] bg-gray-200 text-gray-700 px-1 rounded font-bold leading-tight">
+            🚫{blocked}
+          </span>
+        )}
+      </div>
+
+      {/* Goal colour dots — which goals land on this day */}
+      {total > 0 && (
+        <div className="absolute top-6 left-0 right-0 px-2 flex flex-wrap gap-0.5 justify-center">
+          {dateItems.slice(0, 8).map((item, index) => (
+            <span
+              key={`${item.type}-${item.original_id}-${index}`}
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: item.goal?.color || '#9ca3af', opacity: item.type === 'subtask' ? 0.55 : 1 }}
+            />
+          ))}
+          {total > 8 && <span className="text-[8px] text-gray-400 leading-none">+{total - 8}</span>}
+        </div>
+      )}
 
       {/* Completion Indicator */}
       {total > 0 && (
@@ -91,22 +134,6 @@ export default function CalendarDay({ day, items, isSelected, onClick }) {
               {completed}/{total}
             </span>
           </div>
-        </div>
-      )}
-
-      {/* Today Badge */}
-      {today && (
-        <div className="absolute top-1 right-1">
-          <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-        </div>
-      )}
-
-      {/* Multi-day Task Indicator */}
-      {hasMultiDay && (
-        <div className="absolute top-1 right-1" style={{ right: today ? '12px' : '4px' }}>
-          <span className="text-[10px] bg-purple-100 text-purple-700 px-1 rounded font-bold">
-            📅
-          </span>
         </div>
       )}
     </button>

@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useSubtasks } from '../../hooks/goals/useSubtasks'
 import TableSubTaskRow from './TableSubTaskRow'
+import DueDateBadge from './DueDateBadge'
+import BlockedBadge from './BlockedBadge'
+import { getTaskDeadline } from '../../utils/taskHealth'
 
 const STATUS_CONFIG = {
   todo:        { label: 'Cần làm',     bg: 'bg-gray-100',   text: 'text-gray-700',  icon: '📝' },
@@ -54,7 +57,7 @@ function ChevronIcon({ expanded }) {
 
 // Inline task detail panel – compact strip (like GoalInfoStrip)
 function TaskInlineDetail({ task, indentPx }) {
-  const hasInfo = task.description || (task.tags && task.tags.length > 0)
+  const hasInfo = task.description || (task.tags && task.tags.length > 0) || task.blocked_by || task.start_date
 
   return (
     <tr>
@@ -65,6 +68,17 @@ function TaskInlineDetail({ task, indentPx }) {
         >
           {task.description && (
             <span className="text-xs text-gray-600 italic">{task.description}</span>
+          )}
+          {task.start_date && (
+            <span className="text-xs text-gray-500">
+              🚀 Bắt đầu: {new Date(task.start_date).toLocaleDateString('vi-VN')}
+            </span>
+          )}
+          {task.blocked_by && (
+            <span className="text-xs text-red-600">
+              🔗 Phụ thuộc: <strong>{task.blocked_by.title}</strong>
+              {task.blocked_by.status === 'completed' ? ' (đã xong)' : ' (chưa xong)'}
+            </span>
           )}
           {task.tags?.map((tag) => (
             <span key={tag} className="px-2 py-0.5 text-xs bg-white border border-indigo-200 rounded-full text-indigo-700">
@@ -253,8 +267,14 @@ export default function TableTaskRow({
   const detailIndentPx = depth * 28 + 28
 
   const isCompleted = task.status === 'completed'
-  const status = STATUS_CONFIG[task.status] || STATUS_CONFIG.todo
+  // A pending prerequisite overrides the stored status in the UI: the task is
+  // Waiting, and that is what explains a slipping schedule.
+  const isBlocked = !isCompleted && (task.is_blocked || task.status === 'blocked')
+  const status = isBlocked
+    ? STATUS_CONFIG.blocked
+    : STATUS_CONFIG[task.status] || STATUS_CONFIG.todo
   const priority = PRIORITY_CONFIG[task.priority]
+  const deadline = getTaskDeadline(task)
 
   const handleRowClick = () => setOpen((v) => !v)
 
@@ -272,7 +292,15 @@ export default function TableTaskRow({
     <>
       <tr
         className={`border-b border-gray-100 transition-colors cursor-pointer ${
-          isCompleted ? 'bg-gray-50/60 hover:bg-gray-100' : 'hover:bg-blue-50/60'
+          isCompleted
+            ? 'bg-gray-50/60 hover:bg-gray-100'
+            : task.is_overdue
+            ? 'bg-red-50/50 hover:bg-red-50'
+            : isBlocked
+            ? 'bg-red-50/25 hover:bg-red-50/50'
+            : task.is_due_soon
+            ? 'bg-amber-50/50 hover:bg-amber-50'
+            : 'hover:bg-blue-50/60'
         } ${open ? 'bg-blue-50/30' : ''}`}
         onClick={handleRowClick}
         tabIndex={0}
@@ -320,11 +348,14 @@ export default function TableTaskRow({
           </div>
         </td>
 
-        {/* Status */}
-        <td className="px-3 py-2.5 whitespace-nowrap">
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
-            {status.icon} {status.label}
-          </span>
+        {/* Status (+ what is blocking it) */}
+        <td className="px-3 py-2.5">
+          <div className="flex flex-col items-start gap-1">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${status.bg} ${status.text}`}>
+              {status.icon} {isBlocked && task.is_blocked ? 'Đang chờ' : status.label}
+            </span>
+            {isBlocked && task.blocked_by && <BlockedBadge blockedBy={task.blocked_by} />}
+          </div>
         </td>
 
         {/* Priority */}
@@ -348,9 +379,9 @@ export default function TableTaskRow({
           )}
         </td>
 
-        {/* Deadline - hidden per requirements */}
+        {/* Deadline + days remaining / overdue */}
         <td className="px-3 py-2.5 text-xs whitespace-nowrap">
-          <span className="text-gray-400">—</span>
+          <DueDateBadge date={deadline} isCompleted={isCompleted} showDate compact />
         </td>
 
         {/* Actions - ALWAYS VISIBLE */}

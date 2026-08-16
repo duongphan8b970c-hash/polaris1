@@ -7,6 +7,9 @@ import SubtaskList from '../../components/goals/SubtaskList'
 import TaskForm from '../../components/goals/TaskForm'
 import Modal from '../../components/common/Modal'
 import Loading from '../../components/common/Loading'
+import DueDateBadge from '../../components/common/DueDateBadge'
+import BlockedBadge from '../../components/common/BlockedBadge'
+import { getTaskDeadline } from '../../utils/taskHealth'
 import { TASK_STATUS_FILTERS, PRIORITY_OPTIONS } from '../../constants'
 
 export default function TaskDetails() {
@@ -154,6 +157,15 @@ export default function TaskDetails() {
               }`}>
                 {priorityOption.icon} {priorityOption.label}
               </span>
+              {/* Days remaining / overdue */}
+              <DueDateBadge
+                date={getTaskDeadline(task)}
+                isCompleted={task.status === 'completed'}
+                showDate
+              />
+              {task.status !== 'completed' && task.blocked_by && task.is_blocked && (
+                <BlockedBadge blockedBy={task.blocked_by} />
+              )}
             </div>
           </div>
           
@@ -222,6 +234,7 @@ export default function TaskDetails() {
         <TaskForm
           task={task}
           goalId={goalId}
+          siblingTasks={tasks}
           onSubmit={handleUpdateTask}
           onCancel={() => setShowEditModal(false)}
           loading={submitting}

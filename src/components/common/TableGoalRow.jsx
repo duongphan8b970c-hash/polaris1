@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTasks } from '../../hooks/goals/useTasks'
 import TableTaskRow from './TableTaskRow'
 import TaskForm from '../goals/TaskForm'
 import Modal from './Modal'
+import GoalHealthBadge from './GoalHealthBadge'
+import DueDateBadge from './DueDateBadge'
+import { computeGoalHealth, sortTasksByUrgency } from '../../utils/taskHealth'
 
 const PRIORITY_CONFIG = {
   urgent: { label: 'Khẩn cấp', bg: 'bg-red-100',    text: 'text-red-700' },
@@ -51,29 +54,33 @@ function DurationCell({ goal }) {
 }
 
 // Compact goal info strip shown at the top of the expanded task area
-function GoalInfoStrip({ goal }) {
+function GoalInfoStrip({ goal, health }) {
   const hasInfo =
     goal.description ||
     goal.assigned_to?.length > 0 ||
-    (goal.tags && goal.tags.length > 0)
+    (goal.tags && goal.tags.length > 0) ||
+    !!health
 
   if (!hasInfo) return null
 
   return (
     <tr>
       <td colSpan={7} className="p-0">
-        <div className="bg-blue-50/60 border-b border-blue-100 px-12 py-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-          {goal.description && (
-            <span className="text-xs text-gray-600 italic">{goal.description}</span>
-          )}
-          {goal.assigned_to?.length > 0 && (
-            <span className="text-xs text-gray-500">👥 {goal.assigned_to.length} thành viên</span>
-          )}
-          {goal.tags?.map((tag) => (
-            <span key={tag} className="px-2 py-0.5 text-xs bg-white border border-blue-200 rounded-full text-blue-700">
-              {tag}
-            </span>
-          ))}
+        <div className="bg-blue-50/60 border-b border-blue-100 px-12 py-2 space-y-1">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            {goal.description && (
+              <span className="text-xs text-gray-600 italic">{goal.description}</span>
+            )}
+            {goal.assigned_to?.length > 0 && (
+              <span className="text-xs text-gray-500">👥 {goal.assigned_to.length} thành viên</span>
+            )}
+            {goal.tags?.map((tag) => (
+              <span key={tag} className="px-2 py-0.5 text-xs bg-white border border-blue-200 rounded-full text-blue-700">
+                {tag}
+              </span>
+            ))}
+          </div>
+          {health && <GoalHealthBadge health={health} detail />}
         </div>
       </td>
     </tr>
@@ -81,7 +88,7 @@ function GoalInfoStrip({ goal }) {
 }
 
 // Lazy-loaded task rows for an expanded goal
-function TaskLoader({ goal, depth }) {
+function TaskLoader({ goal, depth, health }) {
   const goalId = goal.id
   const {
     tasks,
@@ -123,7 +130,7 @@ function TaskLoader({ goal, depth }) {
   if (loading) {
     return (
       <>
-        <GoalInfoStrip goal={goal} />
+        <GoalInfoStrip goal={goal} health={health} />
         <tr>
           <td colSpan={7} className="py-2">
             <div className="flex items-center gap-1.5 text-xs text-gray-400 pl-12">
@@ -138,7 +145,7 @@ function TaskLoader({ goal, depth }) {
 
   return (
     <>
-      <GoalInfoStrip goal={goal} />
+      <GoalInfoStrip goal={goal} health={health} />
       {tasks.length === 0 ? (
         <tr>
           <td colSpan={7} className="py-1">
@@ -148,25 +155,20 @@ function TaskLoader({ goal, depth }) {
           </td>
         </tr>
       ) : (
-        [...tasks]
-          .sort((a, b) => {
-            if (a.status === 'completed' && b.status !== 'completed') return 1
-            if (a.status !== 'completed' && b.status === 'completed') return -1
-            return 0
-          })
-          .map((task) => (
-            <TableTaskRow
-              key={task.id}
-              task={task}
-              depth={depth + 1}
-              goalId={goalId}
-              onEdit={handleEdit}
-              onDelete={(t) => {
-                if (confirm(`Xóa task "${t.title}"?`)) deleteTask(t.id)
-              }}
-              onToggle={(t) => toggleTaskStatus(t.id, t.status)}
-            />
-          ))
+        // High priority + near deadline first; completed sinks to the bottom.
+        sortTasksByUrgency(tasks).map((task) => (
+          <TableTaskRow
+            key={task.id}
+            task={task}
+            depth={depth + 1}
+            goalId={goalId}
+            onEdit={handleEdit}
+            onDelete={(t) => {
+              if (confirm(`Xóa task "${t.title}"?`)) deleteTask(t.id)
+            }}
+            onToggle={(t) => toggleTaskStatus(t.id, t.status)}
+          />
+        ))
       )}
 
       {/* Add task button row */}
@@ -196,6 +198,7 @@ function TaskLoader({ goal, depth }) {
             <TaskForm
               task={editingTask}
               goalId={goalId}
+              siblingTasks={tasks}
               onSubmit={handleSubmit}
               onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
               loading={submitting}
@@ -219,15 +222,12 @@ export default function TableGoalRow({
   const progress = parseFloat(goal.progress) || 0
   const priority = PRIORITY_CONFIG[goal.priority]
 
-  const getDaysRemaining = () => {
-    if (!goal.target_date) return null
-    const diffDays = Math.ceil(
-      (new Date(goal.target_date) - new Date()) / (1000 * 60 * 60 * 24)
-    )
-    return diffDays
-  }
-
-  const daysRemaining = getDaysRemaining()
+  // useGoals attaches `health`; recompute as a fallback so the row also works
+  // when it is rendered from a goal object that has not been through the hook.
+  const health = useMemo(
+    () => goal.health || computeGoalHealth(goal, goal.tasks_summary || []),
+    [goal]
+  )
 
   const handleRowClick = () => setExpanded((v) => !v)
   const handleExpandClick = (e) => { e.stopPropagation(); setExpanded((v) => !v) }
@@ -277,17 +277,20 @@ export default function TableGoalRow({
           </div>
         </td>
 
-        {/* Status */}
-        <td className="px-3 py-3 whitespace-nowrap">
-          {isCompleted ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-              ✓ Hoàn thành
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-              ⚡ Đang làm
-            </span>
-          )}
+        {/* Status + health (On Track / At Risk / Off Track) */}
+        <td className="px-3 py-3">
+          <div className="flex flex-col items-start gap-1">
+            {isCompleted ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium whitespace-nowrap">
+                ✓ Hoàn thành
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium whitespace-nowrap">
+                ⚡ Đang làm
+              </span>
+            )}
+            <GoalHealthBadge health={health} />
+          </div>
         </td>
 
         {/* Priority */}
@@ -299,10 +302,10 @@ export default function TableGoalRow({
           ) : <span className="text-gray-400 text-xs">—</span>}
         </td>
 
-        {/* Progress */}
+        {/* Progress (with a marker for where the plan says we should be) */}
         <td className="px-3 py-3">
           <div className="flex items-center gap-2 min-w-[80px]">
-            <div className="flex-1 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+            <div className="relative flex-1 bg-gray-200 rounded-full h-1.5 overflow-hidden">
               <div
                 className={`h-full rounded-full ${
                   progress >= 100 ? 'bg-green-500' :
@@ -312,6 +315,13 @@ export default function TableGoalRow({
                 }`}
                 style={{ width: `${Math.min(progress, 100)}%` }}
               />
+              {!isCompleted && health.expectedProgress !== null && (
+                <span
+                  className="absolute top-0 bottom-0 w-0.5 bg-gray-600/70"
+                  style={{ left: `${Math.min(health.expectedProgress, 100)}%` }}
+                  title={`Kế hoạch: ${health.expectedProgress.toFixed(0)}%`}
+                />
+              )}
             </div>
             <span className="text-xs text-gray-700 w-8 text-right">{progress.toFixed(0)}%</span>
           </div>
@@ -322,27 +332,18 @@ export default function TableGoalRow({
           <DurationCell goal={goal} />
         </td>
 
-        {/* Countdown: days remaining for ALL goals */}
+        {/* Countdown: days remaining / overdue + open risk counts */}
         <td className="px-3 py-3 whitespace-nowrap text-center">
-          {daysRemaining === null ? (
-            <span className="text-gray-400 text-xs">—</span>
-          ) : isCompleted ? (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
-              ✓ Xong
-            </span>
-          ) : daysRemaining < 0 ? (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 rounded-full text-xs font-medium">
-              Quá {Math.abs(daysRemaining)} ngày
-            </span>
-          ) : daysRemaining === 0 ? (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-600 rounded-full text-xs font-medium">
-              Hôm nay
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-              {daysRemaining} ngày
-            </span>
-          )}
+          <div className="flex flex-col items-center gap-1">
+            <DueDateBadge date={goal.target_date} isCompleted={isCompleted} compact />
+            {!isCompleted && (health.overdueTasks > 0 || health.blockedTasks > 0) && (
+              <span className="text-[10px] text-gray-500">
+                {health.overdueTasks > 0 && `${health.overdueTasks} quá hạn`}
+                {health.overdueTasks > 0 && health.blockedTasks > 0 && ' · '}
+                {health.blockedTasks > 0 && `${health.blockedTasks} bị chặn`}
+              </span>
+            )}
+          </div>
         </td>
 
         {/* Actions - ALWAYS VISIBLE */}
@@ -389,7 +390,7 @@ export default function TableGoalRow({
 
       {/* Expanded Tasks + goal info strip (lazy loaded) */}
       {expanded && (
-        <TaskLoader goal={goal} depth={0} />
+        <TaskLoader goal={goal} depth={0} health={health} />
       )}
     </>
   )

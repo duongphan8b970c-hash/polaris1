@@ -4,6 +4,7 @@ import TableGoalRow from '../common/TableGoalRow'
 export default function TableGoalList({
   goals,
   statusFilter = 'all',
+  healthFilter = 'all',
   onEdit,
   onDelete,
   onComplete,
@@ -21,6 +22,10 @@ export default function TableGoalList({
     filteredGoals = safeGoals
   }
 
+  if (healthFilter !== 'all') {
+    filteredGoals = filteredGoals.filter((g) => g.health?.key === healthFilter)
+  }
+
   if (filteredGoals.length === 0) {
     return (
       <div className="card text-center py-16">
@@ -29,9 +34,13 @@ export default function TableGoalList({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
           </svg>
         </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Chưa có mục tiêu nào</h3>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
+          {healthFilter !== 'all' ? 'Không có mục tiêu nào phù hợp' : 'Chưa có mục tiêu nào'}
+        </h3>
         <p className="text-gray-600 max-w-md mx-auto">
-          Tạo mục tiêu đầu tiên để bắt đầu theo dõi tiến độ và hoàn thành các dự án của bạn
+          {healthFilter !== 'all'
+            ? 'Thử bỏ bộ lọc trạng thái sức khỏe để xem tất cả mục tiêu.'
+            : 'Tạo mục tiêu đầu tiên để bắt đầu theo dõi tiến độ và hoàn thành các dự án của bạn'}
         </p>
       </div>
     )
@@ -51,7 +60,7 @@ export default function TableGoalList({
                 Tên
               </th>
               <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                Trạng thái
+                Trạng thái / Sức khỏe
               </th>
               <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 Ưu tiên

@@ -1,28 +1,22 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import {
+  TASK_DEPENDENCY_COLUMN,
+  dependencySelectFragment,
+  disableTaskDependency,
+  isTaskDependencySupported,
+  isUnknownColumnError,
+  stripDependencyField,
+} from '../../lib/taskColumns'
+import { decorateTasks } from '../../utils/taskHealth'
 
-export function useTasks(goalId = null, filters = {}) {
-  const [tasks, setTasks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  const fetchTasks = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not authenticated')
-
-      let query = supabase
-        .from('tasks')
-        .select(`
+const buildSelect = () => `
           *,
           assigned_to,
           created_by,
           scheduled_date,
           recurrence_rule,
-          is_calendar_visible,
+          is_calendar_visible${dependencySelectFragment()},
           goal:goals(
             id,
             name,
@@ -38,31 +32,58 @@ export function useTasks(goalId = null, filters = {}) {
             is_calendar_visible,
             assigned_to
           )
-        `)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
+        `
 
-      if (goalId) {
-        query = query.eq('goal_id', goalId)
+export function useTasks(goalId = null, filters = {}) {
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchTasks = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+
+      const runQuery = () => {
+        let query = supabase
+          .from('tasks')
+          .select(buildSelect())
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+
+        if (goalId) {
+          query = query.eq('goal_id', goalId)
+        }
+
+        if (filters.status) {
+          query = query.eq('status', filters.status)
+        }
+
+        if (filters.priority) {
+          query = query.eq('priority', filters.priority)
+        }
+
+        if (filters.date_from) {
+          query = query.gte('due_date', filters.date_from)
+        }
+
+        if (filters.date_to) {
+          query = query.lte('due_date', filters.date_to)
+        }
+
+        return query
       }
 
-      if (filters.status) {
-        query = query.eq('status', filters.status)
-      }
+      let { data, error: fetchError } = await runQuery()
 
-      if (filters.priority) {
-        query = query.eq('priority', filters.priority)
+      // The dependency column may not be migrated yet — retry without it once.
+      if (fetchError && isUnknownColumnError(fetchError)) {
+        disableTaskDependency()
+        ;({ data, error: fetchError } = await runQuery())
       }
-
-      if (filters.date_from) {
-        query = query.gte('due_date', filters.date_from)
-      }
-
-      if (filters.date_to) {
-        query = query.lte('due_date', filters.date_to)
-      }
-
-      const { data, error: fetchError } = await query
 
       if (fetchError) throw fetchError
 
@@ -71,26 +92,34 @@ export function useTasks(goalId = null, filters = {}) {
         const completedSubtasks = task.subtasks?.filter(s => s.is_completed).length || 0
         const progress = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0
 
-        const isOverdue = task.due_date && 
-                         task.status !== 'completed' && 
-                         new Date(task.due_date) < new Date()
-
         return {
           ...task,
           total_subtasks: totalSubtasks,
           completed_subtasks: completedSubtasks,
           progress: progress.toFixed(2),
-          is_overdue: isOverdue
         }
       })
 
-      setTasks(tasksWithMetrics)
+      // Adds is_blocked / blocked_by / days_remaining / urgency_score.
+      // Dependencies are scoped to the same goal, so the fetched set is a
+      // complete index whenever `goalId` is set.
+      setTasks(decorateTasks(tasksWithMetrics))
     } catch (err) {
       console.error('Error fetching tasks:', err)
       setError(err.message)
     } finally {
       setLoading(false)
     }
+  }
+
+  /** Run a write, retrying without the dependency column if it is missing. */
+  const writeWithDependencyFallback = async (run, payload) => {
+    let result = await run(payload)
+    if (result.error && isUnknownColumnError(result.error)) {
+      disableTaskDependency()
+      result = await run(stripDependencyField(payload))
+    }
+    return result
   }
 
   const createTask = async (taskData) => {
@@ -103,6 +132,7 @@ export function useTasks(goalId = null, filters = {}) {
           goal_id: taskData.goal_id,
           title: taskData.title,
           start_date: taskData.start_date || null,
+          due_date: taskData.due_date || null,
           priority: taskData.priority || 'medium',
           status: 'todo',
           assigned_to: taskData.assigned_to || [],
@@ -111,11 +141,18 @@ export function useTasks(goalId = null, filters = {}) {
           is_calendar_visible: taskData.is_calendar_visible || false
         }
 
-        const { data, error: createError } = await supabase
-          .from('tasks')
-          .insert([insertPayload])
-          .select('*, assigned_to, created_by')
-          .single()
+        if (isTaskDependencySupported()) {
+          insertPayload[TASK_DEPENDENCY_COLUMN] = taskData[TASK_DEPENDENCY_COLUMN] || null
+        }
+
+        const { data, error: createError } = await writeWithDependencyFallback(
+          (payload) => supabase
+            .from('tasks')
+            .insert([payload])
+            .select('*, assigned_to, created_by')
+            .single(),
+          insertPayload
+        )
 
         if (createError) {
           console.error('❌ Create error:', createError)
@@ -152,13 +189,19 @@ export function useTasks(goalId = null, filters = {}) {
         if (Object.hasOwn(taskData, 'is_calendar_visible')) {
           updateData.is_calendar_visible = taskData.is_calendar_visible
         }
+        if (Object.hasOwn(taskData, TASK_DEPENDENCY_COLUMN) && isTaskDependencySupported()) {
+          updateData[TASK_DEPENDENCY_COLUMN] = taskData[TASK_DEPENDENCY_COLUMN] || null
+        }
 
-        const { data, error: updateError } = await supabase
-          .from('tasks')
-          .update(updateData)
-          .eq('id', id)
-          .select('*, assigned_to, created_by')
-          .single()
+        const { data, error: updateError } = await writeWithDependencyFallback(
+          (payload) => supabase
+            .from('tasks')
+            .update(payload)
+            .eq('id', id)
+            .select('*, assigned_to, created_by')
+            .single(),
+          updateData
+        )
 
         if (updateError) {
           console.error('❌ Update error:', updateError)

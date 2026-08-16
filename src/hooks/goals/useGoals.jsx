@@ -1,5 +1,46 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { dependencySelectFragment, disableTaskDependency, isUnknownColumnError } from '../../lib/taskColumns'
+import { computeGoalHealth, decorateTasks } from '../../utils/taskHealth'
+
+/**
+ * One batched query for the tasks of every goal, used to derive goal health
+ * (overdue / blocked counts). Returns Map<goalId, decoratedTasks[]>.
+ */
+async function fetchTasksByGoal(goalIds) {
+  if (goalIds.length === 0) return new Map()
+
+  const runQuery = () =>
+    supabase
+      .from('tasks')
+      .select(
+        `id, goal_id, title, status, priority, start_date, due_date, scheduled_date${dependencySelectFragment()}`
+      )
+      .in('goal_id', goalIds)
+      .is('deleted_at', null)
+
+  let { data, error } = await runQuery()
+
+  if (error && isUnknownColumnError(error)) {
+    disableTaskDependency()
+    ;({ data, error } = await runQuery())
+  }
+
+  if (error) {
+    // Health is a nice-to-have; never block the goal list on it.
+    console.error('Error fetching tasks for goal health:', error)
+    return new Map()
+  }
+
+  // Decorate across all goals at once so dependency lookups always resolve.
+  const decorated = decorateTasks(data || [])
+  const byGoal = new Map()
+  decorated.forEach((task) => {
+    if (!byGoal.has(task.goal_id)) byGoal.set(task.goal_id, [])
+    byGoal.get(task.goal_id).push(task)
+  })
+  return byGoal
+}
 
 export function useGoals() {
   const [goals, setGoals] = useState([])
@@ -41,7 +82,18 @@ export function useGoals() {
         })
       )
 
-      setGoals(goalsWithProgress)
+      // ✅ NEW: On Track / At Risk / Off Track status per goal
+      const tasksByGoal = await fetchTasksByGoal(goalsWithProgress.map((g) => g.id))
+      const goalsWithHealth = goalsWithProgress.map((goal) => {
+        const goalTasks = tasksByGoal.get(goal.id) || []
+        return {
+          ...goal,
+          tasks_summary: goalTasks,
+          health: computeGoalHealth(goal, goalTasks),
+        }
+      })
+
+      setGoals(goalsWithHealth)
     } catch (err) {
       console.error('Error fetching goals:', err)
       setError(err.message)
@@ -100,9 +152,18 @@ export function useGoals() {
 
       console.log('✅ Goal updated:', data)
 
-      // ✅ CRITICAL: Immediately update local state
-      setGoals(prevGoals => 
-        prevGoals.map(g => g.id === id ? data : g)
+      // ✅ CRITICAL: Immediately update local state, keeping derived fields
+      // (progress from the RPC, task summary) and re-deriving health.
+      setGoals(prevGoals =>
+        prevGoals.map(g => {
+          if (g.id !== id) return g
+          const merged = {
+            ...g,
+            ...data,
+            progress: Object.hasOwn(goalData, 'progress') ? data.progress : g.progress,
+          }
+          return { ...merged, health: computeGoalHealth(merged, g.tasks_summary || []) }
+        })
       )
 
       return { success: true, data }

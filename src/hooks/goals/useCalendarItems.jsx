@@ -2,6 +2,47 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import { generateOccurrences, isRecurring } from '../../utils/recurrence'
 import { parseDateString, formatDateString, normalizeToMidnight } from '../../utils/dateUtils'
+import {
+  TASK_DEPENDENCY_COLUMN,
+  dependencySelectFragment,
+  disableTaskDependency,
+  isTaskDependencySupported,
+  isUnknownColumnError,
+} from '../../lib/taskColumns'
+import { decorateTasks } from '../../utils/taskHealth'
+
+/**
+ * Load the `{ id, title, status }` of any prerequisite task that is referenced by
+ * `tasks` but is not itself in the list, so blocked state can be resolved.
+ */
+async function fetchMissingPrerequisites(tasks, abortSignal) {
+  if (!isTaskDependencySupported()) return []
+
+  const present = new Set(tasks.map((task) => task.id))
+  const missing = [
+    ...new Set(
+      tasks
+        .map((task) => task[TASK_DEPENDENCY_COLUMN])
+        .filter((id) => id && !present.has(id))
+    ),
+  ]
+
+  if (missing.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id, title, status')
+    .in('id', missing)
+    .abortSignal(abortSignal)
+
+  if (error) {
+    // Blocked flags are advisory; a failure here must not break the calendar.
+    console.error('Error resolving task prerequisites:', error)
+    return []
+  }
+
+  return data || []
+}
 
 export function useCalendarItems(startDate, endDate, options = {}) {
   const [items, setItems] = useState([])
@@ -38,36 +79,60 @@ export function useCalendarItems(startDate, endDate, options = {}) {
         rangeEnd.setHours(23, 59, 59, 999)
 
         // Fetch tasks
-        let tasksQuery = supabase
-          .from('tasks')
-          .select(`
-            id,
-            title,
-            description,
-            status,
-            priority,
-            scheduled_date,
-            recurrence_rule,
-            is_calendar_visible,
-            assigned_to,
-            goal_id,
-            goal:goals(id, name, icon, color)
-          `)
-          .eq('is_calendar_visible', true)
-          .is('deleted_at', null)
-          .abortSignal(controller.signal)
+        const buildTasksQuery = () => {
+          let query = supabase
+            .from('tasks')
+            .select(`
+              id,
+              title,
+              description,
+              status,
+              priority,
+              start_date,
+              due_date,
+              scheduled_date,
+              recurrence_rule,
+              is_calendar_visible,
+              assigned_to,
+              goal_id${dependencySelectFragment()},
+              goal:goals(id, name, icon, color)
+            `)
+            .eq('is_calendar_visible', true)
+            .is('deleted_at', null)
+            .abortSignal(controller.signal)
 
-        if (userId) {
-          tasksQuery = tasksQuery.contains('assigned_to', [userId])
-        } else if (!includeTeam) {
-          tasksQuery = tasksQuery.contains('assigned_to', [user.id])
+          if (userId) {
+            query = query.contains('assigned_to', [userId])
+          } else if (!includeTeam) {
+            query = query.contains('assigned_to', [user.id])
+          }
+
+          return query
         }
 
-        const { data: tasks, error: tasksError } = await tasksQuery
+        let { data: rawTasks, error: tasksError } = await buildTasksQuery()
+
+        if (tasksError && isUnknownColumnError(tasksError)) {
+          disableTaskDependency()
+          ;({ data: rawTasks, error: tasksError } = await buildTasksQuery())
+        }
+
         if (tasksError || cancelled) {
           if (tasksError) throw tasksError
           return
         }
+
+        // Prerequisites are often not themselves calendar-visible, so pull the
+        // missing ones in before deciding what is blocked.
+        const prerequisites = await fetchMissingPrerequisites(rawTasks || [], controller.signal)
+        if (cancelled) return
+
+        // Adds is_blocked / blocked_by / days_remaining so the calendar can flag
+        // overdue and blocked work. Only the visible tasks are kept afterwards.
+        const visibleIds = new Set((rawTasks || []).map((task) => task.id))
+        const tasks = decorateTasks([...(rawTasks || []), ...prerequisites]).filter((task) =>
+          visibleIds.has(task.id)
+        )
 
         // Fetch subtasks
         let subtasksQuery = supabase
@@ -85,6 +150,9 @@ export function useCalendarItems(startDate, endDate, options = {}) {
             task:tasks(
               id,
               title,
+              status,
+              priority,
+              due_date,
               goal_id,
               goal:goals(id, name, icon, color)
             )

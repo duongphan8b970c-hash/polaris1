@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useGoals } from '../../hooks/goals/useGoals'
+import { GOAL_HEALTH_META } from '../../utils/taskHealth'
 import TableGoalList from '../../components/goals/TableGoalList'
 import GoalForm from '../../components/goals/GoalForm'
 import Modal from '../../components/common/Modal'
@@ -14,6 +15,7 @@ export default function GoalsDashboard() {
   const [editingGoal, setEditingGoal] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [healthFilter, setHealthFilter] = useState('all')
 
   // Calculate summary stats
   const stats = {
@@ -24,6 +26,18 @@ export default function GoalsDashboard() {
       ? goals.reduce((sum, g) => sum + parseFloat(g.progress || 0), 0) / goals.length
       : 0,
   }
+
+  // Health breakdown across goals that are still running
+  const healthCounts = useMemo(() => {
+    const counts = { on_track: 0, at_risk: 0, off_track: 0, completed: 0, no_data: 0 }
+    goals.forEach((goal) => {
+      const key = goal.health?.key
+      if (key && key in counts) counts[key] += 1
+    })
+    return counts
+  }, [goals])
+
+  const atRiskTotal = healthCounts.at_risk + healthCounts.off_track
 
   const handleCreate = () => {
     setEditingGoal(null)
@@ -89,7 +103,7 @@ export default function GoalsDashboard() {
       />
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-5">
         <div className="card bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <div className="flex items-center justify-between">
             <div>
@@ -151,6 +165,52 @@ export default function GoalsDashboard() {
           </div>
           <p className="text-xs text-orange-600 mt-2">hoàn thành</p>
         </div>
+
+        {/* Health / Risk overview */}
+        <div className="card bg-gradient-to-br from-red-50 to-amber-50 border-amber-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-amber-700 font-medium mb-1">Cần chú ý</p>
+              <p className="text-3xl font-bold text-amber-900">{atRiskTotal}</p>
+            </div>
+            <div className="w-12 h-12 bg-amber-200 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-xs text-amber-700 mt-2">
+            {healthCounts.off_track} chậm tiến độ · {healthCounts.at_risk} có rủi ro
+          </p>
+        </div>
+      </div>
+
+      {/* Health Filter */}
+      <div className="flex flex-wrap items-center gap-3 mb-3">
+        <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+          Sức khỏe mục tiêu:
+        </label>
+        <div className="inline-flex flex-wrap rounded-lg border border-gray-300 bg-white p-0.5 shadow-sm gap-0.5">
+          <button
+            onClick={() => setHealthFilter('all')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
+              healthFilter === 'all' ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            Tất cả ({stats.total})
+          </button>
+          {['off_track', 'at_risk', 'on_track', 'no_data'].map((key) => (
+            <button
+              key={key}
+              onClick={() => setHealthFilter(key)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap ${
+                healthFilter === key ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {GOAL_HEALTH_META[key].icon} {GOAL_HEALTH_META[key].label} ({healthCounts[key]})
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Toggle Table Goal List */}
@@ -196,6 +256,7 @@ export default function GoalsDashboard() {
       <TableGoalList
         goals={goals}
         statusFilter={statusFilter}
+        healthFilter={healthFilter}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onComplete={handleComplete}

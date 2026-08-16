@@ -1,13 +1,15 @@
 import { useState, useMemo } from 'react'
-import { useCalendarItemsForMonth } from '../../hooks/goals/useCalendarItems'
+import { useCalendarItems } from '../../hooks/goals/useCalendarItems'
 import { useAnalytics } from '../../hooks/analytics/useAnalytics'
-import { getItemsForDate } from '../../utils/calendar'
-import { formatDateString } from '../../utils/dateUtils'
-import CalendarMonthNav from '../../components/calendar/CalendarMonthNav'
+import { useCalendarCheckIn } from '../../hooks/calendar/useCalendarCheckIn'
+import { getItemsForDate, getMonthName, getWeekLabel } from '../../utils/calendar'
 import CalendarStatsSection from '../../components/calendar/CalendarStatsSection'
 import CalendarGrid from '../../components/calendar/CalendarGrid'
+import CalendarWeekView from '../../components/calendar/CalendarWeekView'
+import CalendarDayView from '../../components/calendar/CalendarDayView'
+import CalendarViewSwitcher from '../../components/calendar/CalendarViewSwitcher'
 import CalendarFilter from '../../components/calendar/CalendarFilter'
-import TodayTasksPanel from '../../components/calendar/TodayTasksPanel'
+import SelectedDatePanel from '../../components/calendar/SelectedDatePanel'
 import StatsCard from '../../components/analytics/StatsCard'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
@@ -18,14 +20,35 @@ export default function GoalsCalendarDashboard() {
   const [currentMonth, setCurrentMonth] = useState(today.getMonth())
   const [selectedDate, setSelectedDate] = useState(today)
   const [viewMode, setViewMode] = useState('team')
-  const [activeTab, setActiveTab] = useState('calendar') 
-  const [dateRange, setDateRange] = useState('month') 
+  const [activeTab, setActiveTab] = useState('calendar')
+  const [dateRange, setDateRange] = useState('month')
   const [calendarFilter, setCalendarFilter] = useState({ type: 'all', goalId: 'all' })
+  const [calendarView, setCalendarView] = useState('month')
 
-  const { items, loading, error, refetch } = useCalendarItemsForMonth(
-    currentYear,
-    currentMonth,
-    { includeTeam: viewMode === 'team' }
+  // Fetch the month padded by a week so the month grid's leading/trailing cells
+  // and any week that straddles two months are fully populated.
+  const fetchStart = useMemo(
+    () => new Date(currentYear, currentMonth, 1 - 7, 0, 0, 0, 0),
+    [currentYear, currentMonth]
+  )
+  const fetchEnd = useMemo(
+    () => new Date(currentYear, currentMonth + 1, 7, 23, 59, 59, 999),
+    [currentYear, currentMonth]
+  )
+
+  const { items, loading, error, refetch } = useCalendarItems(fetchStart, fetchEnd, {
+    includeTeam: viewMode === 'team',
+  })
+
+  const { checkIn, updating } = useCalendarCheckIn(refetch)
+
+  // The fetch window is padded, so narrow back down when we mean "this month".
+  const monthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-`
+
+  // Stats describe the month itself, not the padding days.
+  const monthItems = useMemo(
+    () => items.filter((item) => item.instance_date?.startsWith(monthPrefix)),
+    [items, monthPrefix]
   )
 
   const { analytics, loading: analyticsLoading } = useAnalytics(dateRange)
@@ -53,42 +76,64 @@ export default function GoalsCalendarDashboard() {
     return result
   }, [items, calendarFilter])
 
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11)
-      setCurrentYear(currentYear - 1)
-    } else {
-      setCurrentMonth(currentMonth - 1)
-    }
+  // "Còn lại trong tháng" must respect the active filter too.
+  const filteredMonthItems = useMemo(
+    () => filteredItems.filter((item) => item.instance_date?.startsWith(monthPrefix)),
+    [filteredItems, monthPrefix]
+  )
+
+  /** Keep the fetch window anchored on whatever date is selected. */
+  const goToDate = (date) => {
+    setSelectedDate(date)
+    setCurrentYear(date.getFullYear())
+    setCurrentMonth(date.getMonth())
   }
 
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0)
-      setCurrentYear(currentYear + 1)
-    } else {
-      setCurrentMonth(currentMonth + 1)
+  /**
+   * Step backwards/forwards by the unit the current view shows: a month, a week
+   * or a day.
+   */
+  const shiftPeriod = (direction) => {
+    if (calendarView === 'month') {
+      const next = new Date(currentYear, currentMonth + direction, 1)
+      setCurrentYear(next.getFullYear())
+      setCurrentMonth(next.getMonth())
+      // Keep the selection inside the month being viewed.
+      const day = Math.min(selectedDate.getDate(), new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate())
+      setSelectedDate(new Date(next.getFullYear(), next.getMonth(), day))
+      return
     }
+
+    const step = calendarView === 'week' ? 7 : 1
+    const next = new Date(selectedDate)
+    next.setDate(next.getDate() + step * direction)
+    goToDate(next)
   }
 
-  const handleToday = () => {
-    const now = new Date()
-    setCurrentYear(now.getFullYear())
-    setCurrentMonth(now.getMonth())
-    setSelectedDate(now)
-  }
+  const handleToday = () => goToDate(new Date())
 
   const handleDateClick = (date) => {
+    // Clicking a leading/trailing cell of the month grid also moves the month.
+    if (calendarView === 'month' && date.getMonth() !== currentMonth) {
+      goToDate(date)
+      return
+    }
     setSelectedDate(date)
-
-    console.log('📅 Clicked date:', {
-    date: date,
-    formatted: formatDateString(date),
-    items: getItemsForDate(filteredItems, date)
-  })
   }
 
-  const todayItems = getItemsForDate(filteredItems, selectedDate)
+  const periodLabel =
+    calendarView === 'month'
+      ? `${getMonthName(currentMonth)} ${currentYear}`
+      : calendarView === 'week'
+      ? getWeekLabel(selectedDate)
+      : selectedDate.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
+  const isViewingToday =
+    calendarView === 'month'
+      ? currentYear === today.getFullYear() && currentMonth === today.getMonth()
+      : selectedDate.toDateString() === today.toDateString()
+
+  const selectedDateItems = getItemsForDate(filteredItems, selectedDate)
 
   if (loading) {
     return <Loading message="Đang tải calendar..." />
@@ -192,19 +237,50 @@ export default function GoalsCalendarDashboard() {
         <>
           {/* Stats Cards */}
           <CalendarStatsSection
-            items={items}
+            items={monthItems}
             year={currentYear}
             month={currentMonth}
           />
 
-          {/* Month Navigation */}
-          <CalendarMonthNav
-            year={currentYear}
-            month={currentMonth}
-            onPrevMonth={handlePrevMonth}
-            onNextMonth={handleNextMonth}
-            onToday={handleToday}
-          />
+          {/* Period Navigation + Month / Week / Day switcher */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => shiftPeriod(-1)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Kỳ trước"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[190px] text-center">
+                {periodLabel}
+              </h2>
+              <button
+                onClick={() => shiftPeriod(1)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Kỳ sau"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              <button
+                onClick={handleToday}
+                disabled={isViewingToday}
+                className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-colors ${
+                  isViewingToday
+                    ? 'bg-blue-100 text-blue-600 cursor-default'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Hôm nay
+              </button>
+            </div>
+
+            <CalendarViewSwitcher value={calendarView} onChange={setCalendarView} />
+          </div>
 
           {/* Calendar Filter */}
           <CalendarFilter
@@ -213,22 +289,50 @@ export default function GoalsCalendarDashboard() {
             goals={availableGoals}
           />
 
-          {/* Calendar Grid */}
-          <CalendarGrid
-            year={currentYear}
-            month={currentMonth}
-            items={filteredItems}
-            selectedDate={selectedDate}
-            onDateClick={handleDateClick}
-          />
+          {/* Calendar + selected-date tasks side by side (no scrolling needed) */}
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-4 items-start">
+            <div className="min-w-0">
+              {calendarView === 'month' && (
+                <CalendarGrid
+                  year={currentYear}
+                  month={currentMonth}
+                  items={filteredItems}
+                  selectedDate={selectedDate}
+                  onDateClick={handleDateClick}
+                />
+              )}
 
-          {/* Today's Tasks Panel */}
-          <TodayTasksPanel
-            date={selectedDate}
-            items={todayItems}
-            allMonthItems={filteredItems}
-            onRefresh={refetch}
-          />
+              {calendarView === 'week' && (
+                <CalendarWeekView
+                  anchorDate={selectedDate}
+                  items={filteredItems}
+                  selectedDate={selectedDate}
+                  onDateClick={handleDateClick}
+                />
+              )}
+
+              {calendarView === 'day' && (
+                <CalendarDayView
+                  date={selectedDate}
+                  items={filteredItems}
+                  onToggleItem={checkIn}
+                  updating={updating}
+                />
+              )}
+            </div>
+
+            {/* Day view already lists the selected day, so the panel opens on
+                the month backlog instead of repeating it. */}
+            <SelectedDatePanel
+              key={calendarView === 'day' ? 'day-view' : 'grid-view'}
+              date={selectedDate}
+              items={selectedDateItems}
+              allMonthItems={filteredMonthItems}
+              defaultTab={calendarView === 'day' ? 'upcoming' : 'day'}
+              onCheckIn={checkIn}
+              updating={updating}
+            />
+          </div>
         </>
       )}
 

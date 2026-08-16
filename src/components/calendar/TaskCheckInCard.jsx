@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import UserAvatar from '../common/UserAvatar'
 import { useNavigate } from 'react-router-dom'
+import DueDateBadge from '../common/DueDateBadge'
+import BlockedBadge from '../common/BlockedBadge'
 
 export default function TaskCheckInCard({ item, onCheckIn, isUpdating = false }) { // ✅ FIXED: isUpdating (not isUpdateting)
   const [isChecking, setIsChecking] = useState(false)
@@ -80,16 +82,28 @@ export default function TaskCheckInCard({ item, onCheckIn, isUpdating = false })
           )}
         </div>
 
+        {/* Parentage: subtask → task → goal, task → goal */}
+        <p className="text-xs text-gray-500 mb-1">
+          {item.type === 'task' ? (
+            <>
+              Task của goal{' '}
+              <span className="text-gray-700 font-medium">
+                {item.goal?.icon} {item.goal?.name || '—'}
+              </span>
+            </>
+          ) : (
+            <>
+              Subtask của task <span className="text-gray-700 font-medium">{item.task?.title || '—'}</span>
+              {' · goal '}
+              <span className="text-gray-700 font-medium">
+                {item.goal?.icon} {item.goal?.name || '—'}
+              </span>
+            </>
+          )}
+        </p>
+
         {/* Meta info */}
         <div className="flex items-center gap-2 flex-wrap text-xs text-gray-600">
-          {/* Goal */}
-          {item.goal && (
-            <span className="flex items-center gap-1">
-              <span>{item.goal.icon}</span>
-              <span>{item.goal.name}</span>
-            </span>
-          )}
-
           {/* Type badge */}
           <span className={`px-2 py-0.5 rounded ${
             item.type === 'task' 
@@ -125,6 +139,20 @@ export default function TaskCheckInCard({ item, onCheckIn, isUpdating = false })
                item.priority === 'medium' ? '⚡ Trung bình' :
                '📌 Thấp'}
             </span>
+          )}
+
+          {/* Days remaining / overdue */}
+          {item.type === 'task' && (item.due_date || item.scheduled_date) && (
+            <DueDateBadge
+              date={item.due_date || item.scheduled_date}
+              isCompleted={isCompleted}
+              compact
+            />
+          )}
+
+          {/* Waiting on a prerequisite */}
+          {item.type === 'task' && !isCompleted && item.is_blocked && item.blocked_by && (
+            <BlockedBadge blockedBy={item.blocked_by} compact />
           )}
 
           {/* Assigned users */}

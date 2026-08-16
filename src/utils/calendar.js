@@ -119,3 +119,56 @@ export function getDayName(dayOfWeek) {
   const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
   return days[dayOfWeek]
 }
+
+/**
+ * The 7 days of the week containing `date` (weeks start on Sunday, matching the
+ * month grid).
+ */
+export function getWeekDays(date) {
+  const start = normalizeToMidnight(date)
+  start.setDate(start.getDate() - start.getDay())
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(start)
+    day.setDate(start.getDate() + index)
+    return day
+  })
+}
+
+/** Inclusive first/last day of the week containing `date`. */
+export function getWeekRange(date) {
+  const days = getWeekDays(date)
+  return { start: days[0], end: days[6] }
+}
+
+/** `Tuần 12/8 – 18/8/2026` style label. */
+export function getWeekLabel(date) {
+  const { start, end } = getWeekRange(date)
+  const sameMonth = start.getMonth() === end.getMonth()
+  const startLabel = sameMonth
+    ? `${start.getDate()}`
+    : `${start.getDate()}/${start.getMonth() + 1}`
+  return `Tuần ${startLabel} – ${end.getDate()}/${end.getMonth() + 1}/${end.getFullYear()}`
+}
+
+/** Items for a date, ordered so unfinished and higher-priority work comes first. */
+export function sortCalendarItems(items) {
+  const priorityWeight = { urgent: 4, high: 3, medium: 2, low: 1 }
+  const isDone = (item) => (item.type === 'task' ? item.status === 'completed' : item.is_completed === true)
+
+  return [...items].sort((a, b) => {
+    if (isDone(a) !== isDone(b)) return isDone(a) ? 1 : -1
+
+    const aBlocked = a.type === 'task' && (a.is_blocked || a.status === 'blocked')
+    const bBlocked = b.type === 'task' && (b.is_blocked || b.status === 'blocked')
+    if (aBlocked !== bBlocked) return aBlocked ? 1 : -1
+
+    const aPriority = priorityWeight[a.priority ?? a.task?.priority] ?? 0
+    const bPriority = priorityWeight[b.priority ?? b.task?.priority] ?? 0
+    if (aPriority !== bPriority) return bPriority - aPriority
+
+    // Tasks above their own subtasks, then alphabetical for a stable order.
+    if (a.type !== b.type) return a.type === 'task' ? -1 : 1
+    return (a.title || '').localeCompare(b.title || '', 'vi')
+  })
+}

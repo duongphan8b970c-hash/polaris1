@@ -70,6 +70,15 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
           )
         },
         {
+          name: 'Timeline',
+          path: '/goals/timeline',
+          icon: (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h10M4 12h16M4 18h7" />
+            </svg>
+          )
+        },
+        {
           name: 'All Goals',
           path: '/goals/list',
           icon: (

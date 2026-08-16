@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import UserSelector from './UserSelector'
+import { isTaskDependencySupported, TASK_DEPENDENCY_COLUMN } from '../../lib/taskColumns'
 
 const PRIORITY_OPTIONS = [
   { value: 'low', label: 'Thấp', icon: '🔵' },
@@ -14,7 +15,34 @@ const STATUS_OPTIONS = [
   { value: 'blocked', label: 'Bị chặn', icon: '🚫' },
 ]
 
-export default function TaskForm({ task, onSubmit, onCancel, loading }) {
+/**
+ * Tasks that may be picked as a prerequisite: siblings in the same goal, minus
+ * the task itself and anything that already depends on it (would be a cycle).
+ */
+function getDependencyCandidates(task, siblingTasks) {
+  if (!Array.isArray(siblingTasks)) return []
+
+  const dependents = new Set()
+  if (task?.id) {
+    dependents.add(task.id)
+    // Walk forward: everything reachable from `task` via depends_on links.
+    let grew = true
+    while (grew) {
+      grew = false
+      siblingTasks.forEach((candidate) => {
+        const prereq = candidate[TASK_DEPENDENCY_COLUMN]
+        if (prereq && dependents.has(prereq) && !dependents.has(candidate.id)) {
+          dependents.add(candidate.id)
+          grew = true
+        }
+      })
+    }
+  }
+
+  return siblingTasks.filter((candidate) => !dependents.has(candidate.id))
+}
+
+export default function TaskForm({ task, onSubmit, onCancel, loading, siblingTasks = [] }) {
   const [formData, setFormData] = useState(() => {
     if (task) {
       return {
@@ -26,6 +54,7 @@ export default function TaskForm({ task, onSubmit, onCancel, loading }) {
         assigned_to: task.assigned_to || [],
         scheduled_date: task.scheduled_date || '',
         is_calendar_visible: task.is_calendar_visible || false,
+        [TASK_DEPENDENCY_COLUMN]: task[TASK_DEPENDENCY_COLUMN] || '',
       }
     }
     return {
@@ -37,8 +66,15 @@ export default function TaskForm({ task, onSubmit, onCancel, loading }) {
       assigned_to: [],
       scheduled_date: '',
       is_calendar_visible: false,
+      [TASK_DEPENDENCY_COLUMN]: '',
     }
   })
+
+  const dependencyEnabled = isTaskDependencySupported()
+  const dependencyCandidates = useMemo(
+    () => (dependencyEnabled ? getDependencyCandidates(task, siblingTasks) : []),
+    [dependencyEnabled, task, siblingTasks]
+  )
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -72,6 +108,9 @@ export default function TaskForm({ task, onSubmit, onCancel, loading }) {
     }
     if (submitData.scheduled_date === '') {
       submitData.scheduled_date = null
+    }
+    if (submitData[TASK_DEPENDENCY_COLUMN] === '') {
+      submitData[TASK_DEPENDENCY_COLUMN] = null
     }
 
     console.log('📤 Submitting task data:', submitData)
@@ -174,6 +213,34 @@ export default function TaskForm({ task, onSubmit, onCancel, loading }) {
           />
         </div>
       </div>
+      {/* Dependency: this task waits for another task in the same goal */}
+      {dependencyEnabled && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            🔗 Phụ thuộc vào task
+          </label>
+          <select
+            name={TASK_DEPENDENCY_COLUMN}
+            value={formData[TASK_DEPENDENCY_COLUMN] || ''}
+            onChange={handleChange}
+            className="input"
+            disabled={loading || dependencyCandidates.length === 0}
+          >
+            <option value="">— Không phụ thuộc —</option>
+            {dependencyCandidates.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.status === 'completed' ? '✅' : '⏳'} {candidate.title}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            {dependencyCandidates.length === 0
+              ? 'Chưa có task nào khác trong mục tiêu này để phụ thuộc.'
+              : 'Khi task prerequisite chưa hoàn thành, task này sẽ được đánh dấu Bị chặn / Đang chờ.'}
+          </p>
+        </div>
+      )}
+
       {/* ✅ ADD: Calendar Scheduling */}
       <div className="border-t pt-4">
         <div className="flex items-center justify-between mb-3">

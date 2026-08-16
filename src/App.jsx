@@ -17,6 +17,7 @@ import TaskDetails from './pages/goals/TaskDetails'
 import PaybackPriorityConfig from './pages/finance/PaybackPriorityConfig'
 import UserProfile from './pages/UserProfile'
 import GoalsCalendarDashboard from './pages/goals/GoalsCalendarDashboard'
+import GoalsTimeline from './pages/goals/GoalsTimeline'
 import AnalyticsDashboard from './pages/analytics/AnalyticsDashboard'
 import WalletHistory from './pages/finance/WalletHistory'
 import KanjiComparator from './pages/study/KanjiComparator'
@@ -110,6 +111,7 @@ function App() {
           <Route path="goals" element={<Navigate to="/goals/calendar" />} /> {/* ✅ Redirect to calendar */}
           <Route path="goals/calendar" element={<GoalsCalendarDashboard />} /> {/* ✅ NEW: Main calendar */}
           <Route path="goals/list" element={<GoalsDashboard />} /> {/* ✅ Goals list */}
+          <Route path="goals/timeline" element={<GoalsTimeline />} /> {/* ✅ NEW: Gantt / timeline */}
           <Route path="goals/:goalId" element={<GoalDetails />} />
           <Route path="goals/:goalId/tasks/:taskId" element={<TaskDetails />} />
           <Route path="profile" element={<UserProfile />} />
