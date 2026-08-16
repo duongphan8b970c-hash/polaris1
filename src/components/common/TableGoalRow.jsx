@@ -9,7 +9,6 @@ import DueDateBadge from './DueDateBadge'
 import { computeGoalHealth, sortTasksByUrgency } from '../../utils/taskHealth'
 
 const PRIORITY_CONFIG = {
-  urgent: { label: 'Khẩn cấp', bg: 'bg-red-100',    text: 'text-red-700' },
   high:   { label: 'Cao',       bg: 'bg-orange-100', text: 'text-orange-700' },
   medium: { label: 'TB',        bg: 'bg-yellow-100', text: 'text-yellow-700' },
   low:    { label: 'Thấp',      bg: 'bg-blue-100',   text: 'text-blue-700' },
@@ -359,7 +358,7 @@ export default function TableGoalRow({
                 title="Đánh dấu hoàn thành"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
                 </svg>
               </button>
             )}
