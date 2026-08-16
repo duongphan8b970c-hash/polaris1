@@ -96,7 +96,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/reports" replace />} />
+          <Route index element={<Navigate to="/overview" replace />} />
           <Route path="overview" element={<UnifiedCalendarDashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="transactions" element={<FinancialTracking />} />
