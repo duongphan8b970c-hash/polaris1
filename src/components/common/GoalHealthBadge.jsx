@@ -1,23 +1,19 @@
-import { formatForecastDate } from '../../utils/taskHealth'
-
 /**
  * On Track / At Risk / Off Track chip for a goal.
  *
  * @param health  result of computeGoalHealth()
- * @param detail  render the reasons + forecast underneath the chip
+ * @param detail  render the reasons + the tasks that are actually late
  */
 export default function GoalHealthBadge({ health, detail = false, className = '' }) {
   if (!health) return null
 
-  const { meta, reasons, forecastDate, forecastSlipDays } = health
+  const { meta, reasons, lateTasks = [] } = health
 
   const tooltip = [
-    `${meta.label}`,
+    meta.label,
     ...reasons.map((reason) => `• ${reason}`),
-    forecastDate ? `Dự báo hoàn thành: ${formatForecastDate(forecastDate)}` : null,
-  ]
-    .filter(Boolean)
-    .join('\n')
+    ...lateTasks.map((task) => `⚠️ ${task.title} — trễ ${task.daysOverdue} ngày`),
+  ].join('\n')
 
   return (
     <div className={className}>
@@ -36,19 +32,27 @@ export default function GoalHealthBadge({ health, detail = false, className = ''
               • {reason}
             </p>
           ))}
-          {forecastDate && (
-            <p className="text-xs text-gray-600">
-              📈 Dự báo hoàn thành: <strong>{formatForecastDate(forecastDate)}</strong>
-              {forecastSlipDays !== null && forecastSlipDays > 0 && (
-                <span className="text-red-600"> (trễ {forecastSlipDays} ngày)</span>
-              )}
-              {forecastSlipDays !== null && forecastSlipDays <= 0 && (
-                <span className="text-green-600"> (sớm {Math.abs(forecastSlipDays)} ngày)</span>
-              )}
-            </p>
-          )}
+          <LateTaskList lateTasks={lateTasks} />
         </div>
       )}
+    </div>
+  )
+}
+
+/** The tasks that are currently overdue — shown only when there are any. */
+export function LateTaskList({ lateTasks = [], className = '' }) {
+  if (lateTasks.length === 0) return null
+
+  return (
+    <div className={className}>
+      <p className="text-xs font-semibold text-red-700">⚠️ Task đang trễ ({lateTasks.length})</p>
+      <ul className="mt-0.5 space-y-0.5">
+        {lateTasks.map((task) => (
+          <li key={task.id} className="text-xs text-red-600">
+            • {task.title} — trễ <strong>{task.daysOverdue} ngày</strong>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

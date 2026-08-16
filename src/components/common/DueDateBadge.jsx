@@ -5,15 +5,16 @@ const TONE_ICONS = {
   today: '🔥',
   soon: '⏳',
   normal: '',
-  done: '✓',
   none: '',
 }
 
 /**
  * "3 days left / Due today / 2 days overdue" chip.
  *
+ * Completed work gets no countdown chip at all — only its date, if requested.
+ *
  * @param date        due date (YYYY-MM-DD, ISO string or Date)
- * @param isCompleted mutes the chip and shows a done state
+ * @param isCompleted suppresses the countdown chip
  * @param showDate    also render the calendar date next to the countdown
  * @param compact     shorter wording, for dense table cells
  */
@@ -25,12 +26,21 @@ export default function DueDateBadge({
   className = '',
 }) {
   const status = getDueStatus(date, { isCompleted })
+  const parsed = toLocalDate(date)
 
   if (status.days === null) {
     return <span className={`text-xs text-gray-400 ${className}`}>—</span>
   }
 
-  const parsed = toLocalDate(date)
+  // Nothing is "remaining" on finished work.
+  if (isCompleted) {
+    if (!showDate || !parsed) return <span className={`text-xs text-gray-400 ${className}`}>—</span>
+    return (
+      <span className={`text-xs text-gray-500 whitespace-nowrap ${className}`}>
+        {parsed.toLocaleDateString('vi-VN')}
+      </span>
+    )
+  }
 
   return (
     <span className={`inline-flex items-center gap-1.5 ${className}`}>

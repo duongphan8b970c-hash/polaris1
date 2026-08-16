@@ -11,7 +11,7 @@ import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import UserAvatar from '../../components/common/UserAvatar'
 import Breadcrumb from '../../components/common/Breadcrumb'
-import GoalHealthBadge from '../../components/common/GoalHealthBadge'
+import GoalHealthBadge, { LateTaskList } from '../../components/common/GoalHealthBadge'
 import { computeGoalHealth, sortTasksByUrgency } from '../../utils/taskHealth'
 
 
@@ -272,22 +272,15 @@ export default function GoalDetails() {
               </div>
             </div>
 
-            {/* Health reasons + forecast completion date */}
+            {/* Health reasons + the tasks that are actually late */}
             {health && (
-              <div className="mt-3 flex flex-wrap items-start gap-x-6 gap-y-1">
+              <div className="mt-3 flex flex-wrap items-start gap-x-8 gap-y-2">
                 <div className="space-y-0.5">
                   {health.reasons.map((reason) => (
                     <p key={reason} className="text-xs text-gray-700">• {reason}</p>
                   ))}
                 </div>
-                {health.forecastDate && (
-                  <p className="text-xs text-gray-700">
-                    📈 Dự báo hoàn thành: <strong>{health.forecastDate.toLocaleDateString('vi-VN')}</strong>
-                    {health.forecastSlipDays > 0 && (
-                      <span className="text-red-600"> (trễ {health.forecastSlipDays} ngày)</span>
-                    )}
-                  </p>
-                )}
+                <LateTaskList lateTasks={health.lateTasks} />
               </div>
             )}
           </div>
@@ -481,7 +474,7 @@ export default function GoalDetails() {
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-200">
                         <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tên</th>
-                        <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Trạng thái</th>
+                        <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Sức khỏe</th>
                         <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Ưu tiên</th>
                         <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Subtasks</th>
                         <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Hạn chót</th>

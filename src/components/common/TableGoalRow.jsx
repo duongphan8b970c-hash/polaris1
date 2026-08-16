@@ -52,34 +52,21 @@ function DurationCell({ goal }) {
   )
 }
 
-// Compact goal info strip shown at the top of the expanded task area
-function GoalInfoStrip({ goal, health }) {
-  const hasInfo =
-    goal.description ||
-    goal.assigned_to?.length > 0 ||
-    (goal.tags && goal.tags.length > 0) ||
-    !!health
-
-  if (!hasInfo) return null
+// Compact goal info strip: member count + description only.
+function GoalInfoStrip({ goal }) {
+  const memberCount = goal.assigned_to?.length || 0
+  if (memberCount === 0 && !goal.description) return null
 
   return (
     <tr>
       <td colSpan={7} className="p-0">
-        <div className="bg-blue-50/60 border-b border-blue-100 px-12 py-2 space-y-1">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            {goal.description && (
-              <span className="text-xs text-gray-600 italic">{goal.description}</span>
-            )}
-            {goal.assigned_to?.length > 0 && (
-              <span className="text-xs text-gray-500">👥 {goal.assigned_to.length} thành viên</span>
-            )}
-            {goal.tags?.map((tag) => (
-              <span key={tag} className="px-2 py-0.5 text-xs bg-white border border-blue-200 rounded-full text-blue-700">
-                {tag}
-              </span>
-            ))}
-          </div>
-          {health && <GoalHealthBadge health={health} detail />}
+        <div className="bg-blue-50/60 border-b border-blue-100 px-12 py-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+          {memberCount > 0 && (
+            <span className="text-xs text-gray-500">👥 {memberCount} thành viên</span>
+          )}
+          {goal.description && (
+            <span className="text-xs text-gray-600 italic">{goal.description}</span>
+          )}
         </div>
       </td>
     </tr>
@@ -87,7 +74,7 @@ function GoalInfoStrip({ goal, health }) {
 }
 
 // Lazy-loaded task rows for an expanded goal
-function TaskLoader({ goal, depth, health }) {
+function TaskLoader({ goal, depth }) {
   const goalId = goal.id
   const {
     tasks,
@@ -129,7 +116,7 @@ function TaskLoader({ goal, depth, health }) {
   if (loading) {
     return (
       <>
-        <GoalInfoStrip goal={goal} health={health} />
+        <GoalInfoStrip goal={goal} />
         <tr>
           <td colSpan={7} className="py-2">
             <div className="flex items-center gap-1.5 text-xs text-gray-400 pl-12">
@@ -144,7 +131,7 @@ function TaskLoader({ goal, depth, health }) {
 
   return (
     <>
-      <GoalInfoStrip goal={goal} health={health} />
+      <GoalInfoStrip goal={goal} />
       {tasks.length === 0 ? (
         <tr>
           <td colSpan={7} className="py-1">
@@ -276,20 +263,9 @@ export default function TableGoalRow({
           </div>
         </td>
 
-        {/* Status + health (On Track / At Risk / Off Track) */}
+        {/* Overall health only (On Track / At Risk / Off Track / Completed) */}
         <td className="px-3 py-3">
-          <div className="flex flex-col items-start gap-1">
-            {isCompleted ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium whitespace-nowrap">
-                ✓ Hoàn thành
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium whitespace-nowrap">
-                ⚡ Đang làm
-              </span>
-            )}
-            <GoalHealthBadge health={health} />
-          </div>
+          <GoalHealthBadge health={health} />
         </td>
 
         {/* Priority */}
@@ -331,15 +307,16 @@ export default function TableGoalRow({
           <DurationCell goal={goal} />
         </td>
 
-        {/* Countdown: days remaining / overdue + open risk counts */}
+        {/* Countdown: days remaining / overdue, plus the tasks that are late */}
         <td className="px-3 py-3 whitespace-nowrap text-center">
           <div className="flex flex-col items-center gap-1">
             <DueDateBadge date={goal.target_date} isCompleted={isCompleted} compact />
-            {!isCompleted && (health.overdueTasks > 0 || health.blockedTasks > 0) && (
-              <span className="text-[10px] text-gray-500">
-                {health.overdueTasks > 0 && `${health.overdueTasks} quá hạn`}
-                {health.overdueTasks > 0 && health.blockedTasks > 0 && ' · '}
-                {health.blockedTasks > 0 && `${health.blockedTasks} bị chặn`}
+            {!isCompleted && health.lateTasks?.length > 0 && (
+              <span
+                className="text-[10px] text-red-600 font-medium"
+                title={health.lateTasks.map((t) => `${t.title} — trễ ${t.daysOverdue} ngày`).join('\n')}
+              >
+                ⚠️ {health.lateTasks.length} task trễ
               </span>
             )}
           </div>
@@ -358,7 +335,7 @@ export default function TableGoalRow({
                 title="Đánh dấu hoàn thành"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </button>
             )}
@@ -389,7 +366,7 @@ export default function TableGoalRow({
 
       {/* Expanded Tasks + goal info strip (lazy loaded) */}
       {expanded && (
-        <TaskLoader goal={goal} depth={0} health={health} />
+        <TaskLoader goal={goal} depth={0} />
       )}
     </>
   )

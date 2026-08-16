@@ -3,14 +3,7 @@ import { useSubtasks } from '../../hooks/goals/useSubtasks'
 import TableSubTaskRow from './TableSubTaskRow'
 import DueDateBadge from './DueDateBadge'
 import BlockedBadge from './BlockedBadge'
-import { getTaskDeadline } from '../../utils/taskHealth'
-
-const STATUS_CONFIG = {
-  todo:        { label: 'Cần làm',     bg: 'bg-gray-100',   text: 'text-gray-700',  icon: '📝' },
-  in_progress: { label: 'Đang làm',    bg: 'bg-blue-100',   text: 'text-blue-700',  icon: '⏳' },
-  completed:   { label: 'Hoàn thành',  bg: 'bg-green-100',  text: 'text-green-700', icon: '✅' },
-  blocked:     { label: 'Bị chặn',     bg: 'bg-red-100',    text: 'text-red-700',   icon: '🚫' },
-}
+import { computeTaskHealth, getTaskDeadline } from '../../utils/taskHealth'
 
 const PRIORITY_CONFIG = {
   urgent: { label: 'Khẩn cấp', bg: 'bg-red-100',    text: 'text-red-700' },
@@ -267,12 +260,10 @@ export default function TableTaskRow({
   const detailIndentPx = depth * 28 + 28
 
   const isCompleted = task.status === 'completed'
-  // A pending prerequisite overrides the stored status in the UI: the task is
-  // Waiting, and that is what explains a slipping schedule.
+  // A pending prerequisite is what explains a slipping schedule, so it feeds the
+  // health chip rather than being hidden behind the raw status.
   const isBlocked = !isCompleted && (task.is_blocked || task.status === 'blocked')
-  const status = isBlocked
-    ? STATUS_CONFIG.blocked
-    : STATUS_CONFIG[task.status] || STATUS_CONFIG.todo
+  const health = computeTaskHealth(task)
   const priority = PRIORITY_CONFIG[task.priority]
   const deadline = getTaskDeadline(task)
 
@@ -348,11 +339,15 @@ export default function TableTaskRow({
           </div>
         </td>
 
-        {/* Status (+ what is blocking it) */}
+        {/* Overall health (+ what is blocking it) */}
         <td className="px-3 py-2.5">
           <div className="flex flex-col items-start gap-1">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${status.bg} ${status.text}`}>
-              {status.icon} {isBlocked && task.is_blocked ? 'Đang chờ' : status.label}
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${health.meta.chip}`}
+              title={health.label}
+            >
+              <span aria-hidden="true">{health.meta.icon}</span>
+              {health.label}
             </span>
             {isBlocked && task.blocked_by && <BlockedBadge blockedBy={task.blocked_by} />}
           </div>

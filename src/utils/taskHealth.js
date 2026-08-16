@@ -70,7 +70,7 @@ export const DUE_TONE_CLASSES = {
   today: 'bg-orange-100 text-orange-700 border border-orange-200',
   soon: 'bg-amber-50 text-amber-700 border border-amber-200',
   normal: 'bg-gray-100 text-gray-700 border border-gray-200',
-  done: 'bg-green-50 text-green-700 border border-green-200',
+  done: 'bg-gray-50 text-gray-500 border border-gray-200',
   none: 'bg-transparent text-gray-400',
 }
 
@@ -279,16 +279,16 @@ export const GOAL_HEALTH_META = {
 export const GOAL_HEALTH_ORDER = ['off_track', 'at_risk', 'on_track', 'completed', 'no_data']
 
 /**
- * Overall health of a goal, derived from progress vs. elapsed time, overdue and
- * blocked tasks, plus a linear forecast of the completion date.
+ * Overall health of a goal, derived from progress vs. elapsed time plus the
+ * overdue and blocked tasks inside it.
  *
  * @param goal   goal row (needs progress, start_date, target_date, status)
  * @param tasks  the goal's tasks (already decorated by `decorateTasks`, ideally)
  * @returns {{
  *   key: string, meta: object, progress: number, expectedProgress: number|null,
- *   progressGap: number|null, forecastDate: Date|null, forecastSlipDays: number|null,
- *   daysRemaining: number|null, overdueTasks: number, blockedTasks: number,
- *   dueSoonTasks: number, reasons: string[]
+ *   progressGap: number|null, daysRemaining: number|null,
+ *   overdueTasks: number, blockedTasks: number, dueSoonTasks: number,
+ *   lateTasks: Array<{id, title, daysOverdue}>, reasons: string[]
  * }}
  */
 export function computeGoalHealth(goal, tasks = [], today = new Date()) {
@@ -300,21 +300,25 @@ export function computeGoalHealth(goal, tasks = [], today = new Date()) {
   const daysRemaining = targetDate ? diffInDays(now, targetDate) : null
 
   const openTasks = tasks.filter((task) => task.status !== 'completed')
-  const overdueTasks = openTasks.filter(
-    (task) => task.is_overdue ?? getDueStatus(getTaskDeadline(task), { today: now }).isOverdue
-  ).length
+
+  // The tasks that are actually late — this is what we surface to the user.
+  const lateTasks = openTasks
+    .map((task) => {
+      const due = task.due_status ?? getDueStatus(getTaskDeadline(task), { today: now })
+      return due.isOverdue ? { id: task.id, title: task.title, daysOverdue: Math.abs(due.days) } : null
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.daysOverdue - a.daysOverdue)
+
+  const overdueTasks = lateTasks.length
   const blockedTasks = openTasks.filter((task) => task.is_blocked || task.status === 'blocked').length
   const dueSoonTasks = openTasks.filter(
-    (task) => task.is_due_soon ?? getDueStatus(getTaskDeadline(task), { today: now }).isDueSoon
+    (task) => (task.due_status ?? getDueStatus(getTaskDeadline(task), { today: now })).isDueSoon
   ).length
 
-  const reasons = []
-
-  // Time-based expectation & forecast
+  // Time-based expectation
   let expectedProgress = null
   let progressGap = null
-  let forecastDate = null
-  let forecastSlipDays = null
 
   if (targetDate) {
     const effectiveStart = startDate && startDate <= targetDate ? startDate : null
@@ -323,55 +327,42 @@ export function computeGoalHealth(goal, tasks = [], today = new Date()) {
       const elapsed = Math.max(0, Math.min(totalDays, diffInDays(effectiveStart, now)))
       expectedProgress = (elapsed / totalDays) * 100
       progressGap = progress - expectedProgress
-
-      if (progress >= 100) {
-        forecastDate = now
-      } else if (elapsed > 0 && progress > 0) {
-        const velocityPerDay = progress / elapsed
-        const daysNeeded = Math.ceil((100 - progress) / velocityPerDay)
-        forecastDate = addDays(now, Math.min(daysNeeded, 3650))
-      }
-
-      if (forecastDate) forecastSlipDays = diffInDays(targetDate, forecastDate)
     }
+  }
+
+  const base = {
+    progress,
+    expectedProgress,
+    progressGap,
+    daysRemaining,
+    overdueTasks,
+    blockedTasks,
+    dueSoonTasks,
+    lateTasks,
   }
 
   // ── Classification ──
   if (goal?.status === 'completed') {
     return {
+      ...base,
       key: 'completed',
       meta: GOAL_HEALTH_META.completed,
-      progress,
-      expectedProgress,
-      progressGap,
-      forecastDate: null,
-      forecastSlipDays: null,
-      daysRemaining,
       overdueTasks: 0,
       blockedTasks: 0,
       dueSoonTasks: 0,
+      lateTasks: [],
       reasons: ['Mục tiêu đã được đánh dấu hoàn thành'],
     }
   }
 
   if (!targetDate && tasks.length === 0) {
     return {
+      ...base,
       key: 'no_data',
       meta: GOAL_HEALTH_META.no_data,
-      progress,
-      expectedProgress,
-      progressGap,
-      forecastDate,
-      forecastSlipDays,
-      daysRemaining,
-      overdueTasks,
-      blockedTasks,
-      dueSoonTasks,
       reasons: ['Chưa có ngày hoàn thành dự kiến và chưa có task nào'],
     }
   }
-
-  const slipTolerance = targetDate && startDate ? Math.max(7, Math.round(Math.abs(diffInDays(startDate, targetDate)) * 0.2)) : 7
 
   const offTrack = []
   if (daysRemaining !== null && daysRemaining < 0 && progress < 100) {
@@ -380,28 +371,12 @@ export function computeGoalHealth(goal, tasks = [], today = new Date()) {
   if (progressGap !== null && progressGap <= -25) {
     offTrack.push(`Tiến độ chậm ${Math.abs(progressGap).toFixed(0)}% so với kế hoạch`)
   }
-  if (forecastSlipDays !== null && forecastSlipDays > slipTolerance) {
-    offTrack.push(`Dự báo hoàn thành trễ ${forecastSlipDays} ngày`)
-  }
   if (overdueTasks >= 3) {
     offTrack.push(`${overdueTasks} task đã quá hạn`)
   }
 
   if (offTrack.length > 0) {
-    return {
-      key: 'off_track',
-      meta: GOAL_HEALTH_META.off_track,
-      progress,
-      expectedProgress,
-      progressGap,
-      forecastDate,
-      forecastSlipDays,
-      daysRemaining,
-      overdueTasks,
-      blockedTasks,
-      dueSoonTasks,
-      reasons: offTrack,
-    }
+    return { ...base, key: 'off_track', meta: GOAL_HEALTH_META.off_track, reasons: offTrack }
   }
 
   const atRisk = []
@@ -410,54 +385,60 @@ export function computeGoalHealth(goal, tasks = [], today = new Date()) {
   }
   if (overdueTasks > 0) atRisk.push(`${overdueTasks} task quá hạn`)
   if (blockedTasks > 0) atRisk.push(`${blockedTasks} task đang bị chặn`)
-  if (forecastSlipDays !== null && forecastSlipDays > 0) {
-    atRisk.push(`Dự báo hoàn thành trễ ${forecastSlipDays} ngày`)
-  }
   if (daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= DUE_SOON_THRESHOLD_DAYS && progress < 90) {
     atRisk.push(`Còn ${daysRemaining} ngày nhưng tiến độ mới ${progress.toFixed(0)}%`)
   }
 
   if (atRisk.length > 0) {
-    return {
-      key: 'at_risk',
-      meta: GOAL_HEALTH_META.at_risk,
-      progress,
-      expectedProgress,
-      progressGap,
-      forecastDate,
-      forecastSlipDays,
-      daysRemaining,
-      overdueTasks,
-      blockedTasks,
-      dueSoonTasks,
-      reasons: atRisk,
-    }
+    return { ...base, key: 'at_risk', meta: GOAL_HEALTH_META.at_risk, reasons: atRisk }
   }
 
+  const reasons = []
   if (dueSoonTasks > 0) reasons.push(`${dueSoonTasks} task sắp đến hạn`)
   if (expectedProgress !== null) {
     reasons.push(`Tiến độ ${progress.toFixed(0)}% (kế hoạch ${expectedProgress.toFixed(0)}%)`)
   }
   if (reasons.length === 0) reasons.push('Không phát hiện rủi ro')
 
-  return {
-    key: 'on_track',
-    meta: GOAL_HEALTH_META.on_track,
-    progress,
-    expectedProgress,
-    progressGap,
-    forecastDate,
-    forecastSlipDays,
-    daysRemaining,
-    overdueTasks,
-    blockedTasks,
-    dueSoonTasks,
-    reasons,
-  }
+  return { ...base, key: 'on_track', meta: GOAL_HEALTH_META.on_track, reasons }
 }
 
-/** `2/8/2026` style label for a forecast date, or a dash. */
-export function formatForecastDate(date) {
-  const parsed = toLocalDate(date)
-  return parsed ? parsed.toLocaleDateString('vi-VN') : '—'
+/**
+ * Same On Track / At Risk / Off Track vocabulary, applied to a single task so
+ * task rows read consistently with their goal.
+ */
+export function computeTaskHealth(task, today = new Date()) {
+  if (!task) return { key: 'no_data', meta: GOAL_HEALTH_META.no_data, label: GOAL_HEALTH_META.no_data.label }
+
+  if (task.status === 'completed') {
+    return { key: 'completed', meta: GOAL_HEALTH_META.completed, label: 'Hoàn thành' }
+  }
+
+  const due = task.due_status ?? getDueStatus(getTaskDeadline(task), { today })
+
+  if (due.isOverdue) {
+    return {
+      key: 'off_track',
+      meta: GOAL_HEALTH_META.off_track,
+      label: `Trễ ${Math.abs(due.days)} ngày`,
+    }
+  }
+
+  if (task.is_blocked || task.status === 'blocked') {
+    return { key: 'at_risk', meta: GOAL_HEALTH_META.at_risk, label: 'Đang chờ' }
+  }
+
+  if (due.isDueSoon) {
+    return {
+      key: 'at_risk',
+      meta: GOAL_HEALTH_META.at_risk,
+      label: due.days === 0 ? 'Đến hạn hôm nay' : `Sắp đến hạn (${due.days} ngày)`,
+    }
+  }
+
+  if (due.days === null) {
+    return { key: 'no_data', meta: GOAL_HEALTH_META.no_data, label: 'Chưa có hạn' }
+  }
+
+  return { key: 'on_track', meta: GOAL_HEALTH_META.on_track, label: 'Đúng tiến độ' }
 }

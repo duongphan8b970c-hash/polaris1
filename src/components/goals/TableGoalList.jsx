@@ -60,7 +60,7 @@ export default function TableGoalList({
                 Tên
               </th>
               <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                Trạng thái / Sức khỏe
+                Sức khỏe
               </th>
               <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 Ưu tiên
