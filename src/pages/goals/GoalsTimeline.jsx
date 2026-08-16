@@ -257,8 +257,7 @@ export default function GoalsTimeline() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Timeline mục tiêu"
-        subtitle="Goal → Task → Subtask trên trục thời gian, kèm khối lượng công việc song song"
+        title="Timeline"
         action={
           <div className="flex items-center gap-2">
             <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">

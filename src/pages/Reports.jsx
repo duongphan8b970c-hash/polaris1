@@ -25,7 +25,7 @@ export default function Reports() {
 
   return (
     <div>
-      <PageHeader title="📊 Báo cáo tài chính" subtitle="Tổng hợp giao dịch, so sánh kỳ và kiểm soát hạn mức theo danh mục." />
+      <PageHeader title="📊 Báo cáo tài chính"/>
       <FinanceReport transactions={transactions} budgets={budgets} onRefresh={refreshReport} />
     </div>
   )

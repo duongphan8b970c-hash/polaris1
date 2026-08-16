@@ -18,7 +18,7 @@ export default function GoalsReports() {
 
   return (
     <div>
-      <PageHeader title="🎯 Báo cáo Goal" subtitle="Theo dõi hiệu suất cá nhân theo ngày, tuần và tháng." />
+      <PageHeader title="🎯 Báo cáo"/>
       <GoalsReport goals={goals} tasks={tasks} onRefresh={refreshReport} />
     </div>
   )

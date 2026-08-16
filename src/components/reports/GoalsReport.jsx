@@ -166,7 +166,7 @@ export default function GoalsReport({ goals = [], tasks = [], onRefresh }) {
     <div className="space-y-5">
       <section className="card">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div><h2 className="text-lg font-bold text-gray-900">Báo cáo hiệu suất Goal</h2><p className="mt-1 text-sm text-gray-600">Đánh giá hiệu suất cá nhân theo ngày, tuần hoặc tháng từ task, deadline và tiến độ Goal.</p></div>
+          <div><h2 className="text-lg font-bold text-gray-900">Báo cáo hiệu suất</h2></div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex rounded-lg bg-gray-100 p-1">
               {[{ value: 'day', label: 'Ngày' }, { value: 'week', label: 'Tuần' }, { value: 'month', label: 'Tháng' }].map((option) => <button key={option.value} onClick={() => setPeriod(option.value)} className={`rounded-md px-3 py-1.5 text-sm font-medium ${period === option.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>{option.label}</button>)}
@@ -175,7 +175,7 @@ export default function GoalsReport({ goals = [], tasks = [], onRefresh }) {
             <button onClick={regenerate} disabled={generating} className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">{generating ? 'Đang tạo...' : '↻ Tạo báo cáo'}</button>
           </div>
         </div>
-        <p className="mt-3 text-xs text-gray-500">Kỳ đang xem: <strong>{rangeLabel(report.range, period)}</strong> · Cập nhật lần cuối: {generatedAt.toLocaleTimeString('vi-VN')}</p>
+        <p className="mt-3 text-xs text-gray-500">Thời gian báo cáo: <strong>{rangeLabel(report.range, period)}</strong> · Cập nhật lần cuối: {generatedAt.toLocaleTimeString('vi-VN')}</p>
       </section>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">

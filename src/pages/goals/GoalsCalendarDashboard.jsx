@@ -211,8 +211,7 @@ export default function GoalsCalendarDashboard({ embedded = false }) {
       {embedded && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">🎯 Lịch Goal</h2>
-            <p className="text-sm text-gray-600">Lịch công việc, task và subtask của Goal.</p>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">🎯 Performance</h2>
           </div>
           <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
             <button

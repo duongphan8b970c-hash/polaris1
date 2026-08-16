@@ -180,8 +180,7 @@ export default function FinanceReport({ transactions = [], budgets = [], onRefre
       <section className="card">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Báo cáo giao dịch theo danh mục</h2>
-            <p className="mt-1 text-sm text-gray-600">So sánh chi tiêu với kỳ trước, tổng giao dịch và hạn mức ngân sách đã thiết lập.</p>
+            <h2 className="text-lg font-bold text-gray-900">Báo cáo giao dịch</h2>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex rounded-lg bg-gray-100 p-1">
@@ -196,7 +195,7 @@ export default function FinanceReport({ transactions = [], budgets = [], onRefre
             <button onClick={exportCsv} className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">⇩ CSV</button>
           </div>
         </div>
-        <p className="mt-3 text-xs text-gray-500">Kỳ đang xem: <strong>{rangeLabel(report.range)}</strong> · Cập nhật lần cuối: {generatedAt.toLocaleTimeString('vi-VN')}</p>
+        <p className="mt-3 text-xs text-gray-500">Chu kỳ đang xem: <strong>{rangeLabel(report.range)}</strong> · Cập nhật lần cuối: {generatedAt.toLocaleTimeString('vi-VN')}</p>
       </section>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">

@@ -85,8 +85,7 @@ export default function FinanceCalendar() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">💳 Lịch tài chính</h2>
-          <p className="text-sm text-gray-600">Payback và các kế hoạch chi tiêu được theo dõi riêng với công việc Goal.</p>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">💳 Finance</h2>
         </div>
         <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
           {[

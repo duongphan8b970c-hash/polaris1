@@ -94,7 +94,6 @@ export default function GoalsDashboard() {
     <div>
       <PageHeader
         title="Mục Tiêu & Dự Án"
-        subtitle="Quản lý và theo dõi tiến độ các mục tiêu của bạn"
         action={
           <button onClick={handleCreate} className="btn btn-primary">
             + Tạo mục tiêu mới

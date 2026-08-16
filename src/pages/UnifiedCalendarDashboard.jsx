@@ -3,19 +3,14 @@ import PageHeader from '../components/layout/PageHeader'
 import FinanceCalendar from '../components/calendar/FinanceCalendar'
 import GoalsCalendarDashboard from './goals/GoalsCalendarDashboard'
 
-/**
- * Overview deliberately keeps financial due dates and Goal work separate.
- * Mixing them made each calendar cell ambiguous and hid the work-focused
- * controls that the Goal calendar already provides.
- */
+
 export default function UnifiedCalendarDashboard() {
-  const [activeCalendar, setActiveCalendar] = useState('finance')
+  const [activeCalendar, setActiveCalendar] = useState('goals')
 
   return (
     <div className="space-y-4">
       <PageHeader
         title="🗓️ Tổng quan"
-        subtitle="Theo dõi lịch tài chính và lịch thực hiện Goal trong hai không gian riêng."
       />
 
       <div className="border-b border-gray-200">
@@ -28,7 +23,7 @@ export default function UnifiedCalendarDashboard() {
                 : 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900'
             }`}
           >
-            💳 Lịch tài chính
+            💳 Finance
           </button>
           <button
             onClick={() => setActiveCalendar('goals')}
@@ -38,7 +33,7 @@ export default function UnifiedCalendarDashboard() {
                 : 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900'
             }`}
           >
-            🎯 Lịch Goal
+            🎯 Performance
           </button>
         </nav>
       </div>
