@@ -27,6 +27,7 @@ const buildSelect = () => `
             id,
             title,
             is_completed,
+            completed_date,
             scheduled_date,
             recurrence_rule,
             is_calendar_visible,
@@ -189,6 +190,11 @@ export function useTasks(goalId = null, filters = {}) {
         if (Object.hasOwn(taskData, 'is_calendar_visible')) {
           updateData.is_calendar_visible = taskData.is_calendar_visible
         }
+        if (Object.hasOwn(taskData, 'status')) {
+          updateData.completed_date = taskData.status === 'completed'
+            ? taskData.completed_date || new Date().toISOString().split('T')[0]
+            : null
+        }
         if (Object.hasOwn(taskData, TASK_DEPENDENCY_COLUMN) && isTaskDependencySupported()) {
           updateData[TASK_DEPENDENCY_COLUMN] = taskData[TASK_DEPENDENCY_COLUMN] || null
         }
@@ -235,10 +241,11 @@ export function useTasks(goalId = null, filters = {}) {
 
   const toggleTaskStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 'completed' ? 'todo' : 'completed'
+    const completedDate = newStatus === 'completed' ? new Date().toISOString().split('T')[0] : null
     try {
       const { error: updateError } = await supabase
         .from('tasks')
-        .update({ status: newStatus })
+        .update({ status: newStatus, completed_date: completedDate })
         .eq('id', id)
 
       if (updateError) throw updateError

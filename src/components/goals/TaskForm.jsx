@@ -51,6 +51,7 @@ export default function TaskForm({ task, onSubmit, onCancel, loading, siblingTas
         due_date: task.due_date || '',
         priority: task.priority || 'medium',
         status: task.status || 'todo',
+        completed_date: task.completed_date || null,
         assigned_to: task.assigned_to || [],
         scheduled_date: task.scheduled_date || '',
         is_calendar_visible: task.is_calendar_visible || false,

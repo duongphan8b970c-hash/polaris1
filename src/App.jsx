@@ -23,6 +23,7 @@ import WalletHistory from './pages/finance/WalletHistory'
 import KanjiComparator from './pages/study/KanjiComparator'
 import StudyMaterialVault from './pages/study/StudyMaterialVault'
 import UnifiedCalendarDashboard from './pages/UnifiedCalendarDashboard'
+import GoalsReports from './pages/goals/GoalsReports'
 
 // ✅ Create ProtectedRoute component
 function ProtectedRoute({ children, session }) {
@@ -35,7 +36,7 @@ function ProtectedRoute({ children, session }) {
 // ✅ Create PublicRoute component (redirect if already logged in)
 function PublicRoute({ children, session }) {
   if (session) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/reports" replace />
   }
   return children
 }
@@ -95,7 +96,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/overview" replace />} />
+          <Route index element={<Navigate to="/reports" replace />} />
           <Route path="overview" element={<UnifiedCalendarDashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="transactions" element={<FinancialTracking />} />
@@ -104,6 +105,7 @@ function App() {
           <Route path="wallets" element={<Wallets />} />
           <Route path="wallets/history" element={<WalletHistory />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="reports/goals" element={<GoalsReports />} />
           <Route path="a-better-day" element={<ABetterDay />} />
           <Route path="a-better-day/priorities" element={<PaybackPriorityConfig />} />
           <Route path="payback" element={<Navigate to="/a-better-day" replace />} />
@@ -122,7 +124,7 @@ function App() {
         {/* ✅ Catch all - redirect to dashboard or login */}
         <Route
           path="*"
-          element={<Navigate to={session ? "/dashboard" : "/login"} replace />}
+          element={<Navigate to={session ? "/reports" : "/login"} replace />}
         />
       </Routes>
     </Router>

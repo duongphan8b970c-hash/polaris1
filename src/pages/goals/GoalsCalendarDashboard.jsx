@@ -14,7 +14,7 @@ import StatsCard from '../../components/analytics/StatsCard'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 
-export default function GoalsCalendarDashboard() {
+export default function GoalsCalendarDashboard({ embedded = false }) {
   const today = new Date()
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
   const [currentMonth, setCurrentMonth] = useState(today.getMonth())
@@ -146,6 +146,7 @@ export default function GoalsCalendarDashboard() {
   return (
     <div className="space-y-4">
       {/* Page Header */}
+      {!embedded && (
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
@@ -205,8 +206,37 @@ export default function GoalsCalendarDashboard() {
           </div>
         )}
       </div>
+      )}
+
+      {embedded && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">🎯 Lịch Goal</h2>
+            <p className="text-sm text-gray-600">Lịch công việc, task và subtask của Goal.</p>
+          </div>
+          <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setViewMode('personal')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'personal' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              👤 Cá nhân
+            </button>
+            <button
+              onClick={() => setViewMode('team')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'team' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              👥 Team
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ✅ NEW: Tab Navigation */}
+      {!embedded && (
       <div className="border-b border-gray-200">
         <nav className="flex gap-5">
           <button
@@ -231,9 +261,10 @@ export default function GoalsCalendarDashboard() {
           </button>
         </nav>
       </div>
+      )}
 
       {/* ✅ Calendar Tab Content */}
-      {activeTab === 'calendar' && (
+      {(embedded || activeTab === 'calendar') && (
         <>
           {/* Stats Cards */}
           <CalendarStatsSection
@@ -337,7 +368,7 @@ export default function GoalsCalendarDashboard() {
       )}
 
       {/* ✅ Analytics Tab Content */}
-      {activeTab === 'analytics' && (
+      {!embedded && activeTab === 'analytics' && (
         <>
           {analyticsLoading ? (
             <Loading message="Đang tải analytics..." />

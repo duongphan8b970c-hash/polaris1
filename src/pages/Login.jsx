@@ -22,7 +22,7 @@ export default function Login() {
       
       if (error) throw error
       
-      navigate('/dashboard')
+      navigate('/reports')
     } catch (err) {
       console.error('Login error:', err)
       setError(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.')

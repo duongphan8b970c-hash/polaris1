@@ -6,12 +6,13 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
   
   // ✅ FIX: Default to null (all collapsed)
   const [expandedMenu, setExpandedMenu] = useState(() => {
-    if (location.pathname.startsWith('/goals')) return 'goals'
+    if (location.pathname.startsWith('/goals') || location.pathname.startsWith('/reports/goals')) return 'goals'
     if (
       location.pathname.startsWith('/wallets') ||
       location.pathname.startsWith('/transactions') ||
       location.pathname.startsWith('/trades') ||
-      location.pathname.startsWith('/a-better-day')
+      location.pathname.startsWith('/a-better-day') ||
+      location.pathname === '/reports'
     ) return 'financial'
     if (location.pathname.startsWith('/study')) return 'study'
     if (location.pathname === '/dashboard') return null
@@ -86,6 +87,15 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
           )
+        },
+        {
+          name: 'Báo cáo Goal',
+          path: '/reports/goals',
+          icon: (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6m3 6V7m3 10v-3m3 7H6a2 2 0 01-2-2V5" />
+            </svg>
+          )
         }
       ]
     },
@@ -105,6 +115,15 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>)
+        },
+        {
+          name: 'Báo cáo',
+          path: '/reports',
+          icon: (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6m3 6V7m3 10v-3m3 7m3 4H6a2 2 0 01-2-2V5" />
+            </svg>
+          )
         },
         {
           name: 'Ví',
@@ -174,7 +193,11 @@ export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false })
   // ✅ FIX: Check if ANY child route is active
   const hasActiveChild = (section) => {
     if (!section.submenu) return false
-    return section.submenu.some(item => location.pathname.startsWith(item.path))
+    return section.submenu.some((item) =>
+      item.path === '/reports'
+        ? location.pathname === '/reports'
+        : location.pathname.startsWith(item.path)
+    )
   }
 
   const toggleMenu = (menuId) => {

@@ -262,7 +262,7 @@ export const GOAL_HEALTH_META = {
     key: 'completed',
     label: 'Đã hoàn thành',
     short: 'Completed',
-    icon: '🏁',
+    icon: '✓',
     chip: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
     dot: 'bg-emerald-500',
   },

@@ -25,10 +25,12 @@ export default function TodayTasksPanel({ date, items, allMonthItems, onRefresh 
 
       if (item.type === 'task') {
         const newStatus = item.status === 'completed' ? 'in_progress' : 'completed'
+        const completedDate = newStatus === 'completed' ? new Date().toISOString().split('T')[0] : null
         const { error } = await supabase
           .from('tasks')
           .update({ 
             status: newStatus,
+            completed_date: completedDate,
             updated_at: new Date().toISOString()
           })
           .eq('id', item.original_id)
