@@ -117,8 +117,42 @@ export function useTimeline({ includeTeam = true } = {}) {
 
     fetchAll()
 
+    // Keep the timeline in sync with edits made from other screens (for
+    // example GoalDetails or the calendar). A single event can update several
+    // related rows, so debounce the reload to avoid issuing duplicate queries.
+    let refreshTimer = null
+    const scheduleRefresh = () => {
+      if (cancelled || refreshTimer !== null) return
+
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null
+        fetchAll()
+      }, 150)
+    }
+
+    const channel = supabase
+      .channel(`goals-timeline-${includeTeam ? 'team' : 'personal'}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'goals' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subtasks' }, scheduleRefresh)
+      .subscribe()
+
+    // Realtime may not be enabled for every table/environment. Refreshing when
+    // the tab becomes active also covers updates made while the page was away.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') scheduleRefresh()
+    }
+    const handleWindowFocus = () => scheduleRefresh()
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleWindowFocus)
+
     return () => {
       cancelled = true
+      if (refreshTimer !== null) clearTimeout(refreshTimer)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleWindowFocus)
+      supabase.removeChannel(channel)
     }
   }, [includeTeam, refreshTrigger])
 
