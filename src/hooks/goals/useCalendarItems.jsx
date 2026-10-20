@@ -95,7 +95,7 @@ export function useCalendarItems(startDate, endDate, options = {}) {
               is_calendar_visible,
               assigned_to,
               goal_id${dependencySelectFragment()},
-              goal:goals(id, name, icon, color)
+              goal:goals(id, name, icon, color, deleted_at)
             `)
             .eq('is_calendar_visible', true)
             .is('deleted_at', null)
@@ -121,6 +121,9 @@ export function useCalendarItems(startDate, endDate, options = {}) {
           if (tasksError) throw tasksError
           return
         }
+
+        // Soft deletes don't cascade, so drop tasks whose goal was deleted.
+        rawTasks = (rawTasks || []).filter((task) => !task.goal?.deleted_at)
 
         // Prerequisites are often not themselves calendar-visible, so pull the
         // missing ones in before deciding what is blocked.
@@ -154,7 +157,8 @@ export function useCalendarItems(startDate, endDate, options = {}) {
               priority,
               due_date,
               goal_id,
-              goal:goals(id, name, icon, color)
+              deleted_at,
+              goal:goals(id, name, icon, color, deleted_at)
             )
           `)
           .eq('is_calendar_visible', true)
@@ -167,11 +171,16 @@ export function useCalendarItems(startDate, endDate, options = {}) {
           subtasksQuery = subtasksQuery.contains('assigned_to', [user.id])
         }
 
-        const { data: subtasks, error: subtasksError } = await subtasksQuery
+        const { data: rawSubtasks, error: subtasksError } = await subtasksQuery
         if (subtasksError || cancelled) {
           if (subtasksError) throw subtasksError
           return
         }
+
+        // Likewise drop subtasks whose parent task or goal was deleted.
+        const subtasks = (rawSubtasks || []).filter(
+          (subtask) => !subtask.task?.deleted_at && !subtask.task?.goal?.deleted_at
+        )
 
         const calendarItems = []
 
