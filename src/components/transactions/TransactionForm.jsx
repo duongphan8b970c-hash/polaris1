@@ -3,6 +3,7 @@ import { useWallets } from '../../hooks/finance/useWallets'
 import { useCategories } from '../../hooks/finance/useCategories'
 import { usePaybackGoals } from '../../hooks/finance/usePaybackGoals'
 import { supabase } from '../../lib/supabase'
+import { getWalletTypeInfo } from '../../constants'
 
 // Số tiền hiển thị = số tiền thực / hệ số. Tự động theo tiền tệ của ví:
 // ví VND -> nhập theo đơn vị nghìn (gõ 50 = 50.000 ₫), tiền tệ khác -> nhập chính xác.
@@ -16,7 +17,67 @@ const actualToRaw = (actual, multiplier) => {
   return String(parseFloat(value.toFixed(6)))
 }
 
-export default function TransactionForm({ transaction, onSubmit, onCancel, loading }) {
+// Mô tả gần nhất (không trùng) từ danh sách giao dịch đã sắp xếp mới -> cũ.
+const getRecentDescriptions = (rows, limit = 10) => {
+  const unique = []
+  for (const row of rows) {
+    const desc = (row.description || '').trim()
+    if (desc && !unique.includes(desc)) unique.push(desc)
+    if (unique.length >= limit) break
+  }
+  return unique
+}
+
+// Số tiền gần nhất (không trùng), chỉ lấy giao dịch cùng tiền tệ với ví đang chọn.
+const getRecentAmounts = (rows, wallets, currency, limit = 5) => {
+  const unique = []
+  for (const row of rows) {
+    const amount = Math.abs(parseFloat(row.amount))
+    if (!amount || unique.includes(amount)) continue
+    const rowCurrency = wallets.find(w => w.id === row.wallet_id)?.currency || 'VND'
+    if (rowCurrency === currency) unique.push(amount)
+    if (unique.length >= limit) break
+  }
+  return unique
+}
+
+// Danh sách ví dạng card bấm chọn (giống danh mục) để thao tác nhanh trên mobile.
+function WalletPicker({ wallets, value, onSelect, emptyText = 'Chưa có ví nào.' }) {
+  if (wallets.length === 0) {
+    return <p className="text-sm text-gray-400 py-2">{emptyText}</p>
+  }
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {wallets.map(wallet => {
+        const active = value === wallet.id
+        return (
+          <button
+            key={wallet.id}
+            type="button"
+            onClick={() => onSelect(wallet.id)}
+            className={`flex items-center gap-2 py-2 px-2.5 rounded-lg border-2 text-left transition-all min-w-0 ${
+              active
+                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                : 'border-transparent bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            title={`${wallet.name} (${wallet.currency})`}
+          >
+            <span className="text-xl leading-none shrink-0">{getWalletTypeInfo(wallet.type || 'other')?.icon || '💼'}</span>
+            <span className="min-w-0">
+              <span className="block text-xs font-medium leading-tight truncate">{wallet.name}</span>
+              <span className={`block text-[11px] leading-tight truncate ${active ? 'text-blue-600' : 'text-gray-400'}`}>
+                {(wallet.current_amount || 0).toLocaleString('vi-VN')} {wallet.currency}
+              </span>
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// variant="page": dùng cho trang thêm giao dịch riêng (thanh nút cố định ở đáy màn hình).
+export default function TransactionForm({ transaction, onSubmit, onCancel, loading, variant = 'modal' }) {
   const { wallets } = useWallets()
   const { goals: paybackGoals } = usePaybackGoals()
   const isEditingTransfer = transaction && transaction.type === 'transfer'
@@ -68,41 +129,41 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
     setFormData(prev => ({ ...prev, [field]: actual }))
   }
 
-  // ===== Gợi ý mô tả gần nhất theo cùng danh mục =====
-  const [recentDescriptions, setRecentDescriptions] = useState([])
+  // ===== Gợi ý mô tả & số tiền gần nhất theo cùng danh mục =====
+  const [recentTxns, setRecentTxns] = useState([])
 
   useEffect(() => {
     let cancelled = false
     const catId = formData.category_id
     const fetchRecent = async () => {
       if (!catId || formData.type === 'transfer') {
-        if (!cancelled) setRecentDescriptions([])
+        if (!cancelled) setRecentTxns([])
         return
       }
       const { data, error } = await supabase
         .from('financial_transactions')
-        .select('description, date, time')
+        .select('description, amount, wallet_id, date, time')
         .eq('category_id', catId)
-        .not('description', 'is', null)
-        .neq('description', '')
+        .is('deleted_at', null)
         .order('date', { ascending: false })
         .order('time', { ascending: false })
-        .limit(40)
+        .limit(50)
       if (error || cancelled) return
-      const seen = new Set()
-      const unique = []
-      for (const row of data || []) {
-        const desc = (row.description || '').trim()
-        if (!desc || seen.has(desc)) continue
-        seen.add(desc)
-        unique.push(desc)
-        if (unique.length >= 10) break
-      }
-      setRecentDescriptions(unique)
+      setRecentTxns(data || [])
     }
     fetchRecent()
     return () => { cancelled = true }
   }, [formData.category_id, formData.type])
+
+  const recentDescriptions = getRecentDescriptions(recentTxns)
+  const recentAmounts = getRecentAmounts(recentTxns, wallets, walletCurrency)
+
+  const handlePickAmount = (actual) => {
+    setAmountRaw(actualToRaw(actual, multiplier))
+    setFormData(prev => ({ ...prev, amount: String(actual) }))
+  }
+
+  const selectWallet = (name, value) => handleChange({ target: { name, value } })
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -298,66 +359,27 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
       {formData.type === 'transfer' ? (
         <>
           {/* TRANSFER LAYOUT */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* From Wallet */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Từ ví <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="wallet_id"
-                value={formData.wallet_id}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="">Chọn ví nguồn</option>
-                {wallets.map(wallet => (
-                  <option key={wallet.id} value={wallet.id}>
-                    {wallet.name} ({wallet.currency})
-                  </option>
-                ))}
-              </select>
-              {formData.wallet_id && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Số dư: <span className="font-semibold text-gray-700">
-                    {wallets.find(w => w.id === formData.wallet_id)?.current_amount?.toLocaleString('vi-VN') || '0'}
-                    {' '}{wallets.find(w => w.id === formData.wallet_id)?.currency}
-                  </span>
-                </p>
-              )}
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Từ ví <span className="text-red-500">*</span>
+            </label>
+            <WalletPicker
+              wallets={wallets}
+              value={formData.wallet_id}
+              onSelect={(id) => selectWallet('wallet_id', id)}
+            />
+          </div>
 
-            {/* To Wallet */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Đến ví <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="to_wallet_id"
-                value={formData.to_wallet_id}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="">Chọn ví đích</option>
-                {wallets
-                  .filter(w => w.id !== formData.wallet_id)
-                  .map(wallet => (
-                    <option key={wallet.id} value={wallet.id}>
-                      {wallet.name} ({wallet.currency})
-                    </option>
-                  ))}
-              </select>
-              {formData.to_wallet_id && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Số dư: <span className="font-semibold text-gray-700">
-                    {wallets.find(w => w.id === formData.to_wallet_id)?.current_amount?.toLocaleString('vi-VN') || '0'}
-                    {' '}{wallets.find(w => w.id === formData.to_wallet_id)?.currency}
-                  </span>
-                </p>
-              )}
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Đến ví <span className="text-red-500">*</span>
+            </label>
+            <WalletPicker
+              wallets={wallets.filter(w => w.id !== formData.wallet_id)}
+              value={formData.to_wallet_id}
+              onSelect={(id) => selectWallet('to_wallet_id', id)}
+              emptyText="Không có ví đích khả dụng."
+            />
           </div>
 
           {/* ✅ NEW: Amount + Fee row */}
@@ -372,6 +394,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
               </div>
               <input
                 type="number"
+                inputMode="decimal"
                 name="amount"
                 value={amountRaw}
                 onChange={(e) => handleAmountChange('amount', e.target.value)}
@@ -394,6 +417,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
               </label>
               <input
                 type="number"
+                inputMode="decimal"
                 name="fee"
                 value={feeRaw}
                 onChange={(e) => handleAmountChange('fee', e.target.value)}
@@ -459,20 +483,11 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Ví <span className="text-red-500">*</span>
             </label>
-            <select
-              name="wallet_id"
+            <WalletPicker
+              wallets={wallets}
               value={formData.wallet_id}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            >
-              <option value="">Chọn ví</option>
-              {wallets.map(wallet => (
-                <option key={wallet.id} value={wallet.id}>
-                  {wallet.name} ({wallet.currency})
-                </option>
-              ))}
-            </select>
+              onSelect={(id) => selectWallet('wallet_id', id)}
+            />
           </div>
 
           {/* Danh mục dạng icon bấm chọn */}
@@ -519,6 +534,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
             </div>
             <input
               type="number"
+              inputMode="decimal"
               name="amount"
               value={amountRaw}
               onChange={(e) => handleAmountChange('amount', e.target.value)}
@@ -529,6 +545,26 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
               required
             />
             {renderResolvedHint(amountRaw)}
+
+            {/* Gợi ý 5 số tiền gần nhất của cùng danh mục */}
+            {recentAmounts.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {recentAmounts.map(amt => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => handlePickAmount(amt)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      parseFloat(formData.amount) === amt
+                        ? 'bg-blue-100 text-blue-700 border-blue-300'
+                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    {amt.toLocaleString('vi-VN')} {isVND ? '₫' : walletCurrency}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}
@@ -642,7 +678,9 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-3 pt-4">
+      <div className={variant === 'page'
+        ? 'sticky bottom-0 -mx-4 -mb-4 px-4 pt-3 bg-white border-t border-gray-200 rounded-b-xl flex gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
+        : 'flex gap-3 pt-4'}>
         <button
           type="button"
           onClick={onCancel}

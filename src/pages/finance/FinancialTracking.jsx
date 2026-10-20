@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo} from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useTransactions } from '../../hooks/finance/useTransactions'
 import { useCategories } from '../../hooks/finance/useCategories'
@@ -16,7 +17,7 @@ import PageHeader from '../../components/layout/PageHeader'
 import Loading from '../../components/common/Loading'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { formatCurrency, formatDate } from '../../utils'
-import { getBudgetPeriodRange } from '../../utils/budgetPeriod'
+import { checkBudgetAfterTransaction } from '../../utils/budgetAlert'
 
 const getCurrentMonthRange = () => {
   const now = new Date()
@@ -34,6 +35,7 @@ export default function FinancialTracking() {
   const [categoryType, setCategoryType] = useState('expense')
   
   const { notifyBudgetExceeded, notifyBudgetWarning } = useNotifications()
+  const navigate = useNavigate()
   
   // Filters state
   const [filters, setFilters] = useState(() => {
@@ -240,6 +242,11 @@ const filteredStats = useMemo(() => {
 
   // Transaction handlers
   const handleCreateTransaction = () => {
+    // Mobile: mở trang thêm giao dịch riêng (tối ưu thao tác nhanh). Desktop: giữ modal.
+    if (window.innerWidth < 768) {
+      navigate('/transactions/new')
+      return
+    }
     setEditingTransaction(null)
     setShowTransactionForm(true)
   }
@@ -252,34 +259,6 @@ const filteredStats = useMemo(() => {
   const handleCloseTransactionForm = () => {
     setShowTransactionForm(false)
     setEditingTransaction(null)
-  }
-
-  const checkBudgetAfterTransaction = async (formData) => {
-    if (formData.type !== 'expense' || !formData.category_id) return
-
-    const budget = budgets.find(b => b.category_id === formData.category_id)
-    if (!budget) return
-
-    const now = new Date()
-    const { periodStart, periodEnd } = getBudgetPeriodRange(budget, now)
-
-    const { data } = await supabase
-      .from('financial_transactions')
-      .select('amount')
-      .eq('category_id', formData.category_id)
-      .eq('type', 'expense')
-      .gte('date', periodStart)
-      .lte('date', periodEnd)
-      .is('deleted_at', null)
-
-    const totalSpent = data?.reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0
-    const percentage = budget.amount > 0 ? (totalSpent / budget.amount) * 100 : 0
-
-    if (totalSpent > budget.amount) {
-      notifyBudgetExceeded(budget.category?.name || 'Danh mục', totalSpent, budget.amount)
-    } else if (percentage > 80) {
-      notifyBudgetWarning(budget.category?.name || 'Danh mục', percentage)
-    }
   }
 
   const handleSubmitTransaction = async (formData) => {
@@ -295,7 +274,7 @@ const filteredStats = useMemo(() => {
       handleCloseTransactionForm()
       // Check budget after successful expense transaction
       if (formData.type === 'expense') {
-        await checkBudgetAfterTransaction(formData)
+        await checkBudgetAfterTransaction(formData, budgets, { notifyBudgetExceeded, notifyBudgetWarning })
       }
     } else {
       alert('Lỗi: ' + result.error)

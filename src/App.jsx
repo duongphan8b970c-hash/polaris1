@@ -5,6 +5,7 @@ import { NotificationProvider } from './contexts/NotificationContext'
 import MainLayout from './components/layout/MainLayout'
 import Dashboard from './pages/Dashboard'
 import FinancialTracking from './pages/finance/FinancialTracking'
+import TransactionNew from './pages/finance/TransactionNew'
 import Trade from './pages/finance/Trade'
 import Wallets from './pages/finance/WalletConfig'
 import Reports from './pages/Reports'
@@ -100,6 +101,7 @@ function App() {
           <Route path="overview" element={<UnifiedCalendarDashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="transactions" element={<FinancialTracking />} />
+          <Route path="transactions/new" element={<TransactionNew />} />
           <Route path="trades" element={<Trade />} />
           <Route path="trades/planning" element={<Navigate to="/trades" replace />} />
           <Route path="wallets" element={<Wallets />} />
