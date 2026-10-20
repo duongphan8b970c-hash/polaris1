@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import Sidebar from './Sidebar'
 import Header from './Header'
@@ -88,6 +88,19 @@ function MainLayoutInner() {
           >
             <Outlet />
           </main>
+
+          {/* Nút nổi thêm giao dịch nhanh trên mobile */}
+          {location.pathname !== '/transactions/new' && location.pathname !== '/trades' && (
+            <Link
+              to="/transactions/new"
+              className="md:hidden fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 w-14 h-14 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+              aria-label="Thêm giao dịch"
+            >
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </Link>
+          )}
         </div>
       </div>
     </div>

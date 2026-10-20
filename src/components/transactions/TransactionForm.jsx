@@ -4,6 +4,7 @@ import { useCategories } from '../../hooks/finance/useCategories'
 import { usePaybackGoals } from '../../hooks/finance/usePaybackGoals'
 import { supabase } from '../../lib/supabase'
 import { getWalletTypeInfo } from '../../constants'
+import ReceiptScanner from './ReceiptScanner'
 
 // Số tiền hiển thị = số tiền thực / hệ số. Tự động theo tiền tệ của ví:
 // ví VND -> nhập theo đơn vị nghìn (gõ 50 = 50.000 ₫), tiền tệ khác -> nhập chính xác.
@@ -161,6 +162,23 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
   const handlePickAmount = (actual) => {
     setAmountRaw(actualToRaw(actual, multiplier))
     setFormData(prev => ({ ...prev, amount: String(actual) }))
+  }
+
+  // ===== Điền sẵn từ ảnh hóa đơn =====
+  const [scanInfo, setScanInfo] = useState(null)
+
+  const handleReceiptResult = (result) => {
+    const categoryValid = categories.some(c => c.id === result.category_id)
+    setFormData(prev => ({
+      ...prev,
+      amount: result.amount ? String(result.amount) : prev.amount,
+      description: result.description || prev.description,
+      date: result.date || prev.date,
+      time: result.time || prev.time,
+      category_id: categoryValid ? result.category_id : prev.category_id,
+    }))
+    if (result.amount) setAmountRaw(actualToRaw(result.amount, multiplier))
+    setScanInfo(result)
   }
 
   const selectWallet = (name, value) => handleChange({ target: { name, value } })
@@ -354,6 +372,25 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
           </button>
         </div>
       </div>
+
+      {/* Quét hóa đơn để điền sẵn (chỉ khi thêm mới thu/chi) */}
+      {!transaction && formData.type !== 'transfer' && (
+        <div>
+          <ReceiptScanner categories={categories} onResult={handleReceiptResult} disabled={loading} />
+          {scanInfo && (
+            <div className="mt-2 text-xs rounded-lg bg-green-50 border border-green-200 text-green-800 px-3 py-2">
+              ✅ Đã điền từ hóa đơn{scanInfo.merchant ? ` "${scanInfo.merchant}"` : ''}
+              {scanInfo.amount ? `: ${scanInfo.amount.toLocaleString('vi-VN')} ${scanInfo.currency}` : ''}.
+              {' '}Kiểm tra lại {formData.wallet_id ? '' : 'ví, '}danh mục và số tiền trước khi lưu.
+              {formData.wallet_id && scanInfo.currency !== walletCurrency && (
+                <span className="block mt-1 text-amber-700">
+                  ⚠️ Hóa đơn dùng {scanInfo.currency} nhưng ví đang chọn là {walletCurrency}.
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* CONDITIONAL LAYOUT: Transfer vs Regular Transaction */}
       {formData.type === 'transfer' ? (
