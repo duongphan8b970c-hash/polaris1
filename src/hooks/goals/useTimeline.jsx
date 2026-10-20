@@ -31,7 +31,7 @@ export function useTimeline({ includeTeam = true } = {}) {
             .from('tasks')
             .select(
               `id, goal_id, title, description, status, priority, start_date, due_date,
-               scheduled_date, assigned_to, total_subtasks, completed_subtasks,
+               scheduled_date, assigned_to,
                is_calendar_visible${dependencySelectFragment()}`
             )
             .is('deleted_at', null)
@@ -62,16 +62,35 @@ export function useTimeline({ includeTeam = true } = {}) {
         if (subtasksResult.error) throw subtasksResult.error
         if (cancelled) return
 
+        // The stored progress / subtask counters are not kept in sync with
+        // subtask edits, so derive them from the live rows (same rule as
+        // useGoals / useTasks). Uses every subtask, not just the visible ones,
+        // so personal view still reports the goal's real progress.
+        const allSubtasks = subtasksResult.data || []
+        const subtaskStatsByTask = new Map()
+        allSubtasks.forEach((subtask) => {
+          const stats = subtaskStatsByTask.get(subtask.task_id) || { total: 0, completed: 0 }
+          stats.total += 1
+          if (subtask.is_completed) stats.completed += 1
+          subtaskStatsByTask.set(subtask.task_id, stats)
+        })
+
         // Decorate across all goals at once so dependency lookups resolve even
         // when the prerequisite belongs to a task we would otherwise filter out.
-        const allTasks = decorateTasks(tasksResult.data || [])
+        const allTasks = decorateTasks(
+          (tasksResult.data || []).map((task) => {
+            const stats = subtaskStatsByTask.get(task.id) || { total: 0, completed: 0 }
+            return { ...task, total_subtasks: stats.total, completed_subtasks: stats.completed }
+          })
+        )
+        const progressByGoal = computeGoalProgress(allTasks)
 
         const ownedBy = (row) =>
           Array.isArray(row.assigned_to) && row.assigned_to.includes(user.id)
 
         const visibleTasks = includeTeam ? allTasks : allTasks.filter(ownedBy)
         const visibleTaskIds = new Set(visibleTasks.map((t) => t.id))
-        const visibleSubtasks = (subtasksResult.data || []).filter(
+        const visibleSubtasks = allSubtasks.filter(
           (subtask) =>
             visibleTaskIds.has(subtask.task_id) && (includeTeam || ownedBy(subtask))
         )
@@ -95,8 +114,9 @@ export function useTimeline({ includeTeam = true } = {}) {
           })
         })
 
-        const goals = (goalsResult.data || []).map((goal) => {
-          const goalTasks = tasksByGoal.get(goal.id) || []
+        const goals = (goalsResult.data || []).map((row) => {
+          const goalTasks = tasksByGoal.get(row.id) || []
+          const goal = { ...row, progress: progressByGoal.get(row.id) ?? 0 }
           return {
             ...goal,
             tasks: goalTasks,
@@ -172,6 +192,26 @@ export function useTimeline({ includeTeam = true } = {}) {
   }, [data.goals])
 
   return { goals: data.goals, ownerIds, loading, error, refetch }
+}
+
+/**
+ * Goal progress (0–100): completed / total subtasks across the goal's tasks.
+ * Goals without subtasks report 0, matching `calculate_goal_progress_by_subtasks`.
+ */
+function computeGoalProgress(tasks) {
+  const totals = new Map()
+  tasks.forEach((task) => {
+    const entry = totals.get(task.goal_id) || { total: 0, completed: 0 }
+    entry.total += task.total_subtasks
+    entry.completed += task.completed_subtasks
+    totals.set(task.goal_id, entry)
+  })
+
+  const progressByGoal = new Map()
+  totals.forEach((entry, goalId) => {
+    progressByGoal.set(goalId, entry.total > 0 ? (entry.completed / entry.total) * 100 : 0)
+  })
+  return progressByGoal
 }
 
 /**

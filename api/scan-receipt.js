@@ -1,5 +1,5 @@
 // api/scan-receipt.js
-// Đọc ảnh hóa đơn bằng Claude Haiku 5.5 và trả về dữ liệu để điền sẵn form giao dịch.
+// Đọc ảnh hóa đơn / ảnh chụp màn hình giao dịch bằng Claude Haiku 5.5 và trả về dữ liệu để điền sẵn form giao dịch.
 import Anthropic from '@anthropic-ai/sdk'
 import { jsonSchemaOutputFormat } from '@anthropic-ai/sdk/helpers/json-schema'
 import { createClient } from '@supabase/supabase-js'
@@ -31,16 +31,16 @@ const buildSchema = (categoryIds) => ({
   additionalProperties: false,
 })
 
-const buildPrompt = (categories) => `Đây là ảnh hóa đơn/biên lai mua hàng (thường ở Việt Nam). Trích xuất thông tin để ghi vào sổ chi tiêu.
+const buildPrompt = (categories) => `Ảnh này có thể là hóa đơn/biên lai mua hàng, hoặc ảnh chụp màn hình giao dịch từ app ngân hàng / ví điện tử (MoMo, ZaloPay, chuyển khoản, thanh toán QR...), thường ở Việt Nam. Trích xuất thông tin để ghi vào sổ thu chi.
 
 Quy tắc:
-- is_receipt: false nếu ảnh không phải hóa đơn/biên lai; khi đó để các trường khác rỗng hoặc 0.
-- amount: số tiền KHÁCH THỰC TRẢ (dòng "Tổng cộng", "Tổng tiền", "Thanh toán", "Total"...), không lấy tạm tính hay tiền khách đưa/tiền thối. Trả về số thuần, ví dụ "125.000đ" -> 125000 (dấu chấm/phẩy là phân cách hàng nghìn với VND). 0 nếu không đọc được.
+- is_receipt: true nếu ảnh là hóa đơn, biên lai hoặc màn hình xác nhận/chi tiết giao dịch; false nếu không phải; khi false để các trường khác rỗng hoặc 0.
+- amount: với hóa đơn, lấy số tiền KHÁCH THỰC TRẢ (dòng "Tổng cộng", "Tổng tiền", "Thanh toán", "Total"...), không lấy tạm tính hay tiền khách đưa/tiền thối. Với ảnh giao dịch ngân hàng/ví, lấy số tiền giao dịch (bỏ dấu +/-), không lấy số dư tài khoản. Trả về số thuần, ví dụ "125.000đ" -> 125000 (dấu chấm/phẩy là phân cách hàng nghìn với VND). 0 nếu không đọc được.
 - currency: mã ISO 4217, mặc định "VND".
 - date: định dạng YYYY-MM-DD, chuỗi rỗng nếu không có. Ngày trên hóa đơn VN thường là ngày/tháng/năm.
 - time: định dạng HH:MM (24 giờ), chuỗi rỗng nếu không có.
-- merchant: tên cửa hàng ngắn gọn (ví dụ "Highlands Coffee").
-- description: mô tả ngắn để ghi chú, ví dụ "Highlands - Phin sữa đá".
+- merchant: tên cửa hàng, hoặc tên người/đơn vị nhận/gửi tiền với ảnh chuyển khoản (ví dụ "Highlands Coffee", "Nguyen Van A").
+- description: mô tả ngắn để ghi chú, ví dụ "Highlands - Phin sữa đá"; với chuyển khoản nên dựa vào nội dung chuyển khoản nếu có.
 - category_id: id của danh mục phù hợp nhất trong danh sách dưới đây, chuỗi rỗng nếu không chắc.
 
 Danh mục:
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: 'Không đọc được kết quả từ AI' })
     }
     if (!result.is_receipt) {
-      return res.status(422).json({ error: 'Ảnh không giống hóa đơn' })
+      return res.status(422).json({ error: 'Ảnh không giống hóa đơn hoặc giao dịch' })
     }
 
     return res.status(200).json({

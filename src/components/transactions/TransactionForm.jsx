@@ -379,7 +379,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel, loadi
           <ReceiptScanner categories={categories} onResult={handleReceiptResult} disabled={loading} />
           {scanInfo && (
             <div className="mt-2 text-xs rounded-lg bg-green-50 border border-green-200 text-green-800 px-3 py-2">
-              ✅ Đã điền từ hóa đơn{scanInfo.merchant ? ` "${scanInfo.merchant}"` : ''}
+              ✅ Đã điền từ ảnh{scanInfo.merchant ? ` "${scanInfo.merchant}"` : ''}
               {scanInfo.amount ? `: ${scanInfo.amount.toLocaleString('vi-VN')} ${scanInfo.currency}` : ''}.
               {' '}Kiểm tra lại {formData.wallet_id ? '' : 'ví, '}danh mục và số tiền trước khi lưu.
               {formData.wallet_id && scanInfo.currency !== walletCurrency && (

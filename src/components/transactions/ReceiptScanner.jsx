@@ -23,9 +23,10 @@ const compressImage = (file) => new Promise((resolve, reject) => {
   img.src = url
 })
 
-// Nút chụp/chọn ảnh hóa đơn -> gọi /api/scan-receipt -> trả kết quả qua onResult.
+// Nút chụp ảnh / chọn ảnh từ thư viện (hóa đơn, ảnh chụp màn hình chuyển khoản) -> gọi /api/scan-receipt -> trả kết quả qua onResult.
 export default function ReceiptScanner({ categories, onResult, disabled }) {
-  const inputRef = useRef(null)
+  const cameraRef = useRef(null)
+  const galleryRef = useRef(null)
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState(null)
 
@@ -61,31 +62,29 @@ export default function ReceiptScanner({ categories, onResult, disabled }) {
     }
   }
 
+  const buttonClass = 'flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 text-sm font-medium hover:bg-blue-100 transition-colors disabled:opacity-60'
+
   return (
     <div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleFile}
-        className="hidden"
-      />
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={disabled || scanning}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors disabled:opacity-60"
-      >
-        {scanning ? (
-          <>
-            <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-            Đang đọc hóa đơn...
-          </>
-        ) : (
-          <>📷 Quét hóa đơn</>
-        )}
-      </button>
+      {/* capture -> mở thẳng camera trên mobile; không capture -> chọn từ thư viện ảnh */}
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
+      <input ref={galleryRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+
+      {scanning ? (
+        <div className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 text-sm font-medium">
+          <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          Đang đọc ảnh...
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <button type="button" onClick={() => cameraRef.current?.click()} disabled={disabled} className={buttonClass}>
+            📷 Chụp hóa đơn
+          </button>
+          <button type="button" onClick={() => galleryRef.current?.click()} disabled={disabled} className={buttonClass}>
+            🖼️ Chọn ảnh
+          </button>
+        </div>
+      )}
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   )
