@@ -279,8 +279,10 @@ export const GOAL_HEALTH_META = {
 export const GOAL_HEALTH_ORDER = ['off_track', 'at_risk', 'on_track', 'completed', 'no_data']
 
 /**
- * Overall health of a goal, derived from progress vs. elapsed time plus the
- * overdue and blocked tasks inside it.
+ * Overall health of a goal. When the goal has tasks it is judged by them
+ * (overdue / blocked) — if every task is on time, so is the goal. Progress vs.
+ * elapsed time only matters for goals without tasks. Passing the target date
+ * unfinished is always off track.
  *
  * @param goal   goal row (needs progress, start_date, target_date, status)
  * @param tasks  the goal's tasks (already decorated by `decorateTasks`, ideally)
@@ -364,11 +366,15 @@ export function computeGoalHealth(goal, tasks = [], today = new Date()) {
     }
   }
 
+  // Progress is subtask-based and lags behind task schedules, so it is only a
+  // signal when there are no tasks to judge the goal by.
+  const judgeByProgress = tasks.length === 0
+
   const offTrack = []
   if (daysRemaining !== null && daysRemaining < 0 && progress < 100) {
     offTrack.push(`Đã quá ngày hoàn thành dự kiến ${Math.abs(daysRemaining)} ngày`)
   }
-  if (progressGap !== null && progressGap <= -25) {
+  if (judgeByProgress && progressGap !== null && progressGap <= -25) {
     offTrack.push(`Tiến độ chậm ${Math.abs(progressGap).toFixed(0)}% so với kế hoạch`)
   }
   if (overdueTasks >= 3) {
@@ -380,12 +386,18 @@ export function computeGoalHealth(goal, tasks = [], today = new Date()) {
   }
 
   const atRisk = []
-  if (progressGap !== null && progressGap <= -10) {
+  if (judgeByProgress && progressGap !== null && progressGap <= -10) {
     atRisk.push(`Tiến độ chậm ${Math.abs(progressGap).toFixed(0)}% so với kế hoạch`)
   }
   if (overdueTasks > 0) atRisk.push(`${overdueTasks} task quá hạn`)
   if (blockedTasks > 0) atRisk.push(`${blockedTasks} task đang bị chặn`)
-  if (daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= DUE_SOON_THRESHOLD_DAYS && progress < 90) {
+  if (
+    judgeByProgress &&
+    daysRemaining !== null &&
+    daysRemaining >= 0 &&
+    daysRemaining <= DUE_SOON_THRESHOLD_DAYS &&
+    progress < 90
+  ) {
     atRisk.push(`Còn ${daysRemaining} ngày nhưng tiến độ mới ${progress.toFixed(0)}%`)
   }
 
@@ -395,7 +407,9 @@ export function computeGoalHealth(goal, tasks = [], today = new Date()) {
 
   const reasons = []
   if (dueSoonTasks > 0) reasons.push(`${dueSoonTasks} task sắp đến hạn`)
-  if (expectedProgress !== null) {
+  if (!judgeByProgress) {
+    reasons.push('Tất cả task đúng tiến độ')
+  } else if (expectedProgress !== null) {
     reasons.push(`Tiến độ ${progress.toFixed(0)}% (kế hoạch ${expectedProgress.toFixed(0)}%)`)
   }
   if (reasons.length === 0) reasons.push('Không phát hiện rủi ro')

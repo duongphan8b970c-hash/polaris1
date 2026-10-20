@@ -1,28 +1,35 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react' // useEffect kept for body scroll & route change
 
+/** Which submenu section owns `pathname`, or null for top-level pages. */
+function getSectionForPath(pathname) {
+  if (pathname.startsWith('/goals') || pathname.startsWith('/reports/goals')) return 'goals'
+  if (
+    pathname === '/dashboard' ||
+    pathname.startsWith('/wallets') ||
+    pathname.startsWith('/transactions') ||
+    pathname.startsWith('/trades') ||
+    pathname.startsWith('/a-better-day') ||
+    pathname === '/reports'
+  ) return 'financial'
+  if (pathname.startsWith('/study')) return 'study'
+  return null
+}
+
 export default function Sidebar({ isOpen, onClose, onToggle, darkMode = false }) {
   const location = useLocation()
   
-  // ✅ FIX: Default to null (all collapsed)
-  const [expandedMenu, setExpandedMenu] = useState(() => {
-    if (location.pathname.startsWith('/goals') || location.pathname.startsWith('/reports/goals')) return 'goals'
-    if (
-      location.pathname.startsWith('/wallets') ||
-      location.pathname.startsWith('/transactions') ||
-      location.pathname.startsWith('/trades') ||
-      location.pathname.startsWith('/a-better-day') ||
-      location.pathname === '/reports'
-    ) return 'financial'
-    if (location.pathname.startsWith('/study')) return 'study'
-    if (location.pathname === '/dashboard') return null
-    return null
-  })
+  const [expandedMenu, setExpandedMenu] = useState(() => getSectionForPath(location.pathname))
   const prevPathname = useRef(location.pathname)
 
   useEffect(() => {
     if (prevPathname.current !== location.pathname) {
       prevPathname.current = location.pathname
+      // Auto-expand the section of the page we navigated to; keep the current
+      // one open when the new page has no section (e.g. /overview).
+      const section = getSectionForPath(location.pathname)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (section) setExpandedMenu(section)
       if (window.innerWidth < 1024 && isOpen) {
         onClose()
       }
