@@ -5,6 +5,8 @@ import { formatDateString } from '../../utils/dateUtils'
 import { getDueStatus } from '../../utils/taskHealth'
 import DueDateBadge from '../common/DueDateBadge'
 import BlockedBadge from '../common/BlockedBadge'
+import SortableList from '../common/SortableList'
+import { applyDayOrder, dayItemKey, useDayOrder } from '../../hooks/calendar/useDayOrder'
 
 const TABS = [
   { value: 'day', label: 'Ngày đã chọn', icon: '📝' },
@@ -33,7 +35,13 @@ export default function SelectedDatePanel({
   const [activeTab, setActiveTab] = useState(defaultTab)
   const navigate = useNavigate()
 
-  const dayItems = useMemo(() => sortCalendarItems(items), [items])
+  const { orders, saveOrder } = useDayOrder()
+  const selectedKey = formatDateString(date)
+
+  const dayItems = useMemo(
+    () => applyDayOrder(sortCalendarItems(items), orders[selectedKey]),
+    [items, orders, selectedKey]
+  )
 
   const remainingByDate = useMemo(() => {
     if (!allMonthItems) return []
@@ -45,8 +53,11 @@ export default function SelectedDatePanel({
     })
     return Array.from(grouped.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([dateKey, dateItems]) => ({ dateKey, items: sortCalendarItems(dateItems) }))
-  }, [allMonthItems])
+      .map(([dateKey, dateItems]) => ({
+        dateKey,
+        items: applyDayOrder(sortCalendarItems(dateItems), orders[dateKey]),
+      }))
+  }, [allMonthItems, orders])
 
   const doneCount = dayItems.filter(isItemDone).length
   const todayKey = formatDateString(new Date())
@@ -101,15 +112,13 @@ export default function SelectedDatePanel({
                 <p className="text-xs text-gray-500 mt-1">Chọn một ngày khác trên calendar</p>
               </div>
             ) : (
-              dayItems.map((item, index) => (
-                <PanelItem
-                  key={`${item.type}-${item.original_id}-${index}`}
-                  item={item}
-                  onCheckIn={onCheckIn}
-                  isUpdating={updating[`${item.type}-${item.original_id}`] || false}
-                  onNavigate={navigate}
-                />
-              ))
+              <DayItemList
+                items={dayItems}
+                onReorder={(next) => saveOrder(selectedKey, next)}
+                onCheckIn={onCheckIn}
+                updating={updating}
+                onNavigate={navigate}
+              />
             )}
           </div>
         </>
@@ -147,17 +156,19 @@ export default function SelectedDatePanel({
                     </span>
                     <span className="text-[10px] text-gray-600">{dateItems.length} việc</span>
                   </div>
-                  <div className="space-y-1.5">
-                    {dateItems.map((item, index) => (
-                      <PanelItem
-                        key={`${dateKey}-${item.type}-${item.original_id}-${index}`}
-                        item={item}
-                        onCheckIn={onCheckIn}
-                        isUpdating={updating[`${item.type}-${item.original_id}`] || false}
-                        onNavigate={navigate}
-                      />
-                    ))}
-                  </div>
+                  <DayItemList
+                    items={dateItems}
+                    onReorder={(next) => {
+                      // This tab only lists pending items — keep the done ones'
+                      // saved positions after them.
+                      const pendingKeys = new Set(next.map(dayItemKey))
+                      const rest = (orders[dateKey] || []).filter((key) => !pendingKeys.has(key))
+                      saveOrder(dateKey, [...next, ...rest.map(toKeyItem)])
+                    }}
+                    onCheckIn={onCheckIn}
+                    updating={updating}
+                    onNavigate={navigate}
+                  />
                 </div>
               )
             })
@@ -168,7 +179,44 @@ export default function SelectedDatePanel({
   )
 }
 
-function PanelItem({ item, onCheckIn, isUpdating, onNavigate }) {
+/** Wraps a stored key back into the shape `saveOrder` expects. */
+function toKeyItem(key) {
+  const split = key.indexOf('-')
+  return { type: key.slice(0, split), original_id: key.slice(split + 1) }
+}
+
+/** Pending items are drag-sortable; done items stay fixed underneath. */
+function DayItemList({ items, onReorder, onCheckIn, updating, onNavigate }) {
+  const pending = items.filter((item) => !isItemDone(item))
+  const done = items.filter(isItemDone)
+
+  const renderPanelItem = (item, sortable) => (
+    <PanelItem
+      item={item}
+      onCheckIn={onCheckIn}
+      isUpdating={updating[dayItemKey(item)] || false}
+      onNavigate={onNavigate}
+      handleProps={sortable?.handleProps}
+    />
+  )
+
+  return (
+    <div className="space-y-1.5">
+      <SortableList
+        items={pending}
+        getKey={dayItemKey}
+        onReorder={(next) => onReorder([...next, ...done])}
+        className="space-y-1.5"
+        renderItem={(item, sortable) => renderPanelItem(item, pending.length > 1 ? sortable : null)}
+      />
+      {done.map((item) => (
+        <div key={dayItemKey(item)}>{renderPanelItem(item, null)}</div>
+      ))}
+    </div>
+  )
+}
+
+function PanelItem({ item, onCheckIn, isUpdating, onNavigate, handleProps }) {
   const isDone = isItemDone(item)
   const isTask = item.type === 'task'
   const isBlocked = isTask && !isDone && (item.is_blocked || item.status === 'blocked')
@@ -194,6 +242,21 @@ function PanelItem({ item, onCheckIn, isUpdating, onNavigate }) {
       }`}
       style={{ borderLeftWidth: '3px', borderLeftColor: item.goal?.color || '#d1d5db' }}
     >
+      {handleProps && (
+        <span
+          {...handleProps}
+          className="shrink-0 -ml-1 mt-0.5 px-0.5 text-gray-300 hover:text-gray-500 focus:text-gray-500 focus:outline-none select-none"
+        >
+          <svg className="w-3 h-4" viewBox="0 0 12 16" fill="currentColor" aria-hidden="true">
+            <circle cx="3" cy="3" r="1.5" />
+            <circle cx="9" cy="3" r="1.5" />
+            <circle cx="3" cy="8" r="1.5" />
+            <circle cx="9" cy="8" r="1.5" />
+            <circle cx="3" cy="13" r="1.5" />
+            <circle cx="9" cy="13" r="1.5" />
+          </svg>
+        </span>
+      )}
       <button
         onClick={() => onCheckIn?.(item)}
         disabled={isUpdating}
